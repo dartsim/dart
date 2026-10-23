@@ -175,8 +175,15 @@ DART uses its newer heightfield constructor, otherwise 3.05.
 `dart.pc` requires `bullet-float64` when pkg-config finds that module and otherwise
 publishes the selected libraries and include directories in its public flags.
 Paths are escaped, and compile/link sysroots are removed at path boundaries.
+Absolute library search paths from interface link options precede ordinary link
+directories, matching CMake's ordering. The fallback accepts joined `-L` and
+MSVC `LIBPATH` search options; unsupported interface options report an error
+instead of publishing incomplete flags. A matching `bullet-float64.pc` module
+supplies its own link flags and bypasses that fallback.
 On Linux, sysroot library flags retain the exact selected filename using `-l:`;
 unsupported platform/sysroot library serialization reports an error.
+Scalar ABI checks retain normal interface targets and mapped link options in an
+isolated target graph, independently of pkg-config serialization.
 The two precisions
 share GNU unique symbols, such as the static in `btTransform::getIdentity()`,
 even across `RTLD_LOCAL` plugins, so a process must load only one Bullet

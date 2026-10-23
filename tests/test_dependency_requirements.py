@@ -2313,12 +2313,20 @@ def test_bullet_installed_scalar_abi(tmp_path, precision, linkage, suffix):
     assert f'set(DART_BULLET_REQUIRE_PRECISION "{precision}")' in component.read_text()
 
 
+def pkgconfig_fixture_executable():
+    executable = Path(shutil.which("pkg-config"))
+    raw = executable.with_name(executable.name + ".bin")
+    # Conda's wrapper appends global module paths despite PKG_CONFIG_LIBDIR.
+    return str(raw if raw.is_file() else executable)
+
+
 def pkgconfig_consumer_options(package, *, static=False, env=None):
     flags = []
     content = ""
     for kind in ("--cflags", "--libs"):
         result = cmake_fixture_run(
-            shutil.which("pkg-config"),
+            pkgconfig_fixture_executable(),
+            "--define-prefix",
             *(["--static"] if static else []),
             kind,
             package,
@@ -3308,30 +3316,111 @@ def test_require_optional_dependencies(
         assert result.returncode == 0, output
 
 
-@pytest.mark.parametrize("configuration", ["Release", "Debug"])
-@pytest.mark.parametrize("layout", ["plain", "spaces"])
-def test_bullet_named_libraries_pkgconfig_consumer(tmp_path, configuration, layout):
+@pytest.mark.parametrize(
+    "configuration,layout,provider",
+    [
+        ("Release", "plain", "directories"),
+        ("Debug", "plain", "directories"),
+        ("Release", "spaces", "directories"),
+        ("Debug", "spaces", "directories"),
+        ("Release", "plain", "options"),
+        ("Debug", "plain", "options"),
+        ("Release", "spaces", "options"),
+        ("Debug", "spaces", "options"),
+        ("Release", "spaces", "precedence"),
+        ("Release", "spaces", "normal-directories"),
+        ("Debug", "spaces", "normal-options"),
+        ("Debug", "spaces", "mapped-directories"),
+    ],
+)
+def test_bullet_named_libraries_pkgconfig_consumer(
+    tmp_path, configuration, layout, provider
+):
+    normal = provider.startswith("normal-")
+    provider = provider.removeprefix("normal-")
     folder = "bullet with spaces" if layout == "spaces" else "bullet"
     prefix = build_bullet_abi_fixture(tmp_path / folder, "double", "STATIC", "-float64")
+    other = None
+    if provider == "precedence":
+        other = build_bullet_abi_fixture(
+            tmp_path / "competing single SDK", "single", "STATIC", "-float64"
+        )
     bullet_module(tmp_path)
     source = tmp_path / "consumer.cpp"
     source.write_text(BULLET_CONSUMER)
     graph = (
         "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
-        "add_library(Bullet INTERFACE IMPORTED)\n"
+        f"add_library(Bullet INTERFACE{'' if normal else ' IMPORTED'})\n"
         f'target_include_directories(Bullet INTERFACE "{prefix.as_posix()}/include")\n'
-        f'target_link_directories(Bullet INTERFACE "$<$<CONFIG:{configuration}>:{prefix.as_posix()}/lib>" '
-        '"$<$<CONFIG:Unused>:/missing/bullet>")\n'
+    )
+    owner = "Bullet"
+    if (
+        configuration == "Debug" and provider == "options"
+    ) or provider == "mapped-directories":
+        owner = "usage_owner"
+        graph += (
+            "add_library(usage_owner INTERFACE IMPORTED)\n"
+            "set_property(TARGET usage_owner PROPERTY MAP_IMPORTED_CONFIG_DEBUG Release)\n"
+            "target_link_libraries(Bullet INTERFACE usage_owner)\n"
+        )
+    if provider in ("directories", "mapped-directories"):
+        active = "Release" if provider == "mapped-directories" else configuration
+        graph += (
+            f'target_link_directories({owner} INTERFACE "$<$<CONFIG:{active}>:{prefix.as_posix()}/lib>" '
+            '"$<$<CONFIG:Unused>:/missing/bullet>")\n'
+        )
+    else:
+        graph += (
+            (
+                "if(MSVC)\nset(search_prefix -lIbPaTh:)\nelse()\nset(search_prefix -L)\nendif()\n"
+                if configuration == "Debug"
+                else "if(MSVC)\nset(search_prefix /LIBPATH:)\nelse()\nset(search_prefix -L)\nendif()\n"
+            )
+            + f'target_link_options({owner} INTERFACE "$<$<CONFIG:Release>:${{search_prefix}}{prefix.as_posix()}/lib>" '
+            '"$<$<CONFIG:Unused>:SHELL:unsupported-unused-option>")\n'
+        )
+        if other:
+            graph += f'target_link_directories(Bullet INTERFACE "{other.as_posix()}/lib" "{prefix.as_posix()}/lib")\n'
+    graph += (
         "target_link_libraries(Bullet INTERFACE BulletCollision-float64 LinearMath-float64)\n"
         f'add_executable(consumer "{source.as_posix()}")\n'
         "target_compile_definitions(consumer PRIVATE BT_USE_DOUBLE_PRECISION)\n"
         "target_link_libraries(consumer PRIVATE Bullet)\n"
+        f"get_property(before_options TARGET {owner} PROPERTY INTERFACE_LINK_OPTIONS)\n"
+        'set(CMAKE_REQUIRED_FLAGS "caller-flags")\n'
+        'set(CMAKE_REQUIRED_LIBRARIES "caller-library")\n'
     )
+    hook = tmp_path / "project-hook.cmake"
+    hook.write_text(
+        "# Harmless caller hook; the selected CXX compiler is already initialized.\n"
+    )
+    graph += (
+        f'set(CMAKE_PROJECT_INCLUDE "{hook.as_posix()}")\n'
+        'set(before_compiler "${CMAKE_CXX_COMPILER}")\n'
+        "get_property(before_languages GLOBAL PROPERTY ENABLED_LANGUAGES)\n"
+    )
+    if normal or provider == "mapped-directories":
+        # Establish the ordinary result before the independent scalar ABI probe.
+        control = tmp_path / "ordinary-control"
+        control.mkdir()
+        result = configure(
+            control, graph, cmake_args=(f"-DCMAKE_BUILD_TYPE={configuration}",)
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        cmake_fixture_run(shutil.which("cmake"), "--build", control / "build")
+        cmake_fixture_run(control / "build/consumer")
     result = configure(
         tmp_path,
         graph + "include(DARTFindBullet)\n_dart_bullet_probe_precision(precision)\n"
         'if(NOT BULLET_FOUND OR NOT precision STREQUAL "double")\n'
         'message(FATAL_ERROR "Named libraries failed ABI validation")\nendif()\n'
+        'if(DART_BULLET_PC_ERROR)\nmessage(FATAL_ERROR "${DART_BULLET_PC_ERROR}")\nendif()\n'
+        f"get_property(after_options TARGET {owner} PROPERTY INTERFACE_LINK_OPTIONS)\n"
+        'if(NOT "${before_options}" STREQUAL "${after_options}" OR NOT CMAKE_REQUIRED_FLAGS STREQUAL "caller-flags" OR NOT CMAKE_REQUIRED_LIBRARIES STREQUAL "caller-library")\n'
+        'message(FATAL_ERROR "Finder changed caller state or target options")\nendif()\n'
+        "get_property(after_languages GLOBAL PROPERTY ENABLED_LANGUAGES)\n"
+        f'if(NOT CMAKE_PROJECT_INCLUDE STREQUAL "{hook.as_posix()}" OR NOT CMAKE_CXX_COMPILER STREQUAL before_compiler OR NOT "${{before_languages}}" STREQUAL "${{after_languages}}")\n'
+        'message(FATAL_ERROR "Finder changed caller hook/compiler/languages")\nendif()\n'
         'file(WRITE "${CMAKE_BINARY_DIR}/bullet.pc" "Name: bullet-fixture\\nDescription: Bullet fixture\\nVersion: 1\\nCflags: -DBT_USE_DOUBLE_PRECISION${DART_BULLET_PC_CFLAGS}\\nLibs:${DART_BULLET_PC_LIBS}\\n")\n',
         cmake_args=(f"-DCMAKE_BUILD_TYPE={configuration}",),
     )
@@ -3349,6 +3438,11 @@ def test_bullet_named_libraries_pkgconfig_consumer(tmp_path, configuration, layo
     assert "-lLinearMath-float64" in flags
     assert "-L" + (prefix / "lib").as_posix() in flags
     assert all("/missing/bullet" not in flag for flag in flags)
+    if other:
+        wanted = "-L" + (prefix / "lib").as_posix()
+        competing = "-L" + (other / "lib").as_posix()
+        assert flags.index(wanted) < flags.index(competing)
+        assert flags.count(wanted) == 1
     consumer = tmp_path / "pc-consumer"
     consumer.mkdir()
     result = configure(
@@ -3359,6 +3453,207 @@ def test_bullet_named_libraries_pkgconfig_consumer(tmp_path, configuration, layo
     assert result.returncode == 0, result.stdout + result.stderr
     cmake_fixture_run(shutil.which("cmake"), "--build", consumer / "build")
     cmake_fixture_run(consumer / "build/consumer")
+    if other:
+        # Reversing actual search priority must select the incompatible archive.
+        negative = tmp_path / "wrong-priority"
+        negative.mkdir()
+        result = configure(
+            negative,
+            "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+            f'add_executable(consumer "{source.as_posix()}")\n'
+            f'target_link_directories(consumer PRIVATE "{other.as_posix()}/lib")\n'
+            + options,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        result = subprocess.run(
+            [shutil.which("cmake"), "--build", str(negative / "build")],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode != 0, result.stdout + result.stderr
+        assert "btStaticPlaneShape" in result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    "kind", ["shell", "linker", "genex", "relative", "split", "quoted", "macro"]
+)
+def test_bullet_link_options_only_block_pkgconfig_fallback(tmp_path, monkeypatch, kind):
+    prefix = build_bullet_abi_fixture(
+        tmp_path / "bullet", "double", "STATIC", "-float64"
+    )
+    bullet_module(tmp_path)
+    source = tmp_path / "consumer.cpp"
+    source.write_text(BULLET_CONSUMER)
+    forms = {
+        "shell": '"SHELL:${search_prefix}\\"${sdk_lib}\\""',
+        "linker": '"LINKER:${search_prefix}${sdk_lib}"',
+        "genex": '"$<IF:$<BOOL:1>,${search_prefix}${sdk_lib},>"',
+        "relative": '"${search_prefix}relative-bullet"',
+        "split": '"${search_prefix}" "${sdk_lib}"',
+        "quoted": '"${search_prefix}\\"${sdk_lib}\\""',
+        "macro": '"${search_prefix}$SYSROOT/fixture"',
+    }
+    graph = (
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        + bullet_imports(prefix, "-float64")
+        + "if(MSVC)\nset(search_prefix /LIBPATH:)\nelse()\nset(search_prefix -L)\nendif()\n"
+        f'set(sdk_lib "{prefix.as_posix()}/lib")\n'
+        f"target_link_options(Bullet INTERFACE {forms[kind]})\n"
+        "get_target_property(before_options Bullet INTERFACE_LINK_OPTIONS)\n"
+        f'add_executable(consumer "{source.as_posix()}")\n'
+        "target_compile_definitions(consumer PRIVATE BT_USE_DOUBLE_PRECISION)\n"
+        "target_link_libraries(consumer PRIVATE Bullet)\n"
+    )
+    # Split /LIBPATH: is malformed native syntax; its packaging check stands alone.
+    ordinary_valid = not (os.name == "nt" and kind == "split")
+    result = configure(
+        tmp_path,
+        graph + "include(DARTFindBullet)\n"
+        "if(NOT BULLET_FOUND OR _DART_BULLET_GRAPH_UNKNOWN OR NOT DART_BULLET_PC_ERROR)\n"
+        'message(FATAL_ERROR "Packaging error changed ABI/discovery or was omitted")\nendif()\n'
+        'file(WRITE "${CMAKE_BINARY_DIR}/metadata-error.txt" "${DART_BULLET_PC_ERROR}")\n'
+        "get_target_property(after_options Bullet INTERFACE_LINK_OPTIONS)\n"
+        'if(NOT "${before_options}" STREQUAL "${after_options}")\nmessage(FATAL_ERROR "Finder changed original options")\nendif()\n'
+        + (
+            "_dart_bullet_probe_precision(precision)\n"
+            'if(NOT precision STREQUAL "double")\nmessage(FATAL_ERROR "Valid ordinary target lost scalar ABI")\nendif()\n'
+            if ordinary_valid
+            else ""
+        ),
+        cmake_args=("-DCMAKE_BUILD_TYPE=Release",),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    error = (tmp_path / "build/metadata-error.txt").read_text()
+    assert "Bullet" in error and "Release" in error
+    if ordinary_valid:
+        cmake_fixture_run(shutil.which("cmake"), "--build", tmp_path / "build")
+        cmake_fixture_run(tmp_path / "build/consumer")
+    pc_block = (
+        (ROOT / "CMakeLists.txt")
+        .read_text()
+        .split("# Generate the DART pkg-config\n")[1]
+        .split("if(HAVE_ODE)")[0]
+    )
+    for available in (False, True) if kind == "shell" else (False,):
+        case = tmp_path / ("real-module" if available else "fallback")
+        case.mkdir()
+        pcdir = case / "pkgconfig"
+        pcdir.mkdir()
+        if available:
+            path = prefix.as_posix().replace(" ", "\\ ")
+            (pcdir / "bullet-float64.pc").write_text(
+                "Name: Bullet float64 fixture\nDescription: real scalar SDK\nVersion: 3.25\n"
+                f"Cflags: -DBT_USE_DOUBLE_PRECISION -I{path}/include\n"
+                f"Libs: -L{path}/lib -lBulletCollision-float64 -lLinearMath-float64\n"
+            )
+        env = {
+            **os.environ,
+            "PKG_CONFIG_PATH": str(pcdir),
+            "PKG_CONFIG_LIBDIR": str(pcdir),
+        }
+        env.pop("PKG_CONFIG_SYSROOT_DIR", None)
+        exists = subprocess.run(
+            [pkgconfig_fixture_executable(), "--exists", "bullet-float64"],
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        assert (exists.returncode == 0) == available, exists.stdout + exists.stderr
+        for name in ("PKG_CONFIG_PATH", "PKG_CONFIG_LIBDIR"):
+            monkeypatch.setenv(name, env[name])
+        monkeypatch.delenv("PKG_CONFIG_SYSROOT_DIR", raising=False)
+        bullet_module(case)
+        result = configure(
+            case,
+            graph + "include(DARTFindBullet)\nset(HAVE_BULLET TRUE)\n"
+            "set(CMAKE_DISABLE_FIND_PACKAGE_PkgConfig FALSE)\n"
+            f'set(PKG_CONFIG_EXECUTABLE "{Path(pkgconfig_fixture_executable()).as_posix()}")\n'
+            + pc_block
+            + 'if(NOT BULLET_FLOAT64_FOUND OR NOT DART_BULLET_PC_ERROR)\nmessage(FATAL_ERROR "Real module did not bypass only fallback serialization")\nendif()\n',
+            cmake_args=("-DCMAKE_BUILD_TYPE=Release",),
+        )
+        assert (result.returncode == 0) == available, result.stdout + result.stderr
+        if not available:
+            assert " ".join(error.split()) in " ".join(
+                (result.stdout + result.stderr).split()
+            )
+        else:
+            options, _ = pkgconfig_consumer_options("bullet-float64", env=env)
+            consumer = case / "pc-consumer"
+            consumer.mkdir()
+            result = configure(
+                consumer,
+                "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+                f'add_executable(consumer "{source.as_posix()}")\n' + options,
+            )
+            assert result.returncode == 0, result.stdout + result.stderr
+            cmake_fixture_run(shutil.which("cmake"), "--build", consumer / "build")
+            cmake_fixture_run(consumer / "build/consumer")
+
+
+@pytest.mark.parametrize(
+    "mode", ["unset", "empty", "notfound-suffix", "inactive-config"]
+)
+def test_bullet_link_option_property_and_error_state(tmp_path, mode):
+    prefix = build_bullet_abi_fixture(
+        tmp_path / "bullet", "double", "STATIC", "-float64"
+    )
+    bullet_module(tmp_path)
+    source = tmp_path / "consumer.cpp"
+    source.write_text(BULLET_CONSUMER)
+    directory = tmp_path / "search-directory-NOTFOUND"
+    directory.mkdir()
+    replacement = {
+        "unset": "set_property(TARGET Bullet PROPERTY INTERFACE_LINK_OPTIONS)\n",
+        "empty": 'set_property(TARGET Bullet PROPERTY INTERFACE_LINK_OPTIONS "")\n',
+        "notfound-suffix": f'set_property(TARGET Bullet PROPERTY INTERFACE_LINK_OPTIONS "${{search_prefix}}{directory.as_posix()}")\n',
+        "inactive-config": 'set_property(TARGET Bullet PROPERTY INTERFACE_LINK_OPTIONS "$<$<CONFIG:Debug>:SHELL:${search_prefix}\\"${sdk_lib}\\">")\n',
+    }
+    graph = (
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        + bullet_imports(prefix, "-float64")
+        + "if(MSVC)\nset(search_prefix /LIBPATH:)\nelse()\nset(search_prefix -L)\nendif()\n"
+        f'set(sdk_lib "{prefix.as_posix()}/lib")\n'
+        'set_property(TARGET Bullet PROPERTY INTERFACE_LINK_OPTIONS "SHELL:${search_prefix}\\"${sdk_lib}\\"")\n'
+        "include(DARTFindBullet)\n"
+        'if(NOT DART_BULLET_PC_ERROR OR NOT BULLET_FOUND OR _DART_BULLET_GRAPH_UNKNOWN)\nmessage(FATAL_ERROR "Missing initial metadata-only error")\nendif()\n'
+        + replacement[mode]
+        + 'set(_dart_bullet_options "SHELL:cache-poison" CACHE STRING "" FORCE)\n'
+        'set(_dart_bullet_value "SHELL:cache-poison" CACHE STRING "" FORCE)\n'
+        "include(DARTFindBullet)\n_dart_bullet_probe_precision(precision)\n"
+        'if(DART_BULLET_PC_ERROR OR NOT BULLET_FOUND OR _DART_BULLET_GRAPH_UNKNOWN OR NOT precision STREQUAL "double")\nmessage(FATAL_ERROR "Inactive/unset option or stale metadata poisoned selected ABI")\nendif()\n'
+        "get_property(options_set TARGET Bullet PROPERTY INTERFACE_LINK_OPTIONS SET)\n"
+        f'if(NOT options_set STREQUAL "{0 if mode == "unset" else 1}")\nmessage(FATAL_ERROR "Option SET state changed")\nendif()\n'
+        'file(WRITE "${CMAKE_BINARY_DIR}/metadata.txt" "${DART_BULLET_PC_LIBS}")\n'
+        f'add_executable(consumer "{source.as_posix()}")\n'
+        "target_compile_definitions(consumer PRIVATE BT_USE_DOUBLE_PRECISION)\n"
+        "target_link_libraries(consumer PRIVATE Bullet)\n"
+    )
+    result = configure(tmp_path, graph, cmake_args=("-DCMAKE_BUILD_TYPE=Release",))
+    assert result.returncode == 0, result.stdout + result.stderr
+    if mode == "notfound-suffix":
+        assert "-L" + directory.as_posix() in shlex.split(
+            (tmp_path / "build/metadata.txt").read_text()
+        )
+    cmake_fixture_run(shutil.which("cmake"), "--build", tmp_path / "build")
+    cmake_fixture_run(tmp_path / "build/consumer")
+    if mode == "inactive-config":
+        # The unused Debug packaging error must not survive the final Release walk.
+        multi = tmp_path / "multi"
+        cmake_fixture_run(
+            shutil.which("cmake"),
+            "-G",
+            "Ninja Multi-Config",
+            "-S",
+            tmp_path / "source",
+            "-B",
+            multi,
+            "-DCMAKE_BUILD_TYPE=Release",
+        )
+        cmake_fixture_run(
+            shutil.which("cmake"), "--build", multi, "--config", "Release"
+        )
+        cmake_fixture_run(multi / "Release/consumer")
 
 
 @pytest.mark.parametrize(

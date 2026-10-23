@@ -1170,7 +1170,14 @@ function(_dart_bullet_collect_graph config all_configs)
     foreach(output files built_precisions unknown)
       set(_dart_bullet_${output} "${${output}}" PARENT_SCOPE)
     endforeach()
-    foreach(output pc_files includes link_directories)
+    foreach(
+      output
+      pc_files
+      includes
+      link_directories
+      pc_option_directories
+      pc_error
+    )
       set(_dart_bullet_${output} "${_dart_bullet_${output}}" PARENT_SCOPE)
     endforeach()
     return()
@@ -1191,6 +1198,9 @@ function(_dart_bullet_collect_graph config all_configs)
   set(_dart_bullet_pc_files)
   set(_dart_bullet_includes)
   set(_dart_bullet_link_directories)
+  set(_dart_bullet_pc_option_directories)
+  set(_dart_bullet_pc_error "")
+  set(_dart_bullet_has_link_usage FALSE)
   set(_dart_bullet_unknown FALSE)
   set(_dart_bullet_built_precisions)
   set(_dart_bullet_has_build_targets FALSE)
@@ -1227,6 +1237,17 @@ function(_dart_bullet_collect_graph config all_configs)
         "${_dart_bullet_item}"
         INTERFACE_${property}
       )
+      if(property STREQUAL "LINK_DIRECTORIES")
+        get_property(
+          _dart_bullet_has_dirs
+          TARGET "${_dart_bullet_item}"
+          PROPERTY INTERFACE_LINK_DIRECTORIES
+          SET
+        )
+        if(_dart_bullet_has_dirs AND NOT "${_dart_bullet_value}" STREQUAL "")
+          set(_dart_bullet_has_link_usage TRUE)
+        endif()
+      endif()
       if(_dart_bullet_value)
         _dart_bullet_evaluate_items(_dart_bullet_value _dart_bullet_unresolved
           "${config}" "${_dart_bullet_item}" TRUE ${_dart_bullet_value}
@@ -1245,6 +1266,59 @@ function(_dart_bullet_collect_graph config all_configs)
         endforeach()
       endif()
     endforeach()
+    get_property(
+      _dart_bullet_has_options
+      TARGET "${_dart_bullet_item}"
+      PROPERTY INTERFACE_LINK_OPTIONS
+      SET
+    )
+    if(_dart_bullet_has_options)
+      get_target_property(
+        _dart_bullet_options
+        "${_dart_bullet_item}"
+        INTERFACE_LINK_OPTIONS
+      )
+      if(NOT "${_dart_bullet_options}" STREQUAL "")
+        set(_dart_bullet_has_link_usage TRUE)
+      endif()
+      _dart_bullet_evaluate_items(_dart_bullet_options _dart_bullet_options_unknown
+        "${config}" "${_dart_bullet_item}" TRUE ${_dart_bullet_options}
+      )
+      if(_dart_bullet_options_unknown)
+        set(
+          _dart_bullet_pc_error
+          "Cannot serialize Bullet interface link options for '${_dart_bullet_item}' in '${config}'"
+        )
+      endif()
+      foreach(_dart_bullet_option IN LISTS _dart_bullet_options)
+        set(_dart_bullet_option_path "")
+        string(TOUPPER "${_dart_bullet_option}" _dart_bullet_upper_option)
+        if(_dart_bullet_option MATCHES "^-L(.+)$")
+          set(_dart_bullet_option_path "${CMAKE_MATCH_1}")
+        elseif(_dart_bullet_upper_option MATCHES "^[/-]LIBPATH:")
+          string(
+            SUBSTRING "${_dart_bullet_option}"
+            9
+            -1
+            _dart_bullet_option_path
+          )
+        endif()
+        if(
+          NOT IS_ABSOLUTE "${_dart_bullet_option_path}"
+          OR _dart_bullet_option_path MATCHES "[\r\n;#$'\"<>]"
+        )
+          set(
+            _dart_bullet_pc_error
+            "Cannot serialize Bullet interface link option '${_dart_bullet_option}' from '${_dart_bullet_item}' in '${config}'"
+          )
+        else()
+          list(
+            APPEND _dart_bullet_pc_option_directories
+            "${_dart_bullet_option_path}"
+          )
+        endif()
+      endforeach()
+    endif()
     get_target_property(_dart_bullet_imported "${_dart_bullet_item}" IMPORTED)
     if(NOT _dart_bullet_imported)
       get_target_property(_dart_bullet_type "${_dart_bullet_item}" TYPE)
@@ -1295,6 +1369,9 @@ function(_dart_bullet_collect_graph config all_configs)
     pc_files
     includes
     link_directories
+    pc_option_directories
+    pc_error
+    has_link_usage
     unknown
     built_precisions
     has_build_targets
@@ -1362,8 +1439,17 @@ if(TARGET Bullet AND (BULLET_FOUND OR Bullet_FOUND))
       "${_dart_bullet_found}"
       INCLUDES ${_dart_bullet_includes}
       LIBRARIES ${_dart_bullet_pc_files}
-      LINK_DIRECTORIES ${_dart_bullet_link_directories}
+      # CMake places link options before its generated library-directory flags.
+      LINK_DIRECTORIES ${_dart_bullet_pc_option_directories} ${_dart_bullet_link_directories}
     )
+    if(NOT "${_dart_bullet_pc_error}" STREQUAL "")
+      set(
+        DART_BULLET_PC_ERROR
+        "${_dart_bullet_pc_error}"
+        CACHE INTERNAL
+        "Unsupported Bullet pkg-config serialization"
+      )
+    endif()
   endif()
   set(_DART_BULLET_GRAPH_UNKNOWN "${_dart_bullet_unknown}")
   set(_DART_BULLET_IMPORTED_FILES "${_dart_bullet_pc_files}")
@@ -1424,9 +1510,8 @@ function(_dart_bullet_snapshot_value out targets supported value)
   set(${supported} "${valid}" PARENT_SCOPE)
 endfunction()
 
-# C-only consumers need a synchronous link check without enabling CXX in their
-# scope. Ordinary child executables retain target identities that try_compile's
-# further target export can omit. The child never runs a target program.
+# Ordinary child executables retain target usage that try_compile exports can
+# omit, without enabling CXX in a C-only caller. No target program is run.
 function(_dart_bullet_probe_child single_out double_out config source)
   set(${single_out} FALSE PARENT_SCOPE)
   set(${double_out} FALSE PARENT_SCOPE)
@@ -1436,30 +1521,33 @@ function(_dart_bullet_probe_child single_out double_out config source)
   )
     message(
       STATUS
-      "C-only Bullet ABI validation has no usable selected CXX compiler"
+      "Isolated Bullet ABI validation has no usable selected CXX compiler"
     )
     return()
   endif()
   if(_dart_bullet_has_build_targets)
     message(
       STATUS
-      "C-only Bullet ABI validation cannot snapshot project-built link dependencies"
+      "Isolated Bullet ABI validation cannot snapshot project-built link dependencies"
     )
     return()
   endif()
-  get_cmake_property(variables VARIABLES)
-  foreach(variable IN LISTS variables)
-    if(
-      variable MATCHES "^CMAKE_PROJECT_.*INCLUDE"
-      AND NOT "${${variable}}" STREQUAL ""
-    )
-      message(
-        STATUS
-        "C-only Bullet ABI validation cannot replay project include hooks"
+  # An enabled CXX caller already supplied its compiler state; do not replay hooks.
+  if(NOT CMAKE_CXX_COMPILER_LOADED)
+    get_cmake_property(variables VARIABLES)
+    foreach(variable IN LISTS variables)
+      if(
+        variable MATCHES "^CMAKE_PROJECT_.*INCLUDE"
+        AND NOT "${${variable}}" STREQUAL ""
       )
-      return()
-    endif()
-  endforeach()
+        message(
+          STATUS
+          "Isolated Bullet ABI validation cannot replay project include hooks"
+        )
+        return()
+      endif()
+    endforeach()
+  endif()
 
   set(queue ${_dart_bullet_targets})
   set(seen)
@@ -1492,7 +1580,7 @@ function(_dart_bullet_probe_child single_out double_out config source)
     )
       message(
         STATUS
-        "C-only Bullet ABI validation cannot snapshot target '${target}' of type '${type}'"
+        "Isolated Bullet ABI validation cannot snapshot target '${target}' of type '${type}'"
       )
       return()
     endif()
@@ -1519,7 +1607,7 @@ function(_dart_bullet_probe_child single_out double_out config source)
       if(value)
         message(
           STATUS
-          "C-only Bullet ABI validation cannot snapshot '${target}' property '${property}'"
+          "Isolated Bullet ABI validation cannot snapshot '${target}' property '${property}'"
         )
         return()
       endif()
@@ -1587,7 +1675,7 @@ function(_dart_bullet_probe_child single_out double_out config source)
       if(property MATCHES "^IMPORTED_LINK_DEPENDENT_LIBRARIES" AND value)
         message(
           STATUS
-          "C-only Bullet ABI validation cannot snapshot hidden dependent libraries"
+          "Isolated Bullet ABI validation cannot snapshot hidden dependent libraries"
         )
         return()
       endif()
@@ -1595,7 +1683,7 @@ function(_dart_bullet_probe_child single_out double_out config source)
       if(NOT supported)
         message(
           STATUS
-          "C-only Bullet ABI validation cannot snapshot target context in '${target}' property '${property}'"
+          "Isolated Bullet ABI validation cannot snapshot target context in '${target}' property '${property}'"
         )
         return()
       endif()
@@ -1604,7 +1692,7 @@ function(_dart_bullet_probe_child single_out double_out config source)
         if(_dart_bullet_unknown OR _dart_bullet_has_build_targets)
           message(
             STATUS
-            "C-only Bullet ABI validation cannot snapshot identity target '${extra_target}'"
+            "Isolated Bullet ABI validation cannot snapshot identity target '${extra_target}'"
           )
           return()
         endif()
@@ -1704,7 +1792,7 @@ function(_dart_bullet_probe_child single_out double_out config source)
     if(NOT variable MATCHES "^[A-Za-z_][A-Za-z0-9_]*$")
       message(
         STATUS
-        "C-only Bullet ABI validation cannot snapshot platform variable '${variable}'"
+        "Isolated Bullet ABI validation cannot snapshot platform variable '${variable}'"
       )
       return()
     endif()
@@ -1916,7 +2004,15 @@ function(_dart_bullet_probe_precision out)
         return()
       endif()
     endif()
-    if(NOT CMAKE_CXX_COMPILER_LOADED)
+    # Normal roots and mapped link usage need the original target graph.
+    if(
+      NOT CMAKE_CXX_COMPILER_LOADED
+      OR
+        (
+          NOT _dart_bullet_has_build_targets
+          AND (NOT probe_imported OR _dart_bullet_has_link_usage)
+        )
+    )
       _dart_bullet_probe_child(_dart_bullet_probe_single _dart_bullet_probe_double
         "${CMAKE_TRY_COMPILE_CONFIGURATION}"
         "#include <btBulletCollisionCommon.h>
