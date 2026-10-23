@@ -357,7 +357,7 @@ def test_component_exports_only_install_owned_dependency_finders(
         "add_component(dart fixture)\n"
         "add_library(fixture INTERFACE)\n"
         "add_component_targets(dart fixture fixture)\n"
-        "add_component_dependency_packages(dart fixture Eigen3 ODE)\n"
+        "add_component_dependency_packages(dart fixture Eigen3 ODE urdfdom)\n"
         "install_component_exports(dart)\n",
     )
     assert result.returncode == 0, result.stdout + result.stderr
@@ -401,7 +401,7 @@ def test_component_exports_only_install_owned_dependency_finders(
         f"set(DART_BUILD_EIGEN_MAJOR {build_major})\n"
         + (ROOT / "cmake/DARTFindEigen3.cmake").read_text()
     )
-    for name in ("DARTFindODE.cmake", "FindODE.cmake"):
+    for name in ("DARTFindODE.cmake", "FindODE.cmake", "DARTFindurdfdom.cmake"):
         assert (installed / name).read_text() == (ROOT / "cmake" / name).read_text()
 
 
@@ -468,7 +468,7 @@ def test_io_requires_all_parser_dependencies(tmp_path, missing):
     if missing != "tinyxml2":
         config_package(tmp_path, "tinyxml2", "10.0.0", "tinyxml2::tinyxml2")
     if missing == "sdformat":
-        config_package(tmp_path, "urdfdom", "3.0.0", "urdfdom")
+        config_package(tmp_path, "urdfdom", "4.0.0", "urdfdom")
     result = configure(
         tmp_path,
         "include(DARTMacros)\n"
@@ -516,7 +516,7 @@ def test_io_rejects_tinyxml2_9_with_minimum_version_message(tmp_path, lookup):
         ("fcl", "0.7.0", "fcl", True),
         ("octomap", "1.9.7", "octomap", False),
         ("tinyxml2", "10.0.0", "tinyxml2::tinyxml2", False),
-        ("urdfdom", "3.0.0", "urdfdom", False),
+        ("urdfdom", "4.0.0", "urdfdom", False),
         ("ODE", "0.16.2", "ODE::ODE", False),
         ("imgui", "1.92.8", "imgui::imgui", True),
     ],
@@ -533,7 +533,7 @@ def test_config_floors(tmp_path, package, minimum, target, required, version_kin
     if package == "tinyxml2" and version_kind == "older":
         versions["older"] = "9.0.0"
     if package == "urdfdom" and version_kind == "older":
-        versions["older"] = "2.3.5"
+        versions["older"] = "3.1.1"
     if package in ("tinyxml2", "urdfdom") and version_kind == "newer":
         versions["newer"] = f"{major + 1}.0.0"
     extra = ""
@@ -559,52 +559,44 @@ def test_config_floors(tmp_path, package, minimum, target, required, version_kin
         assert result.returncode == 0, result.stdout + result.stderr
 
 
-@pytest.mark.parametrize(
-    "libdir,pcdir",
-    [
-        ("lib", "lib/pkgconfig"),
-        ("lib", "libdata/pkgconfig"),
-        ("lib/x86_64-linux-gnu", "lib/x86_64-linux-gnu/pkgconfig"),
-    ],
-)
-@pytest.mark.parametrize(
-    "metadata", ["3.0.2", "3.0.0", "2.3.5", "invalid", "unrelated", None]
-)
-def test_urdfdom_without_cmake_version(tmp_path, monkeypatch, libdir, pcdir, metadata):
-    config_package(tmp_path, "urdfdom", None)
-    prefix = tmp_path / "prefix"
-    config_dir = prefix / libdir / "urdfdom/cmake"
-    config_dir.parent.mkdir(parents=True, exist_ok=True)
-    (prefix / "lib/cmake/urdfdom").rename(config_dir)
-    if metadata is not None:
-        pc_prefix = tmp_path / "prefix-other" if metadata == "unrelated" else prefix
-        pc_file = pc_prefix / pcdir / "urdfdom.pc"
-        pc_file.parent.mkdir(parents=True)
-        pc_file.write_text(
-            f"prefix={pc_prefix.as_posix()}\n"
-            "Name: urdfdom\nDescription: URDF parser\n"
-            f"Version: {'3.0.2' if metadata == 'unrelated' else metadata}\n"
-        )
-        monkeypatch.setenv("PKG_CONFIG_PATH", str(pc_file.parent))
-    accepted = metadata in ("3.0.2", "3.0.0")
+@pytest.mark.parametrize("version", [None, "3.1.1", "4.0.0", "5.0.0", "6.0.1"])
+def test_urdfdom_version_file_without_config_version_variable(tmp_path, version):
+    config_package(tmp_path, "urdfdom", version)
+    # Upstream configs leave the version to the separate CMake version file.
+    config = tmp_path / "prefix/lib/cmake/urdfdom/urdfdomConfig.cmake"
+    config.write_text("set(urdfdom_FOUND TRUE)\n")
+    accepted = version in {"4.0.0", "5.0.0", "6.0.1"}
     result = configure(
         tmp_path,
-        f'set(CMAKE_INCLUDE_PATH "{(tmp_path / "prefix-other" / pcdir).as_posix()}")\n'
         "include(DARTFindurdfdom)\n"
-        f"if({'NOT urdfdom_FOUND' if accepted else 'urdfdom_FOUND OR URDFDOM_FOUND'})\n"
-        'message(FATAL_ERROR "Incorrect urdfdom version acceptance")\nendif()\n'
-        + (
-            f'if(NOT TARGET urdfdom OR NOT urdfdom_VERSION STREQUAL "{metadata}")\n'
-            'message(FATAL_ERROR "Missing urdfdom version or target")\nendif()\n'
-            if accepted
-            else ""
-        ),
-        cmake_args=(f"-Durdfdom_DIR={config_dir}/../cmake",),
+        "if(urdfdom_FOUND OR URDFDOM_FOUND)\n"
+        + ("" if accepted else 'message(FATAL_ERROR "Accepted unsupported version")\n')
+        + "else()\n"
+        + ('message(FATAL_ERROR "Rejected supported version")\n' if accepted else "")
+        + "endif()\n",
     )
-    output = result.stdout + result.stderr
-    assert result.returncode == 0, output
-    if not accepted:
-        assert "urdfdom >= 3.0.0 is required" in output
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_urdfdom_msvc_strips_invalid_include_without_tinyxml(tmp_path):
+    include_dir = tmp_path / "prefix/include"
+    include_dir.mkdir(parents=True)
+    config_package(
+        tmp_path,
+        "urdfdom",
+        "4.0.0",
+        extra=f'set(urdfdom_INCLUDE_DIRS "/include;{include_dir.as_posix()}")\n',
+    )
+    result = configure(
+        tmp_path,
+        "set(MSVC TRUE)\n"
+        "set(CMAKE_DISABLE_FIND_PACKAGE_TinyXML TRUE)\n"
+        "include(DARTFindurdfdom)\n"
+        "get_target_property(includes urdfdom INTERFACE_INCLUDE_DIRECTORIES)\n"
+        f'if(NOT urdfdom_FOUND OR NOT includes STREQUAL "{include_dir.as_posix()}")\n'
+        'message(FATAL_ERROR "Incorrect urdfdom includes")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 @pytest.mark.parametrize("version", ["3.4.0", "3.4.1", "5.0.1", "6.0.0"])

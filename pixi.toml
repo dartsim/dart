@@ -989,7 +989,7 @@ octomap = "*"
 pkg-config = "*"
 python = ">=3.10"
 tinyxml2 = "*"
-urdfdom = "*"
+urdfdom = ">=4.0.0"
 
 [feature.gazebo-harmonic]
 channels = ["conda-forge"]

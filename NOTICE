@@ -228,7 +228,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------
 Project: Willow Garage URDF world parser
-Files: dart/utils/urdf/urdf_world_parser.*
+Files: dart/utils/urdf/detail/urdf_world_parser.*
 Source: https://github.com/ros/urdfdom/blob/0.2.10/urdf_parser/src/pose.cpp
 Adapted URDF parsing utilities. The pinned upstream header states:
 Copyright (c) 2008, Willow Garage, Inc.
