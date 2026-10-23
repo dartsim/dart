@@ -17,12 +17,20 @@ add_test(NAME package_factory COMMAND package_factory)
 
 if(
   io IN_LIST DART_TEST_COMPONENTS
+  OR io-sdf IN_LIST DART_TEST_COMPONENTS
   OR utils IN_LIST DART_TEST_COMPONENTS
   OR utils-urdf IN_LIST DART_TEST_COMPONENTS
   OR utils-assets IN_LIST DART_TEST_COMPONENTS
 )
   add_executable(package_io io.cpp)
-  foreach(io_component io utils-assets utils-urdf utils)
+  foreach(
+    io_component
+    io
+    io-sdf
+    utils-assets
+    utils-urdf
+    utils
+  )
     if(io_component IN_LIST DART_TEST_COMPONENTS)
       target_link_libraries(package_io PRIVATE dart-${io_component})
       break()

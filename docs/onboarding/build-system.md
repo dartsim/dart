@@ -29,7 +29,8 @@ primary C++ libraries:
 | Component | Target | Contents |
 | --------- | ------ | -------- |
 | `dart` | `dart` | Headless core and enabled collision backends |
-| `io` | `dart-io` | SKEL, SDF, MJCF and URDF loading |
+| `io` | `dart-io` | SKEL, MJCF, URDF and optional SDF loading |
+| `io-sdf` | `dart-io-sdf` | Forwarding component requiring SDF support in `dart-io` |
 | `gui` | `dart-gui` | Filament GUI and ImGui integration |
 
 The nanobind `dartpy` module includes all three libraries. See
@@ -236,15 +237,19 @@ components, and parent-project embedding.
 
 `dart-io` contains the SKEL, SDF, MJCF and URDF loaders. Enable it with
 `DART_BUILD_IO=ON` (the default); it requires tinyxml2 10.0.0 or newer (the
-Ubuntu 24.04 LTS floor), urdfdom and sdformat 14 (at least 14.8), 15 or 16.
-Pixi uses sdformat 16.1 or newer within major 16 and urdfdom 6 by default.
+Ubuntu 24.04 LTS floor) and urdfdom. SDF
+support is optional and uses the environment's sdformat 14 (at least 14.8),
+15 or 16. Missing sdformat warns and builds IO without SDF; set
+`DART_SKIP_SDFORMAT=ON` to disable SDF deliberately. Standalone builds do not
+fetch sdformat. Pixi and package-manager builds continue using the installed
+library; Pixi uses sdformat 16.1 or newer within major 16 and urdfdom 6.
 SDF loading uses sdformat's validation, schema conversion and frame resolution;
 tinyxml2 remains required by the other XML loaders.
 CMake selects major 16, then 15, then 14 when several SDKs are available,
-using versioned or unversioned package names. Installed IO components record
-the selected package and major and require that same major, so a consumer
-cannot silently link a different sdformat ABI. Core builds with IO disabled
-do not discover sdformat.
+using versioned or unversioned package names. Shared `dart-io` links sdformat
+privately, so installed consumers do not need its development package. Static
+IO exports the selected package and major as a dependency and requires that
+same major. Core builds with IO disabled do not discover sdformat.
 
 Source builds using urdfdom below 5.1 should load only trusted URDF: those
 versions can interpret URDF text as a printf format string in parser error
@@ -257,7 +262,11 @@ Set
 build.
 
 Use `find_package(DART CONFIG REQUIRED COMPONENTS io)` and link `dart-io`.
-The `dart::utils` namespace and `dart/utils/...` header paths are preserved.
+Consumers requiring SDF should request `COMPONENTS io-sdf` and link
+`dart-io-sdf`, which forwards to `dart-io`. An SDF-off installation reports
+that component as not found. `HAVE_SDFORMAT` in `dart/config.hpp` records
+whether SDF is enabled; the SDF headers and parser symbols are installed only
+when enabled. The other `dart::utils` APIs and header paths are preserved.
 Legacy `utils` / `utils-urdf` components and `dart-utils` / `dart-utils-urdf`
 targets forward to `dart-io`; applications linked to their former shared
 libraries must rebuild.

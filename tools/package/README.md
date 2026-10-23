@@ -12,9 +12,16 @@ backend-disabled installations. Use `DART_DIR` to select the installation
 explicitly.
 
 Request `io` to link the single `dart-io` target and load installed SKEL, SDF,
-MJCF and URDF sample data. Also request `utils` and `utils-urdf` to check their
-legacy forwarding targets. The data probe uses staged filesystem paths so
-source-tree resource fallback cannot hide missing installed assets.
+MJCF and URDF sample data (SDF only when `HAVE_SDFORMAT` is enabled). Request
+`io-sdf` to require SDF support, and check that it is not found on an SDF-off
+install. Shared `io` and `io-sdf` consumers should configure with
+`CMAKE_DISABLE_FIND_PACKAGE_sdformat=ON` and the versioned
+`CMAKE_DISABLE_FIND_PACKAGE_sdformat14`, `CMAKE_DISABLE_FIND_PACKAGE_sdformat15`
+and `CMAKE_DISABLE_FIND_PACKAGE_sdformat16` also set to `ON`. Static
+SDF-enabled IO consumers must find the selected sdformat major. Also request
+`utils` and `utils-urdf` to check their legacy forwarding targets. The data
+probe uses staged filesystem paths so source-tree resource fallback cannot
+hide missing installed assets.
 
 With `DART_BUILD_UTILS_ASSETS=ON` in the installed build, request
 `io;utils-assets` to also construct an offline model retriever and register

@@ -1,3 +1,5 @@
+dart_check_optional_package(SDFORMAT "SDF loading" "sdformat" "14.8")
+
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
@@ -20,4 +22,10 @@ install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/sdf.hpp
   DESTINATION include/dart/utils/sdf
   COMPONENT headers
+)
+
+# Install the finder only on SDF-on builds for examples using sdformat directly.
+install(
+  FILES "${DART_SOURCE_DIR}/cmake/DARTFindsdformat.cmake"
+  DESTINATION "${CONFIG_INSTALL_DIR}"
 )
