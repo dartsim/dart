@@ -1236,7 +1236,7 @@ def test_bullet_provider_current_source_metadata(tmp_path, mode, version):
         + 'if(DEFINED CACHE{DART_BULLET_SOURCE_DIR} OR DEFINED CACHE{DART_BULLET_BINARY_DIR} OR DEFINED CACHE{BULLET_PHYSICS_SOURCE_DIR})\nmessage(FATAL_ERROR "Provider metadata leaked into cache")\nendif()\n'
         + (
             'if(NOT BULLET_VERSION VERSION_EQUAL "3.25")\nmessage(FATAL_ERROR "Wrong provider version")\nendif()\n'
-            'file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/main.c" "#include <btBulletCollisionCommon.h>\\n_Static_assert(sizeof(btScalar) == sizeof(double), \\"Wrong precision\\");\\nint main(void) { return fixture_BulletCollision() + fixture_LinearMath() == 2 ? 0 : 1; }\\n")\n'
+            'file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/main.c" "#include <btBulletCollisionCommon.h>\\ntypedef char fixture_double_precision[(sizeof(btScalar) == sizeof(double)) ? 1 : -1];\\nint main(void) { return fixture_BulletCollision() + fixture_LinearMath() == 2 ? 0 : 1; }\\n")\n'
             'add_executable(provider_consumer "${CMAKE_CURRENT_BINARY_DIR}/main.c")\n'
             "target_link_libraries(provider_consumer PRIVATE Bullet)\n"
             if accepted
@@ -1296,7 +1296,7 @@ def test_bullet_fallback_dispatch(tmp_path, mode):
         bullet_fallback_content()
         .replace(
             "https://github.com/bulletphysics/bullet3/archive/refs/tags/3.25.tar.gz",
-            archive.as_uri(),
+            archive.as_posix(),
         )
         .replace(
             "c45afb6399e3f68036ddb641c6bf6f552bf332d5ab6be62f7e6c54eda05ceb77",
