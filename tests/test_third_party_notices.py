@@ -63,6 +63,7 @@ KNOWN_SOURCES = {
     "computational-geometry-toolbox": "dart/math/detail/ConvexHull.hpp",
     # ConvexHull-impl.hpp is covered only by the ConvexHull glob.
     "Dear ImGui": None,
+    "DeepMind Control Suite model assets": "data/mjcf/deepmind/cartpole.xml",
     "tsl::robin_map": None,
     "Eigen": None,
 }

@@ -8,11 +8,15 @@ import pytest
 from tests.util import get_asset_path
 
 
-def test_parse_fetch():
+def test_parse_included_mesh_scene():
     world = dart.utils.MjcfParser.readWorld(
-        "dart://sample/mjcf/openai/robotics/fetch/pick_and_place.xml"
+        "dart://sample/mjcf/test/manipulation/scene.xml"
     )
     assert world is not None
+    assert world.getNumSkeletons() == 6
+    assert world.getSkeleton("arm").getNumBodyNodes() == 3
+    mesh = world.getSkeleton("object").getBodyNode(0).getShapeNode(0).getShape()
+    assert mesh.getType() == "MeshShape"
     # M1f switches only the Python World and io.load_world wrappers. The
     # direct binding calls the C++ parser, whose FCL default must stay intact.
     assert isinstance(
@@ -65,7 +69,9 @@ def test_joint_limits(name, limited):
 
 
 def test_autolimits_disabled():
-    world = dart.utils.MjcfParser.readWorld("dart://sample/mjcf/test/autolimits_false.xml")
+    world = dart.utils.MjcfParser.readWorld(
+        "dart://sample/mjcf/test/autolimits_false.xml"
+    )
     assert world is not None
     skeleton = world.getSkeleton("explicit_true")
     joint = skeleton.getRootJoint()
@@ -99,7 +105,9 @@ def test_spring_reference_angle_units():
     world = dart.utils.MjcfParser.readWorld("dart://sample/mjcf/test/joint_limits.xml")
     assert world is not None
     skeleton = world.getSkeleton("limits")
-    assert skeleton.getJoint("hinge_true").getRestPosition(0) == pytest.approx(np.pi / 6)
+    assert skeleton.getJoint("hinge_true").getRestPosition(0) == pytest.approx(
+        np.pi / 6
+    )
     assert skeleton.getJoint("slide_true").getRestPosition(0) == 0.1
 
 
@@ -150,7 +158,9 @@ def test_invalid_autolimits(tmp_path, value):
     ],
 )
 def test_declared_inertia(name, expected):
-    world = dart.utils.MjcfParser.readWorld("dart://sample/mjcf/test/declared_inertia.xml")
+    world = dart.utils.MjcfParser.readWorld(
+        "dart://sample/mjcf/test/declared_inertia.xml"
+    )
     assert world is not None
     body = world.getSkeleton("quat").getBodyNode(name)
     np.testing.assert_allclose(body.getInertia().getMoment(), expected, atol=1e-12)
@@ -160,7 +170,9 @@ def test_declared_inertia(name, expected):
 
 
 def test_omitted_body_position_and_orthogonalized_xyaxes():
-    world = dart.utils.MjcfParser.readWorld("dart://sample/mjcf/test/declared_inertia.xml")
+    world = dart.utils.MjcfParser.readWorld(
+        "dart://sample/mjcf/test/declared_inertia.xml"
+    )
     assert world is not None
     body = world.getSkeleton("quat").getBodyNode("no_inertial")
     np.testing.assert_allclose(body.getRelativeTransform().translation(), [0, 0, 0])
@@ -172,7 +184,9 @@ def test_omitted_body_position_and_orthogonalized_xyaxes():
     np.testing.assert_allclose(body.getLocalCOM(), [0.1, 0.2, 0.3])
     c = np.sqrt(0.5)
     expected = [[c, -c, 0], [c, c, 0], [0, 0, 1]]
-    np.testing.assert_allclose(body.getRelativeTransform().rotation(), expected, atol=1e-12)
+    np.testing.assert_allclose(
+        body.getRelativeTransform().rotation(), expected, atol=1e-12
+    )
     assert body.getNumShapeNodes() == 2
     for i in range(body.getNumShapeNodes()):
         rotation = body.getShapeNode(i).getRelativeTransform().rotation()

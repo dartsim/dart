@@ -37,8 +37,6 @@
 #include "dart/common/Macros.hpp"
 #include "dart/math/Geometry.hpp"
 
-#include <fmt/format.h>
-
 #include <iostream>
 #include <stdexcept>
 #include <type_traits>
@@ -55,12 +53,9 @@ Vector parseFixedSizeXmlVector(const std::string& str, const char* typeName)
   const std::vector<std::string> pieces = common::split(common::trim(str));
   constexpr int size = Vector::SizeAtCompileTime;
   if (pieces.size() != static_cast<std::size_t>(size)) {
-    const auto message = fmt::format(
-        "value [{}] must contain exactly {} elements for {}; got {}",
-        str,
-        size,
-        typeName,
-        pieces.size());
+    const auto message = "value [" + str + "] must contain exactly "
+                         + std::to_string(size) + " elements for " + typeName
+                         + "; got " + std::to_string(pieces.size());
     DART_ERROR("{}", message);
     throw std::invalid_argument(message);
   }
@@ -103,7 +98,7 @@ bool warnIfNullAttributeElement(
 //==============================================================================
 std::string toString(bool v)
 {
-  return fmt::format("{}", v);
+  return v ? "true" : "false";
 }
 
 //==============================================================================
@@ -133,7 +128,7 @@ std::string toString(double v)
 //==============================================================================
 std::string toString(char v)
 {
-  return fmt::format("{}", v);
+  return std::string(1, v);
 }
 
 //==============================================================================
@@ -289,10 +284,8 @@ static std::string getChildElementText(
   if (childElement == nullptr) {
     const std::string parentName
         = parentElement->Name() ? parentElement->Name() : "unknown";
-    const auto msg = fmt::format(
-        "Child element [{}] not found in parent element [{}]",
-        childName,
-        parentName);
+    const auto msg = "Child element [" + childName
+                     + "] not found in parent element [" + parentName + "]";
     dterr << msg << std::endl;
     throw std::runtime_error(msg);
   }
@@ -301,10 +294,8 @@ static std::string getChildElementText(
   if (text == nullptr) {
     const std::string parentName
         = parentElement->Name() ? parentElement->Name() : "unknown";
-    const auto msg = fmt::format(
-        "Child element [{}] in parent [{}] has no text content",
-        childName,
-        parentName);
+    const auto msg = "Child element [" + childName + "] in parent ["
+                     + parentName + "] has no text content";
     dterr << msg << std::endl;
     throw std::runtime_error(msg);
   }

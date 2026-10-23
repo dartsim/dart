@@ -49,6 +49,19 @@ Errors Joint::read(
 {
   Errors errors;
 
+  if (std::string(element->Name()) == "freejoint") {
+    // Free joints bypass joint defaults, including the body's childclass.
+    mAttributes = JointAttributes();
+    mAttributes.mType = JointType::FREE;
+    if (hasAttribute(element, "name")) {
+      mAttributes.mName = getAttributeString(element, "name");
+    }
+    if (hasAttribute(element, "group")) {
+      mAttributes.mGroup = getAttributeInt(element, "group");
+    }
+    return errors;
+  }
+
   if (std::string(element->Name()) != "joint") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,

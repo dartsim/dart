@@ -14,7 +14,8 @@ Python bindings, including `dartpy.gui`, in the development tree.
 
 Source builds on `main` require the Ubuntu 24.04 LTS toolchain floor: GCC 13.2,
 LLVM Clang 18, Apple Clang 17 (Xcode 16.3), MSVC 19.32 (Visual Studio 2022
-17.2), and CMake 3.28. Installed consumers (`find_package(DART)`) still only
+17.2), and CMake 3.28. IO builds require tinyxml2 10.0.0 or newer, the
+Ubuntu 24.04 LTS version. Installed consumers (`find_package(DART)`) still only
 need CMake 3.22.1. `release-6.20` keeps Ubuntu 22.04. The platform table is in
 `docs/readthedocs/dart/developer_guide/build.rst`.
 

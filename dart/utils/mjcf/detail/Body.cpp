@@ -86,14 +86,17 @@ Errors Body::read(
     errors.insert(errors.end(), inertialErrors.begin(), inertialErrors.end());
   }
 
-  // Read multiple <joint>
-  ElementEnumerator jointElements(element, "joint");
-  while (jointElements.next()) {
-    Joint joint = Joint();
-    const Errors jointErrors = joint.read(
-        jointElements.get(), defaults, currentDefault->getJointAttributes());
-    errors.insert(errors.end(), jointErrors.begin(), jointErrors.end());
-    mJoints.emplace_back(std::move(joint));
+  // Read <joint> and <freejoint>. MuJoCo forbids stacking a free joint with
+  // other joints, so reading the two tags separately keeps any valid order.
+  for (const auto* jointTag : {"joint", "freejoint"}) {
+    ElementEnumerator jointElements(element, jointTag);
+    while (jointElements.next()) {
+      Joint joint = Joint();
+      const Errors jointErrors = joint.read(
+          jointElements.get(), defaults, currentDefault->getJointAttributes());
+      errors.insert(errors.end(), jointErrors.begin(), jointErrors.end());
+      mJoints.emplace_back(std::move(joint));
+    }
   }
 
   // Read multiple <geom>

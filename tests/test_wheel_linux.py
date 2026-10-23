@@ -138,29 +138,90 @@ def test_dependency_image_builds_sdformat_against_urdfdom_6():
     )
 
 
-@pytest.mark.parametrize("wheels, succeeds", [(True, True), (False, False)])
-def test_wheels_do_not_require_python_embedding_library(tmp_path, wheels, succeeds):
-    (tmp_path / "FindPython3.cmake").write_text(
-        'if("Development" IN_LIST Python3_FIND_COMPONENTS)\n'
+def write_nanobind_package(package):
+    """Write a complete fake nanobind 3.1.x package at `package`."""
+    (package / "nanobindConfig.cmake").write_text(
+        f'set(NB_DIR "{package.as_posix()}")\n'
+    )
+    (package / "include/nanobind").mkdir(parents=True)
+    (package / "include/nanobind/nanobind.h").write_text(
+        "#define NB_VERSION_MAJOR 3\n"
+        "#define NB_VERSION_MINOR 1\n"
+        "#define NB_VERSION_PATCH 0\n"
+    )
+    (package / "src").mkdir()
+    (package / "src/nb_internals.h").write_text("#  define NB_INTERNALS_VERSION 22\n")
+    (package / "nanobindConfigVersion.cmake").write_text(
+        'set(PACKAGE_VERSION "3.1.0")\n' "set(PACKAGE_VERSION_COMPATIBLE TRUE)\n"
+    )
+
+
+@pytest.mark.parametrize("wheels", [True, False])
+@pytest.mark.parametrize("stable_abi", [True, False])
+def test_python_discovery_needs_no_embedding_library(tmp_path, wheels, stable_abi):
+    selected_python = (tmp_path / "selected-python").as_posix()
+    (tmp_path / "FindPython.cmake").write_text(
+        "if(Python_FOUND)\n"
+        '  message(FATAL_ERROR "Python discovered twice")\n'
+        "endif()\n"
+        'if(NOT Python_FIND_VERSION STREQUAL "3.12")\n'
+        '  message(FATAL_ERROR "Python floor was not requested")\n'
+        "endif()\n"
+        'if(NOT "Interpreter" IN_LIST Python_FIND_COMPONENTS)\n'
+        '  message(FATAL_ERROR "Interpreter was not requested")\n'
+        "endif()\n"
+        'if("Development" IN_LIST Python_FIND_COMPONENTS)\n'
         '  message(FATAL_ERROR "Embedding library unavailable")\n'
         "endif()\n"
-        'if(NOT "Development.Module" IN_LIST Python3_FIND_COMPONENTS)\n'
+        'if(NOT "Development.Module" IN_LIST Python_FIND_COMPONENTS)\n'
         '  message(FATAL_ERROR "Extension headers were not requested")\n'
         "endif()\n"
-        "set(Python3_FOUND TRUE)\n"
+        'if(DART_DARTPY_STABLE_ABI AND NOT "Development.SABIModule" IN_LIST Python_FIND_COMPONENTS)\n'
+        '  message(FATAL_ERROR "Stable ABI headers were not requested")\n'
+        "endif()\n"
+        "set(Python_FOUND TRUE)\n"
+        'if(NOT Python_EXECUTABLE OR Python_EXECUTABLE STREQUAL "legacy-python")\n'
+        f'  set(Python_EXECUTABLE "{selected_python}")\n'
+        "endif()\n"
     )
+    (tmp_path / "FindPython3.cmake").write_text(
+        'message(FATAL_ERROR "Duplicate Python3 discovery")\n'
+    )
+    write_nanobind_package(tmp_path)
     (tmp_path / "CMakeLists.txt").write_text(
         "cmake_minimum_required(VERSION 3.28)\n"
         "project(PythonComponents NONE)\n"
         "macro(dart_find_package)\nendmacro()\n"
         "macro(dart_check_required_package)\nendmacro()\n"
         "macro(dart_check_optional_package)\nendmacro()\n"
+        "function(add_subdirectory)\nendfunction()\n"
         f'set(CMAKE_MODULE_PATH "{tmp_path.as_posix()}")\n'
         "set(DART_BUILD_DARTPY ON)\n"
         f'set(DART_BUILD_WHEELS {"ON" if wheels else "OFF"})\n'
+        f'set(DART_DARTPY_STABLE_ABI {"ON" if stable_abi else "OFF"})\n'
         "set(DART_USE_SYSTEM_ODE ON)\n"
         "set(DART_USE_SYSTEM_BULLET ON)\n"
         f'include("{ROOT.as_posix()}/cmake/DARTFindDependencies.cmake")\n'
+        "if(NOT DEFINED Python3_EXECUTABLE)\n"
+        '  set(Python3_EXECUTABLE "legacy-python")\n'
+        "endif()\n"
+        "set(DART_USE_SYSTEM_NANOBIND ON)\n"
+        f'set(nanobind_DIR "{tmp_path.as_posix()}")\n'
+        f'include("{ROOT.as_posix()}/python/CMakeLists.txt")\n'
+        "if(NOT DEFINED expected_python)\n"
+        f'  set(expected_python "{selected_python}")\n'
+        "endif()\n"
+        "get_property(selected CACHE Python3_EXECUTABLE PROPERTY VALUE)\n"
+        'if(NOT selected STREQUAL "${expected_python}")\n'
+        '  message(FATAL_ERROR "Selected interpreter was not cached")\n'
+        "endif()\n"
+        'if(NOT Python3_EXECUTABLE STREQUAL "${expected_python}")\n'
+        '  message(FATAL_ERROR "Legacy interpreter shadows selected Python")\n'
+        "endif()\n"
+        "get_property(last_forced CACHE _DART_PYTHON3_EXECUTABLE PROPERTY VALUE)\n"
+        'if(NOT last_forced STREQUAL "${expected_python}")\n'
+        '  message(FATAL_ERROR "Last forced interpreter was not cached")\n'
+        "endif()\n"
     )
     result = subprocess.run(
         ["cmake", "-S", str(tmp_path), "-B", str(tmp_path / "build")],
@@ -169,9 +230,121 @@ def test_wheels_do_not_require_python_embedding_library(tmp_path, wheels, succee
         check=False,
         timeout=30,
     )
-    assert (result.returncode == 0) == succeeds, result.stdout + result.stderr
-    if not succeeds:
-        assert "Embedding library unavailable" in result.stderr
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "will be ignored" not in result.stderr
+
+    result = subprocess.run(
+        [
+            "cmake",
+            "-S",
+            str(tmp_path),
+            "-B",
+            str(tmp_path / "build"),
+            "-DPython3_EXECUTABLE=different-python",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "Python3_EXECUTABLE differs from Python_EXECUTABLE" in result.stderr
+    assert "Set Python_EXECUTABLE to select the Python interpreter" in " ".join(
+        result.stderr.split()
+    )
+
+    new_python = (tmp_path / "new-python").as_posix()
+    result = subprocess.run(
+        [
+            "cmake",
+            "-S",
+            str(tmp_path),
+            "-B",
+            str(tmp_path / "build"),
+            f"-DPython_EXECUTABLE={new_python}",
+            f"-Dexpected_python={new_python}",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "will be ignored" not in result.stderr
+
+
+def test_builtin_findpython_primary_persists_across_configures(tmp_path):
+    write_nanobind_package(tmp_path)
+    (tmp_path / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.28)\n"
+        "project(BuiltinFindPython NONE)\n"
+        "function(add_subdirectory)\nendfunction()\n"
+        "set(DART_BUILD_DARTPY ON)\n"
+        "set(DART_DARTPY_STABLE_ABI OFF)\n"
+        "set(DART_USE_SYSTEM_NANOBIND ON)\n"
+        f'set(nanobind_DIR "{tmp_path.as_posix()}")\n'
+        f'include("{ROOT.as_posix()}/python/CMakeLists.txt")\n'
+        'file(WRITE "${CMAKE_BINARY_DIR}/selected.txt" "${Python_EXECUTABLE}")\n'
+    )
+    build = tmp_path / "build"
+
+    def configure(*args):
+        return subprocess.run(
+            ["cmake", "-S", str(tmp_path), "-B", str(build), *args],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+
+    def cached(name):
+        for line in (build / "CMakeCache.txt").read_text().splitlines():
+            if line.startswith(f"{name}:"):
+                return line.split("=", 1)[1]
+        return None
+
+    result = configure()
+    assert result.returncode == 0, result.stdout + result.stderr
+    selected = (build / "selected.txt").read_text()
+    assert Path(selected).is_file()
+    for name in ("Python_EXECUTABLE", "Python3_EXECUTABLE", "_DART_PYTHON3_EXECUTABLE"):
+        assert cached(name) == selected
+
+    # A later alias must not seed an empty primary: the selection persists.
+    result = configure("-DPython3_EXECUTABLE=/nonexistent/python")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "Python3_EXECUTABLE differs from Python_EXECUTABLE" in result.stderr
+    assert (build / "selected.txt").read_text() == selected
+    for name in ("Python_EXECUTABLE", "Python3_EXECUTABLE", "_DART_PYTHON3_EXECUTABLE"):
+        assert cached(name) == selected
+
+
+def test_dartpy_disabled_does_not_discover_python(tmp_path):
+    for name in ("Python", "Python3"):
+        (tmp_path / f"Find{name}.cmake").write_text(
+            f'message(FATAL_ERROR "Unexpected {name} discovery")\n'
+        )
+    (tmp_path / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.28)\n"
+        "project(PythonDisabled NONE)\n"
+        "macro(dart_find_package)\nendmacro()\n"
+        "macro(dart_check_required_package)\nendmacro()\n"
+        "macro(dart_check_optional_package)\nendmacro()\n"
+        f'set(CMAKE_MODULE_PATH "{tmp_path.as_posix()}")\n'
+        "set(DART_BUILD_DARTPY OFF)\n"
+        "set(DART_USE_SYSTEM_ODE ON)\n"
+        "set(DART_USE_SYSTEM_BULLET ON)\n"
+        f'include("{ROOT.as_posix()}/cmake/DARTFindDependencies.cmake")\n'
+        f'include("{ROOT.as_posix()}/python/CMakeLists.txt")\n'
+    )
+    result = subprocess.run(
+        ["cmake", "-S", str(tmp_path), "-B", str(tmp_path / "build")],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_smoke_helper_does_not_require_python_on_path(monkeypatch, tmp_path):
