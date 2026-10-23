@@ -4820,7 +4820,8 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
   mMapForSkeletons[_skeleton] = _skeleton;
 
   mNameConnectionsForSkeletons.push_back(_skeleton->onNameChanged.connect(
-      [=](dynamics::ConstMetaSkeletonPtr skel,
+      [this](
+          dynamics::ConstMetaSkeletonPtr skel,
           const std::string&,
           const std::string&) { this->handleSkeletonNameChange(skel); }));
 
@@ -5019,7 +5020,8 @@ std::string World::addSimpleFrame(const dynamics::SimpleFramePtr& _frame)
   mSimpleFrameToShared[_frame.get()] = _frame;
 
   mNameConnectionsForSimpleFrames.push_back(_frame->onNameChanged.connect(
-      [=](const dynamics::Entity* _entity,
+      [this](
+          const dynamics::Entity* _entity,
           const std::string&,
           const std::string&) { this->handleSimpleFrameNameChange(_entity); }));
 
