@@ -140,6 +140,10 @@ else()
   )
 
   FetchContent_MakeAvailable(dart_imgui)
+  dart_check_fetchcontent(
+    dart_imgui DART_USE_SYSTEM_IMGUI
+    "${DART_BINARY_DIR}/_deps/dart_imgui-${IMGUI_ARCHIVE_SHA256}-src"
+  )
 
   set(
     imgui_core_sources

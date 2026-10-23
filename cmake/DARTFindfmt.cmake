@@ -6,11 +6,8 @@
 #
 # This file is provided under the "BSD-style" License
 
-# Downstream `find_package(DART)` consumers re-include this finder through
-# the installed DART config but never define DART_USE_SYSTEM_FMT (it is a DART
-# build-time option, not exported into the installed config). Treat an undefined
-# value as ON so installed/packaged and offline consumers keep resolving the
-# system fmt via find_package(fmt) instead of fetching it over the network.
+# fmt is a private build-time dependency, not needed by installed consumers.
+# Default to system fmt when the build has not set DART_USE_SYSTEM_FMT.
 if(NOT DEFINED DART_USE_SYSTEM_FMT)
   set(DART_USE_SYSTEM_FMT ON)
 endif()
@@ -34,10 +31,8 @@ else()
       GIT_PROGRESS TRUE
     )
 
-    # Keep FMT_INSTALL ON so fmt's targets belong to an export set: DART links
-    # fmt::fmt-header-only PUBLIC and validates install(EXPORT) at generate time,
-    # which fails if the fetched fmt targets are in no export set. Skip the rest.
-    set(FMT_INSTALL ON CACHE BOOL "" FORCE)
+    # fmt is a private build dependency and is not part of DART's export set.
+    set(FMT_INSTALL OFF CACHE BOOL "" FORCE)
     set(FMT_TEST OFF CACHE BOOL "" FORCE)
     set(FMT_DOC OFF CACHE BOOL "" FORCE)
     set(FMT_FUZZ OFF CACHE BOOL "" FORCE)

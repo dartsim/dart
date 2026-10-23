@@ -32,6 +32,7 @@
 
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/lcpsolver/dantzig/DantzigMatrix.hpp"
 #include "dart/lcpsolver/dantzig/DantzigMisc.hpp"
 #include "dart/math/Constants.hpp"
@@ -258,7 +259,14 @@ void PgsBoxedLcpSolver::reserve(std::size_t n)
 //==============================================================================
 void PgsBoxedLcpSolver::setOption(const PgsBoxedLcpSolver::Option& option)
 {
+  if (mOption.mMaxIteration == option.mMaxIteration
+      && mOption.mDeltaXThreshold == option.mDeltaXThreshold
+      && mOption.mRelativeDeltaXTolerance == option.mRelativeDeltaXTolerance
+      && mOption.mEpsilonForDivision == option.mEpsilonForDivision
+      && mOption.mRandomizeConstraintOrder == option.mRandomizeConstraintOrder)
+    return;
   mOption = option;
+  detail::notifyBoxedSolverParameterMutation(this);
 }
 
 //==============================================================================

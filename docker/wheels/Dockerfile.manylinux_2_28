@@ -191,15 +191,6 @@ RUN curl -fsSL https://github.com/glfw/glfw/archive/refs/tags/3.4.tar.gz -o glfw
     && cmake --build glfw/build --target install -j${NUM_CORES} \
     && rm -rf glfw glfw.tar.gz
 
-# Match the existing external fmt configuration.
-RUN curl -fsSL https://github.com/gabime/spdlog/archive/refs/tags/v1.15.3.tar.gz -o spdlog.tar.gz \
-    && echo "15a04e69c222eb6c01094b5c7ff8a249b36bb22788d72519646fb85feb267e67  spdlog.tar.gz" | sha256sum -c - \
-    && mkdir spdlog && tar -xf spdlog.tar.gz -C spdlog --strip-components=1 \
-    && cmake spdlog -B spdlog/build -DCMAKE_BUILD_TYPE=Release \
-    -DSPDLOG_FMT_EXTERNAL=ON -DSPDLOG_BUILD_TESTS=OFF \
-    && cmake --build spdlog/build --target install -j${NUM_CORES} \
-    && rm -rf spdlog spdlog.tar.gz
-
 # Match DART's source-build ODE settings and retain the ODE collision bindings.
 RUN curl -fsSL https://bitbucket.org/odedevs/ode/downloads/ode-0.16.6.tar.gz -o ode.tar.gz \
     && echo "c91a28c6ff2650284784a79c726a380d6afec87ecf7a35c32a6be0c5b74513e8  ode.tar.gz" | sha256sum -c - \

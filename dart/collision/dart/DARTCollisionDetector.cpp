@@ -48,6 +48,7 @@
 #include "dart/common/Console.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/common/detail/DeterministicExecutor.h"
+#include "dart/common/detail/ModelMutation.hpp"
 
 #include <algorithm>
 #include <array>
@@ -1304,10 +1305,17 @@ void DARTCollisionDetector::setNumCollisionThreads(std::size_t numThreads)
       numThreads = 1u;
   }
 
+  numThreads = std::max<std::size_t>(1u, numThreads);
+  if (numThreads == getNumCollisionThreads())
+    return;
+  detail::checkWorldDetectorTopologyMutation(this);
+
   auto* manager = dynamic_cast<DARTCollisionObjectManager*>(
       mCollisionObjectManager.get());
-  if (manager)
-    manager->setNumCollisionThreads(std::max<std::size_t>(1u, numThreads));
+  if (manager) {
+    manager->setNumCollisionThreads(numThreads);
+    detail::notifyWorldDetectorTopologyMutation(this);
+  }
 }
 
 //==============================================================================
@@ -1321,10 +1329,14 @@ std::size_t DARTCollisionDetector::getNumCollisionThreads() const
 //==============================================================================
 void DARTCollisionDetector::setSoftFaceInteriorContactsEnabled(bool enabled)
 {
+  if (enabled == getSoftFaceInteriorContactsEnabled())
+    return;
   auto* manager = dynamic_cast<DARTCollisionObjectManager*>(
       mCollisionObjectManager.get());
-  if (manager)
+  if (manager) {
     manager->setSoftFaceInteriorContactsEnabled(enabled);
+    detail::notifyWorldDetectorParameterMutation(this);
+  }
 }
 
 //==============================================================================

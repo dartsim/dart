@@ -60,6 +60,9 @@ release branch cannot render the claim.
    is required but needs the backport PR number, draft the decision and keep the
    finalize/update follow-up local until explicit approval permits another
    push. Do not skip the changelog decision just because this is a backport.
+   Release branches take no fragments: if the cherry-pick added
+   `changelog.d/` fragments, delete them and let `dart-changelog` write the entry into the
+   release branch's `CHANGELOG.md`.
 7. Run `pixi run lint` and the smallest relevant release-branch checks.
 8. Ask for explicit maintainer/user approval before pushing or opening the PR.
    After approval, open it as a draft against the release branch with the

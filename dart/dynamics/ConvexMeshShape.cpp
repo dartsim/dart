@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/ConvexMeshShape.hpp"
 
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 
 #include <limits>
@@ -83,10 +84,11 @@ const std::shared_ptr<ConvexMeshShape::TriMeshType>& ConvexMeshShape::getMesh()
 //==============================================================================
 void ConvexMeshShape::setMesh(const std::shared_ptr<TriMeshType>& mesh)
 {
+  common::detail::checkShapeTopologyMutation(this);
   mMesh = mesh;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
-  incrementVersion();
+  common::detail::incrementShapeTopologyVersion(this);
 }
 
 //==============================================================================

@@ -50,6 +50,16 @@ def test_arguments():
     dart.common.info("Log with param '{}' and '{}'".format(1, val))
 
 
+@pytest.mark.parametrize("level", ["info", "warn", "error", "fatal"])
+def test_user_text_is_literal(level, caplog):
+    text = "literal {} {broken} {{braces}}"
+    with caplog.at_level(logging.DEBUG, logger="dartpy"):
+        getattr(dart.common, level)(text)
+        dart.common.flush_logs()
+    assert [r.getMessage() for r in _records(caplog)] == [text]
+    assert "log format error" not in caplog.text
+
+
 def test_records_reach_python_logging(caplog):
     with caplog.at_level(logging.DEBUG, logger="dartpy"):
         dart.common.info("info log")

@@ -1,4 +1,4 @@
-"""Point-cloud sampling and voxel occupancy on a moving KR5 robot."""
+"""Point-cloud sampling and voxel occupancy on a moving six-axis arm."""
 
 from __future__ import annotations
 
@@ -13,21 +13,14 @@ def build() -> dart.viewer.SceneSetup:
     world = dart.simulation.World()
     world.setGravity([0, 0, 0])
     loader = dart.utils.DartLoader()
-    robot = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
+    robot = loader.parseSkeleton("dart://sample/urdf/six_axis_arm/six_axis_arm.urdf")
     if robot is None:
-        raise RuntimeError("failed to load dart://sample/urdf/KR5/KR5 sixx R650.urdf")
+        raise RuntimeError("failed to load dart://sample/urdf/six_axis_arm/six_axis_arm.urdf")
     robot.getJoint(0).setTransformFromParentBodyNode(dart.math.Isometry3())
-    robot.setName("KR5")
     world.addSkeleton(robot)
-    ground = loader.parseSkeleton("dart://sample/urdf/KR5/ground.urdf")
+    ground = loader.parseSkeleton("dart://sample/urdf/six_axis_arm/ground.urdf")
     if ground is None:
-        raise RuntimeError("failed to load dart://sample/urdf/KR5/ground.urdf")
-    transform = ground.getJoint(0).getTransformFromParentBodyNode()
-    transform.pretranslate([0, 0, 0.5])
-    transform.set_rotation(
-        transform.rotation() @ dart.math.AngleAxis(np.pi / 2, [1, 0, 0]).rotation()
-    )
-    ground.getJoint(0).setTransformFromParentBodyNode(transform)
+        raise RuntimeError("failed to load dart://sample/urdf/six_axis_arm/ground.urdf")
     world.addSkeleton(ground)
 
     point_cloud = dart.dynamics.PointCloudShape()

@@ -22,7 +22,7 @@ oracle plus claim-tied Filament visual corroboration.
 
 dart::utils::DartLoader loader;
 auto skel = loader.parseSkeleton(
-    "dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+    "dart://sample/urdf/six_axis_arm/six_axis_arm.urdf");
 ```
 
 ## Full Documentation

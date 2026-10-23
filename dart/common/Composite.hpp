@@ -197,6 +197,14 @@ protected:
   RequiredAspectSet mRequiredAspects;
 };
 
+namespace detail {
+
+/// Check nested model properties before applying any part of a bulk update.
+void checkTopologyProperties(
+    const Composite* object, const Composite::Properties& properties);
+
+} // namespace detail
+
 //==============================================================================
 /// Attach an arbitrary number of Aspects to the specified Composite type.
 // TODO(MXG): Consider putting this functionality into the Composite class

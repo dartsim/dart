@@ -33,6 +33,7 @@
 #include "dart/dynamics/SimpleFrame.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/math/Geometry.hpp"
 
 namespace dart {
@@ -121,6 +122,16 @@ void SimpleFrame::copy(
   if ((this == _otherFrame) && (_refFrame == getParentFrame()))
     return;
 
+  if (_refFrame != getParentFrame()) {
+    common::detail::checkTopologyMutation(this);
+    common::detail::checkTopologyMutation(
+        dynamic_cast<const common::Composite*>(_refFrame));
+  }
+  if (_copyProperties && common::detail::hasGuardedModels()) {
+    if (const auto* shapeFrame = dynamic_cast<const ShapeFrame*>(_otherFrame))
+      common::detail::checkTopologyProperties(
+          this, shapeFrame->getCompositeProperties());
+  }
   Eigen::Isometry3d relativeTf = _otherFrame->getTransform(_refFrame);
   Eigen::Vector6d relativeVelocity
       = _otherFrame->getSpatialVelocity(_refFrame, Frame::World());
@@ -154,6 +165,7 @@ SimpleFrame& SimpleFrame::operator=(const SimpleFrame& _otherFrame)
 std::shared_ptr<SimpleFrame> SimpleFrame::spawnChildSimpleFrame(
     const std::string& name, const Eigen::Isometry3d& relativeTransform)
 {
+  common::detail::checkTopologyMutation(this);
   return std::make_shared<SimpleFrame>(this, name, relativeTransform);
 }
 
@@ -161,22 +173,31 @@ std::shared_ptr<SimpleFrame> SimpleFrame::spawnChildSimpleFrame(
 void SimpleFrame::setRelativeTransform(
     const Eigen::Isometry3d& _newRelTransform)
 {
+  const bool changed = mRelativeTf.matrix() != _newRelTransform.matrix();
   mRelativeTf = _newRelTransform;
   dirtyTransform();
+  if (changed)
+    common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
 void SimpleFrame::setRelativeTranslation(const Eigen::Vector3d& _newTranslation)
 {
+  const bool changed = mRelativeTf.translation() != _newTranslation;
   mRelativeTf.translation() = _newTranslation;
   dirtyTransform();
+  if (changed)
+    common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
 void SimpleFrame::setRelativeRotation(const Eigen::Matrix3d& _newRotation)
 {
+  const bool changed = mRelativeTf.linear() != _newRotation;
   mRelativeTf.linear() = _newRotation;
   dirtyTransform();
+  if (changed)
+    common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
