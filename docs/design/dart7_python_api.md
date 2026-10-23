@@ -186,8 +186,9 @@ Every mutator belongs to exactly one class:
 | State and control | Yes | positions, velocities, commands, external forces, actuator targets | No model revision; caches invalidate and sleeping bodies wake as today |
 | Cosmetic | Yes | appearance, material, visibility, shadows, segmentation id | None |
 
-Revisions are tracked per World, not process-wide. Parameter setters stop
-bumping the process-wide structural version, and changing a joint's actuator
+Revisions are tracked per World, not process-wide, and only for compiled
+Worlds. Version counters keep their DART 6 propagation, so a parameter setter
+still bumps the process-wide structural version. Changing a joint's actuator
 kind bumps a revision, because articulated-body dynamics branch on it.
 
 Strict enforcement has two tiers:
@@ -202,6 +203,17 @@ Strict enforcement has two tiers:
    `step()` or `compile()`, which raises. This tier is documented as detected
    late. Never-compiled Worlds do not track such writes; `compile()` validates
    the model when it begins.
+
+Ownership is resolved from a registry index that a World joins at its first
+`compile()` and that its membership changes then maintain (adding or removing
+multibodies, frames, collision-group members and subscriptions, and detector
+or solver replacement), never by reading another World's containers. Lazy
+Worlds have no registry entry: their setters take no lock, their revisions do
+not track model objects, and a lazy World that shares a model with a World
+being compiled is not detected. A body that reaches a World only through a subscribed view
+(`Group`, `Linkage`) belongs to it once the collision group synchronizes with
+the view, at `update()`, `compile()` or `step()`; editing the view before that
+is a raw write of tier 2.
 
 Python exposes typed setters instead of raw references. Tests cover every
 mutation path downstream simulators use: re-parenting, adding and removing
@@ -316,7 +328,10 @@ c = h·D + h²·K
 ### Concurrency
 
 - A World has one stepping owner. Re-entrant stepping and concurrent mutation
-  raise.
+  raise; for lazy Worlds only re-entrant stepping and same-thread topology
+  edits from step callbacks are detected. Independent Worlds step and edit
+  their own models on separate threads without reading each other's
+  containers.
 - While a World steps, any access from another thread raises
   `WorldBusyError`. Reads count, because getters fill lazy caches. The busy flag
   is set before the GIL is released.

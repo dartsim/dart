@@ -66,6 +66,15 @@
 
 namespace {
 
+thread_local std::size_t g_heapAllocationFailureCountdown = 0u;
+
+void checkHeapAllocationFailure()
+{
+  if (g_heapAllocationFailureCountdown != 0u
+      && --g_heapAllocationFailureCountdown == 0u)
+    throw std::bad_alloc();
+}
+
 std::atomic<bool> g_heapAllocationTrackingEnabled{false};
 std::atomic<std::size_t> g_heapAllocationCount{0u};
 std::atomic<std::size_t> g_heapAllocationBytes{0u};
@@ -222,6 +231,7 @@ void deallocateAlignedRaw(void* pointer, std::size_t alignment) noexcept
 
 void* operator new(std::size_t bytes)
 {
+  checkHeapAllocationFailure();
   recordHeapAllocation(bytes);
   if (auto* ptr = allocateRaw(bytes)) {
     return ptr;
@@ -231,6 +241,7 @@ void* operator new(std::size_t bytes)
 
 void* operator new[](std::size_t bytes)
 {
+  checkHeapAllocationFailure();
   recordHeapAllocation(bytes);
   if (auto* ptr = allocateRaw(bytes)) {
     return ptr;
@@ -252,6 +263,7 @@ void* operator new[](std::size_t bytes, const std::nothrow_t&) noexcept
 
 void* operator new(std::size_t bytes, std::align_val_t alignment)
 {
+  checkHeapAllocationFailure();
   recordHeapAllocation(bytes);
   if (auto* ptr
       = allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment))) {
@@ -262,6 +274,7 @@ void* operator new(std::size_t bytes, std::align_val_t alignment)
 
 void* operator new[](std::size_t bytes, std::align_val_t alignment)
 {
+  checkHeapAllocationFailure();
   recordHeapAllocation(bytes);
   if (auto* ptr
       = allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment))) {
@@ -447,6 +460,11 @@ namespace {
 } // namespace
 
 namespace dart::test {
+
+void failHeapAllocation(std::size_t nth) noexcept
+{
+  g_heapAllocationFailureCountdown = nth;
+}
 
 ScopedHeapAllocationCounter::ScopedHeapAllocationCounter()
 {

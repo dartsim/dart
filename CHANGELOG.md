@@ -1,5 +1,7 @@
 # DART Changelog
 
+<!-- On main, add entries as changelog.d/ fragments (see changelog.d/README.md); release-* branches edit this file directly. -->
+
 ## DART 7
 
 ### [DART 7.0.0 (Unreleased)](https://github.com/dartsim/dart/milestone/105)
@@ -12,16 +14,9 @@
     logger settings no longer affect DART; use `dart::common::setLogLevel` and
     `dart::common::setLogSink` instead. `DART_*` logging arguments must be
     integers, floating-point values, strings, pointers or enums; convert other
-    types to strings first. Format strings support only `{}`, `{:.Ne}`,
-    `{:.Nf}`, `{:.Ng}` (a decimal precision `N` from 0 to 1000 for floating-point
-    values), and escaped braces `{{` and `}}`. Unsupported fields, invalid
-    precision or missing arguments produce a format-error marker followed by
-    the raw format string; surplus arguments are ignored. Default `long double`
-    formatting preserves round trips but may differ in layout from fmt.
-    Projects that used fmt through `find_package(DART)`
+    types to strings first. Projects that used fmt through `find_package(DART)`
     must find it themselves, and `DART_SKIP_spdlog` no longer has any effect.
-    [#3853](https://github.com/dartsim/dart/pull/3853),
-    [#3854](https://github.com/dartsim/dart/pull/3854)
+    [#3853](https://github.com/dartsim/dart/pull/3853)
   * Source builds require the Ubuntu 24.04 LTS toolchain or newer: GCC 13.2,
     LLVM Clang 18, Apple Clang 17 (Xcode 16.3), MSVC 19.32 (Visual Studio 2022
     17.2) and CMake 3.28. Projects that use an installed DART through
@@ -137,18 +132,6 @@
 
 * API
 
-  * The GUI log panel captures native diagnostics alongside dartpy's automatic
-    Python logging bridge, delivering each record once to each destination.
-    Configure Python's `dartpy` logger directly; the duplicate manual
-    `enable_logging` and `disable_logging` controls are removed.
-    Legacy C++ console diagnostics reach custom sinks without native threshold
-    filtering; default console output is unchanged. Panel updates run on the
-    GUI thread and retain the newest 2000 pending records.
-    With a custom sink or inside the GUI App, unterminated `dt*` lines wait for
-    an explicit flush, the next `dt*` statement on that thread, or thread exit;
-    their terminal ordering relative to direct stdout/stderr writes can differ.
-    [#3899](https://github.com/dartsim/dart/pull/3899)
-
   * Add `dart::common::setLogSink`, `resetLogSink`, `setLogLevel` and
     `getLogLevel` to route DART's log messages to an application and filter
     them at run time.
@@ -162,6 +145,21 @@
   * The GUI rejects textures of more than 67,108,864 pixels (8192 x 8192), or
     256 MiB of decoded RGBA data, before allocating them.
     [#3860](https://github.com/dartsim/dart/pull/3860)
+
+  * Add opt-in C++ `World::compile()` and scoped `World::edit()` to freeze
+    and recompile model topology, with per-World topology and parameter
+    revisions. Worlds that are never compiled retain lazy runtime editing
+    and shared model membership; `edit()` on such a World leaves it lazy.
+    Scope exit never throws: when the recompile fails, the next `step()` or
+    `compile()` throws that error.
+    [#3869](https://github.com/dartsim/dart/pull/3869)
+
+  * Worlds that are never compiled keep DART 6 behavior, including version
+    propagation and shared model membership, with one labeled change: a
+    re-entrant `World::step()` and a topology edit of the stepping World's
+    model from its own step callbacks now throw `std::runtime_error` instead
+    of corrupting the step. Ownership tracking starts at `compile()`.
+    [#3869](https://github.com/dartsim/dart/pull/3869)
 
   * Add `optimizer::Problem::clearObjective()` and
     `utils::CompositeResourceRetriever::getDefaultRetrievers()`,
@@ -192,6 +190,18 @@
     [#3750](https://github.com/dartsim/dart/pull/3750)
 
 * Collision
+
+  * A throwing Shape override or allocation failure during collision-group
+    subscription no longer leaves partial collision objects or a stale
+    FCL/Bullet detector shape entry; debug builds no longer assert when the
+    detector is destroyed.
+    [#3869](https://github.com/dartsim/dart/pull/3869)
+
+  * Editing a `CompositeCollisionFilter` during its own query, from one of its
+    filters, now throws `std::runtime_error` instead of invalidating the query
+    when the edit removes the filter being queried, clears the composite or
+    adds a filter that rehashes its set; other edits still apply.
+    [#3869](https://github.com/dartsim/dart/pull/3869)
 
   * Fix a memory leak where a Bullet collision detector used for a collision
     check between two groups was never destroyed.
@@ -463,6 +473,15 @@
     availability.
     [#3886](https://github.com/dartsim/dart/pull/3886)
 
+  * Add `DART_USE_SYSTEM_DEPENDENCIES` (default `OFF`); when `ON`, GoogleTest,
+    GoogleBenchmark and Tracy default to installed packages, and explicit
+    per-dependency switches still win. Offline configures now report missing
+    fetched sources with the source override and system-package switch to use.
+    [#3879](https://github.com/dartsim/dart/pull/3879)
+
+  * Fix `DART_USE_SYSTEM_TRACY=ON`, which rejected installed Tracy packages
+    because they ship no CMake version file.
+    [#3879](https://github.com/dartsim/dart/pull/3879)
   * **Additive:** Linux wheels accept URDF 1.1 and 1.2 with urdfdom 6.0.1,
     which also stops parser error logging from treating URDF text as a printf
     format string. URDF 1.0 files load as before.
@@ -478,10 +497,6 @@
     options and `eulerAngles()` call Eigen 5 deprecates, and the C++ tests
     pass against Eigen 5.
     [#3836](https://github.com/dartsim/dart/pull/3836)
-
-  * DART no longer uses fmt. `DART_USE_SYSTEM_FMT` is a deprecated no-op
-    retained through DART 7.x.
-    [#3854](https://github.com/dartsim/dart/pull/3854)
 
   * The `dart` target no longer exports the `BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS`
     compile definition, and DART no longer declares a direct Boost development

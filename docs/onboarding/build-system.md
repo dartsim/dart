@@ -43,6 +43,37 @@ Gazebo compatibility covers rebuilding released `gz-physics` and `gz-sim`
 without source changes. Existing binary plugins must be rebuilt against the
 new library layout.
 
+## Dependency Sources
+
+`DART_USE_SYSTEM_DEPENDENCIES=ON` seeds the defaults of
+`DART_USE_SYSTEM_GOOGLETEST`, `DART_USE_SYSTEM_GOOGLEBENCHMARK`, and
+`DART_USE_SYSTEM_TRACY` to use installed packages. The umbrella defaults to
+`OFF`; other dependency switches keep their existing defaults. ODE and Bullet
+already default to system packages. Each option keeps its cached value:
+set the umbrella on the first configure of a fresh
+build tree, or explicitly set each per-dependency switch when reconfiguring.
+An explicit per-dependency `-D` always wins over the umbrella.
+
+For offline builds, set `FETCHCONTENT_FULLY_DISCONNECTED=ON` and either use
+installed dependencies through their system switches or pre-seed source
+trees with `FETCHCONTENT_SOURCE_DIR_<NAME>` (uppercase name). DART stops with
+an actionable error if a fetch needs a missing source tree, including with
+CMake older than 3.30; on 3.30 and newer it also enables CMP0170. The check
+runs right after each `FetchContent_MakeAvailable`, so a registered
+dependency provider (CMake 3.24+) can still fulfill a request without a source
+tree; source-consuming dependencies such as the Filament SDK keep enforcing
+their own SDK and license requirements. Existing
+populated source directories in the build tree are accepted. The stable
+FetchContent names are `googletest`, `benchmark`, `tracy`, `nanobind`,
+`dart_imgui`, `dart_filament_sdk`, `ode`, and `bullet`. The umbrella
+does not select system nanobind, ImGui, or Filament; set those switches
+separately when needed. Pixi configure tasks use the umbrella;
+`pixi run -e profile config-tracy` selects the profile environment's Tracy.
+To fetch Tracy instead, override the umbrella with `DART_USE_SYSTEM_TRACY=OFF`.
+System Tracy must be 0.11.1 or newer when it reports a version (CMake
+variables, or the selected `Tracy::TracyClient` target's `common/TracyVersion.hpp`);
+upstream installs no version file, so a versionless package is accepted.
+
 ## Eigen Compatibility
 
 DART supports Eigen >= 3.4.0 and < 6. Every Pixi environment pins Eigen 3.4.0

@@ -502,6 +502,60 @@ private:
   std::size_t mRevision = 0u;
 };
 
+class RestingFilterReadWorld : public World
+{
+public:
+  using World::invalidateAllRestingKinematicSnapshot;
+  using World::isAllRestingFastPathReady;
+  using World::wakeRestingSkeletonsIfStepStateChanged;
+};
+
+class RestingFilterReadSkeleton : public Skeleton
+{
+public:
+  static std::shared_ptr<RestingFilterReadSkeleton> create()
+  {
+    auto skeleton = std::shared_ptr<RestingFilterReadSkeleton>(
+        new RestingFilterReadSkeleton);
+    skeleton->setPtr(skeleton);
+    return skeleton;
+  }
+
+  std::size_t getNumBodyNodes() const override
+  {
+    if (onBodyCount) {
+      auto callback = std::move(onBodyCount);
+      onBodyCount = nullptr;
+      callback();
+    }
+    return Skeleton::getNumBodyNodes();
+  }
+
+  mutable std::function<void()> onBodyCount;
+
+private:
+  RestingFilterReadSkeleton() : Skeleton(AspectPropertiesData("filter_read")) {}
+};
+
+class RestingFilterRevisionProbe
+  : public BodyNodeCollisionFilter,
+    public collision::detail::CollisionFilterSnapshotTracker
+{
+public:
+  std::size_t getCollisionFilterSnapshotRevision() const override
+  {
+    if (onRevision) {
+      auto callback = std::move(onRevision);
+      onRevision = nullptr;
+      callback();
+    }
+    return revision + getBodyNodePairBlackListRevision();
+  }
+
+  mutable std::function<void()> onRevision;
+  std::size_t revision = 0u;
+};
+
 // Collision detectors whose filter queries differ: FCL (World's default) and
 // the dart detector stop asking at their contact limit, ODE and Bullet do not,
 // and Bullet's dispatcher keeps the last query filter.
@@ -3419,6 +3473,109 @@ TEST(IslandDeactivation, WakeOnSolverCollisionFilterChangeBeforeFastPath)
       floor->getBodyNode(0), sleeper->getBodyNode(0));
 
   expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+// A virtual reader runs between native filter classification and the lazy
+// revision read. Keep the original filter alive when replacing the option.
+TEST(IslandDeactivation, WakeReadsFreshSavedNativeFilterAfterCallback)
+{
+  for (const auto& [replaceFilter, editBlacklist] :
+       {std::pair{false, true},
+        std::pair{true, false},
+        std::pair{true, true}}) {
+    SCOPED_TRACE(replaceFilter);
+    SCOPED_TRACE(editBlacklist);
+    auto world = std::make_shared<RestingFilterReadWorld>();
+    auto options = world->getDeactivationOptions();
+    options.mEnabled = true;
+    world->setDeactivationOptions(options);
+    auto floor = createFloor();
+    auto sleeper = createFreeBox(
+        "sleeper",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf + 0.02));
+    auto reader = RestingFilterReadSkeleton::create();
+    reader->setMobile(false);
+    world->addSkeleton(floor);
+    world->addSkeleton(sleeper);
+    world->addSkeleton(reader);
+    auto filter = std::make_shared<BodyNodeCollisionFilter>();
+    auto replacement = std::make_shared<BodyNodeCollisionFilter>();
+    world->getConstraintSolver()->getCollisionOption().collisionFilter = filter;
+    ASSERT_NO_FATAL_FAILURE(stepUntilRestingWithContacts(world.get(), sleeper));
+    world->invalidateAllRestingKinematicSnapshot();
+
+    bool called = false;
+    reader->onBodyCount
+        = [&, replaceFilter = replaceFilter, editBlacklist = editBlacklist] {
+            called = true;
+            if (replaceFilter)
+              world->getConstraintSolver()->getCollisionOption().collisionFilter
+                  = replacement;
+            if (editBlacklist) {
+              filter->addBodyNodePairToBlackList(
+                  floor->getBodyNode(0), sleeper->getBodyNode(0));
+              filter->removeBodyNodePairFromBlackList(
+                  floor->getBodyNode(0), sleeper->getBodyNode(0));
+            }
+          };
+    world->wakeRestingSkeletonsIfStepStateChanged();
+    ASSERT_TRUE(called);
+    EXPECT_EQ(sleeper->isResting(), !editBlacklist);
+    EXPECT_EQ(
+        world->getConstraintSolver()->getCollisionOption().collisionFilter,
+        replaceFilter ? replacement : filter);
+  }
+}
+
+TEST(IslandDeactivation, RestingChecksKeepTrackedSubclassCallbacksAndExceptions)
+{
+  for (const bool checkReadiness : {false, true}) {
+    SCOPED_TRACE(checkReadiness);
+    auto world = std::make_shared<RestingFilterReadWorld>();
+    auto options = world->getDeactivationOptions();
+    options.mEnabled = true;
+    world->setDeactivationOptions(options);
+    world->addSkeleton(createFloor());
+    auto sleeper = createFreeBox(
+        "sleeper",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf + 0.02));
+    world->addSkeleton(sleeper);
+    auto filter = std::make_shared<RestingFilterRevisionProbe>();
+    world->getConstraintSolver()->getCollisionOption().collisionFilter = filter;
+    ASSERT_NO_FATAL_FAILURE(
+        stepUntilRestingFastPathReady(world.get(), sleeper));
+    bool stale = false;
+    const auto check = [&] {
+      if (checkReadiness)
+        return world->isAllRestingFastPathReady(true, &stale);
+      world->wakeRestingSkeletonsIfStepStateChanged();
+      return sleeper->isResting();
+    };
+
+    bool called = false;
+    filter->onRevision = [&] {
+      called = true;
+      throw std::runtime_error("tracked resting revision");
+    };
+    EXPECT_THROW(check(), std::runtime_error);
+    ASSERT_TRUE(called);
+    EXPECT_TRUE(check());
+    EXPECT_FALSE(stale);
+
+    called = false;
+    filter->onRevision = [&] {
+      called = true;
+      ++filter->revision;
+    };
+    EXPECT_FALSE(check());
+    EXPECT_TRUE(called);
+    if (checkReadiness)
+      EXPECT_TRUE(stale);
+    else
+      EXPECT_FALSE(sleeper->isResting());
+  }
 }
 
 //==============================================================================

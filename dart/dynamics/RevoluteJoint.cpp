@@ -142,7 +142,7 @@ void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
   mAspectProperties.mAxis = axis;
   Joint::notifyPositionUpdated();
   updateRelativeJacobian();
-  Joint::incrementVersion();
+  Joint::incrementParameterVersion();
   // Wakes resting bodies even when the pose is unchanged (at q = 0).
   Joint::notifyAutomaticConstraintPropertiesUpdated();
 }

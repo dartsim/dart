@@ -35,6 +35,7 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/Contact.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
 
@@ -174,9 +175,13 @@ ContactSurfaceHandlerPtr ContactSurfaceHandler::getParent()
 //==============================================================================
 void ContactSurfaceHandler::setParent(ContactSurfaceHandlerPtr parent)
 {
-  if (parent.get() != this)
+  if (parent == mParent)
+    return;
+  if (parent.get() != this) {
+    detail::checkContactSurfaceMutation(this);
     this->mParent = std::move(parent);
-  else
+    detail::notifyContactSurfaceMutation(this);
+  } else
     dtwarn << "Cannot assign self as parent handler.";
 }
 

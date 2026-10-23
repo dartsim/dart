@@ -34,6 +34,7 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -100,7 +101,10 @@ void JointCoulombFrictionConstraint::setConstraintForceMixing(double _cfm)
     _cfm = 1e-9;
   }
 
-  mConstraintForceMixing = _cfm;
+  if (mConstraintForceMixing != _cfm) {
+    mConstraintForceMixing = _cfm;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
 }
 
 //==============================================================================
