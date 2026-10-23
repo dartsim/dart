@@ -32,14 +32,38 @@ if(DART_USE_SYSTEM_GOOGLEBENCHMARK)
   find_package(benchmark CONFIG REQUIRED)
 else()
   include(FetchContent)
+  # Extract with current timestamps on CMake 3.24+ so archive updates rebuild.
+  set(dart_benchmark_timestamp)
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
+    set(dart_benchmark_timestamp DOWNLOAD_EXTRACT_TIMESTAMP FALSE)
+  endif()
   FetchContent_Declare(
     benchmark
-    GIT_REPOSITORY https://github.com/google/benchmark.git
-    GIT_TAG v1.9.1
+    URL https://github.com/google/benchmark/archive/refs/tags/v1.10.0.tar.gz
+    URL_HASH
+      SHA256=acc5c7c0fbed855c4aaa2d7c3c36fb82b0c15c28f4e151e3f679c2fc0aa404af
+    TLS_VERIFY ON
+    ${dart_benchmark_timestamp}
   )
   set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+  set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+  # Use the archive's project version, not an enclosing DART Git checkout.
+  foreach(var CMAKE_DISABLE_FIND_PACKAGE_Git GIT_EXECUTABLE)
+    if(DEFINED ${var})
+      set(dart_benchmark_saved_${var} "${${var}}")
+    endif()
+  endforeach()
+  set(CMAKE_DISABLE_FIND_PACKAGE_Git ON)
+  set(GIT_EXECUTABLE "")
   FetchContent_MakeAvailable(benchmark)
   dart_check_fetchcontent(benchmark DART_USE_SYSTEM_GOOGLEBENCHMARK)
+  foreach(var CMAKE_DISABLE_FIND_PACKAGE_Git GIT_EXECUTABLE)
+    if(DEFINED dart_benchmark_saved_${var})
+      set(${var} "${dart_benchmark_saved_${var}}")
+    else()
+      unset(${var})
+    endif()
+  endforeach()
 endif()
 
 add_subdirectory(unit)
@@ -51,10 +75,10 @@ dart_format_add(PerfGuard.hpp)
 # mirroring main's tests/benchmark wiring)
 # ==============================================================================
 add_executable(bm_simd simd/bm_simd.cpp)
-target_link_libraries(bm_simd dart-simd Eigen3::Eigen benchmark::benchmark)
+target_link_libraries(bm_simd benchmark::benchmark dart-simd Eigen3::Eigen)
 
 add_executable(bm_math simd/bm_math.cpp)
-target_link_libraries(bm_math dart-simd Eigen3::Eigen benchmark::benchmark)
+target_link_libraries(bm_math benchmark::benchmark dart-simd Eigen3::Eigen)
 
 # Enable native SIMD for benchmarks (AVX2, AVX-512, etc. based on CPU). CI's
 # SIMD matrix turns this off so each row's benchmarks build at that row's level.

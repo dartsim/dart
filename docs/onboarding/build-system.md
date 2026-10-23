@@ -74,6 +74,28 @@ System Tracy must be 0.11.1 or newer when it reports a version (CMake
 variables, or the selected `Tracy::TracyClient` target's `common/TracyVersion.hpp`);
 upstream installs no version file, so a versionless package is accepted.
 
+## Test Tooling
+
+With `BUILD_TESTING=ON` and the default `DART_USE_SYSTEM_GOOGLETEST=OFF` and
+`DART_USE_SYSTEM_GOOGLEBENCHMARK=OFF`, DART fetches GoogleTest 1.17.0 and Google
+Benchmark 1.10.0 over HTTPS with pinned SHA-256 hashes. GoogleTest uses its release
+archive; Benchmark uses its tag archive because that release has no attached
+source archive. Fetched test tooling is not installed. On CMake 3.24 and newer,
+archives extract with current timestamps so changing an archive rebuilds its
+objects; older CMake versions need a fresh build directory after an update.
+The pins live in `tests/CMakeLists.txt` and `tests/benchmark/CMakeLists.txt`.
+To update a pin, download the new archive with `curl -fLO` and compute its hash
+with `sha256sum`.
+
+`DART_USE_SYSTEM_GOOGLETEST=ON` and
+`DART_USE_SYSTEM_GOOGLEBENCHMARK=ON` select installed packages instead, as the
+default Pixi tasks do. The supported system floors remain Ubuntu 24.04's
+GoogleTest 1.14 and Google Benchmark 1.8.3. For offline configures, pre-seed
+`FETCHCONTENT_SOURCE_DIR_GOOGLETEST` and `FETCHCONTENT_SOURCE_DIR_BENCHMARK`
+with local source trees, or use the system switches. The Linux CI
+fetched-test-tooling job configures both switches `OFF`, builds the C++ tests
+and benchmarks, runs CTest, and checks that installation excludes test tooling.
+
 ## Eigen Compatibility
 
 DART supports Eigen >= 3.4.0 and < 6. Every Pixi environment pins Eigen 3.4.0
