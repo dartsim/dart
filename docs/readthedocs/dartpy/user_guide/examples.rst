@@ -21,17 +21,17 @@ Once you have installed dartpy using pip install -U dartpy, you can run the foll
         world = dart.simulation.World()
 
         urdf_parser = dart.utils.DartLoader()
-        kr5 = urdf_parser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
-        ground = urdf_parser.parseSkeleton("dart://sample/urdf/KR5/ground.urdf")
-        world.addSkeleton(kr5)
+        arm = urdf_parser.parseSkeleton("dart://sample/urdf/six_axis_arm/six_axis_arm.urdf")
+        ground = urdf_parser.parseSkeleton("dart://sample/urdf/six_axis_arm/ground.urdf")
+        world.addSkeleton(arm)
         world.addSkeleton(ground)
-        print("Robot {} is loaded".format(kr5.getName()))
+        print("Robot {} is loaded".format(arm.getName()))
 
         for i in range(100):
             if i % 10 == 0:
                 print(
                     "[{}] joint position: {}".format(
-                        world.getSimFrames(), kr5.getPositions()
+                        world.getSimFrames(), arm.getPositions()
                     )
                 )
             world.step()
@@ -39,21 +39,23 @@ Once you have installed dartpy using pip install -U dartpy, you can run the foll
     if __name__ == "__main__":
         main()
 
-When you run this script, it will perform a forward dynamic simulation of the 6-DOF robot for 100 steps. Joint angles are printed every 10 steps, producing the following output:
+The arm starts at zero joint angles in an upright L, with a vertical upper arm and a horizontal forearm. When you run this script, it will perform a forward dynamic simulation of the 6-DOF robot for 100 steps. Joint angles are printed every 10 steps, producing the following output:
 
 .. code-block:: none
 
-   Robot KR5sixxR650WP_description is loaded
+   Robot six_axis_arm is loaded
    [0] joint position: [0. 0. 0. 0. 0. 0.]
-   [10] joint position: [ 0.00220342  0.00021945 -0.00040518  0.00011133  0.00074889 -0.00010902]
-   [20] joint position: [ 0.00841056  0.0008539  -0.0015611   0.00042308  0.00284968 -0.00040791]
-   [30] joint position: [ 0.01861372  0.00194988 -0.00350848  0.00092958  0.0062733  -0.00087254]
-   [40] joint position: [ 0.03279843  0.00358421 -0.00631463  0.00162151  0.01097006 -0.0014636 ]
-   [50] joint position: [ 0.05094093  0.00586373 -0.01007336  0.00248606  0.01686793 -0.00212772]
-   [60] joint position: [ 0.07300469  0.00892482 -0.01490498  0.00350698  0.02387041 -0.00279907]
-   [70] joint position: [ 0.098936    0.01293271 -0.02095646  0.00466479  0.03185446 -0.0034017 ]
-   [80] joint position: [ 0.12865883  0.01808055 -0.02840175  0.00593683  0.04066865 -0.00385261]
-   [90] joint position: [ 0.16206903  0.02458815 -0.03744247  0.00729732  0.05013223 -0.00406555]
+   [10] joint position: [ 0.00000000e+00  1.56990893e-06  2.44957094e-03  0.00000000e+00
+    -5.26233357e-03  0.00000000e+00]
+   [20] joint position: [ 0.00000000e+00  2.45210566e-05  9.33435506e-03  0.00000000e+00
+    -2.00914590e-02  0.00000000e+00]
+   [30] joint position: [ 0.          0.00012299  0.02059999  0.         -0.04447795  0.        ]
+   [40] joint position: [ 0.          0.00038681  0.03615581  0.         -0.07838581  0.        ]
+   [50] joint position: [ 0.          0.00094134  0.05587419  0.         -0.12172263  0.        ]
+   [60] joint position: [ 0.          0.00194683  0.07959015  0.         -0.17429913  0.        ]
+   [70] joint position: [ 0.          0.0035972   0.10710134  0.         -0.23578037  0.        ]
+   [80] joint position: [ 0.          0.00611769  0.13816923  0.         -0.30563343  0.        ]
+   [90] joint position: [ 0.          0.00976148  0.17252223  0.         -0.38307829  0.        ]
 
 You can find additional example code at https://github.com/dartsim/dart/tree/main/python/examples
 

@@ -93,5 +93,6 @@ use deterministic local fixtures rather than online vendor availability.
 The Hubo puppet scene and installed `dart://sample/urdf/drchubo/` resources
 have been retired. The Fetch demo is retired, while its model remains a parser
 fixture. Atlas v3 control and soft-foot examples retain their tuned models.
-KR5, WAM, synthetic skeletons, and historical MJCF files remain useful teaching
-or regression fixtures; model age alone is not a removal criterion.
+The DART-authored six-axis arm, WAM, synthetic skeletons, and historical MJCF
+files remain useful teaching or regression fixtures; model age alone is not a
+removal criterion.
