@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tarfile
 import time
 from pathlib import Path, PureWindowsPath
@@ -176,7 +177,9 @@ TRACY_FIXTURE = (
     + _DEPENDENCIES[
         _DEPENDENCIES.index(
             "if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)"
-        ) : _DEPENDENCIES.index("if(DART_BUILD_DARTPY AND Python_EXECUTABLE)")
+        ) : _DEPENDENCIES.index(
+            "# Deprecated compatibility option; DART owns its logging implementation."
+        )
     ]
     + 'if(NOT TARGET Tracy::TracyClient)\nmessage(FATAL_ERROR "no TracyClient")\nendif()\n'
 )
@@ -463,7 +466,7 @@ def test_optional_package_with_undefined_found_flag(tmp_path, skip):
 @pytest.mark.parametrize("missing", ["tinyxml2", "urdfdom", "sdformat"])
 def test_io_requires_all_parser_dependencies(tmp_path, missing):
     if missing != "tinyxml2":
-        config_package(tmp_path, "tinyxml2", "9.0.0", "tinyxml2::tinyxml2")
+        config_package(tmp_path, "tinyxml2", "10.0.0", "tinyxml2::tinyxml2")
     if missing == "sdformat":
         config_package(tmp_path, "urdfdom", "3.0.0", "urdfdom")
     result = configure(
@@ -477,14 +480,42 @@ def test_io_requires_all_parser_dependencies(tmp_path, missing):
     assert "DART_BUILD_IO=OFF" in result.stdout + result.stderr
 
 
+@pytest.mark.parametrize("lookup", ["config", "module"])
+def test_io_rejects_tinyxml2_9_with_minimum_version_message(tmp_path, lookup):
+    variables = ""
+    if lookup == "config":
+        config_package(tmp_path, "tinyxml2", "9.0.0", "tinyxml2::tinyxml2")
+    else:
+        include = tmp_path / "include"
+        include.mkdir()
+        (include / "tinyxml2.h").write_text(
+            "#define TINYXML2_MAJOR_VERSION 9\n"
+            "#define TINYXML2_MINOR_VERSION 0\n"
+            "#define TINYXML2_PATCH_VERSION 0\n"
+        )
+        library = tmp_path / "library"
+        library.touch()
+        variables = (
+            f'set(TINYXML2_INCLUDE_DIRS "{include.as_posix()}")\n'
+            f'set(TINYXML2_LIBRARIES "{library.as_posix()}")\n'
+        )
+    result = configure(
+        tmp_path,
+        "include(DARTMacros)\n"
+        + variables
+        + f'include("{(ROOT / "dart/utils/CMakeLists.txt").as_posix()}")\n',
+    )
+    assert result.returncode != 0
+    assert "dart-io requires tinyxml2 >= 10.0.0" in result.stdout + result.stderr
+
+
 @pytest.mark.parametrize(
     "package,minimum,target,required",
     [
-        ("fmt", "8.1.1", "fmt::fmt", False),
         ("Eigen3", "3.4.0", "Eigen3::Eigen", True),
         ("fcl", "0.7.0", "fcl", True),
         ("octomap", "1.9.7", "octomap", False),
-        ("tinyxml2", "9.0.0", "tinyxml2::tinyxml2", False),
+        ("tinyxml2", "10.0.0", "tinyxml2::tinyxml2", False),
         ("urdfdom", "3.0.0", "urdfdom", False),
         ("ODE", "0.16.2", "ODE::ODE", False),
         ("imgui", "1.92.8", "imgui::imgui", True),
@@ -500,7 +531,7 @@ def test_config_floors(tmp_path, package, minimum, target, required, version_kin
         "newer": f"{major}.{minor + 1}.0",
     }
     if package == "tinyxml2" and version_kind == "older":
-        versions["older"] = "8.0.0"
+        versions["older"] = "9.0.0"
     if package == "urdfdom" and version_kind == "older":
         versions["older"] = "2.3.5"
     if package in ("tinyxml2", "urdfdom") and version_kind == "newer":
@@ -512,7 +543,7 @@ def test_config_floors(tmp_path, package, minimum, target, required, version_kin
     accepted = version_kind in ("minimum", "newer")
     result = configure(
         tmp_path,
-        f"set(DART_USE_SYSTEM_FMT ON)\nset(DART_USE_SYSTEM_ODE ON)\n"
+        "set(DART_USE_SYSTEM_ODE ON)\n"
         f"include(DARTFind{package})\n"
         f"if({package}_FOUND OR {package.upper()}_FOUND)\n"
         + ("" if accepted else 'message(FATAL_ERROR "Accepted unsupported version")\n')
@@ -1387,9 +1418,9 @@ def test_bullet_fallback_dispatch(tmp_path, mode):
     [
         (
             "tinyxml2",
-            "9.0.0",
+            "10.0.0",
             "tinyxml2.h",
-            "#define TINYXML2_MAJOR_VERSION 9\n#define TINYXML2_MINOR_VERSION 0\n#define TINYXML2_PATCH_VERSION 0\n",
+            "#define TINYXML2_MAJOR_VERSION 10\n#define TINYXML2_MINOR_VERSION 0\n#define TINYXML2_PATCH_VERSION 0\n",
             "tinyxml2::tinyxml2",
         ),
         (
@@ -1439,7 +1470,7 @@ def test_config_header_version_fallback(
     [
         ("assimp", "5.3.0", "ASSIMP", "assimp/scene.h", None),
         ("fcl", "0.7.0", "FCL", "fcl/config.h", "FCL_VERSION"),
-        ("tinyxml2", "9.0.0", "TINYXML2", "tinyxml2.h", "TINYXML2"),
+        ("tinyxml2", "10.0.0", "TINYXML2", "tinyxml2.h", "TINYXML2"),
         ("ODE", "0.16.2", "ODE", "ode/version.h", "dODE_VERSION"),
         ("imgui", "1.92.8", "imgui", "imgui.h", "IMGUI_VERSION"),
     ],
@@ -1452,6 +1483,8 @@ def test_module_floors(
     path = include / header
     path.parent.mkdir(parents=True)
     version = minimum if version_kind == "minimum" else "0.1.0"
+    if package == "tinyxml2" and version_kind == "older":
+        version = "9.0.0"
     content = ""
     if version_kind != "unknown" and definition:
         if package == "tinyxml2":
@@ -1476,7 +1509,11 @@ def test_module_floors(
     result = configure(
         tmp_path,
         variables
-        + f"find_package({package} {minimum} QUIET MODULE)\n"
+        + (
+            "include(DARTFindtinyxml2)\n"
+            if package == "tinyxml2"
+            else f"find_package({package} {minimum} QUIET MODULE)\n"
+        )
         + f"if({package}_FOUND OR {prefix}_FOUND)\n"
         + ("" if accepted else 'message(FATAL_ERROR "Accepted unsupported version")\n')
         + "else()\n"
@@ -1603,43 +1640,6 @@ def test_parent_ode_target_version(tmp_path, version, use_version_metadata):
         content += 'if(ODE_FOUND OR ode_FOUND)\nmessage(FATAL_ERROR "Accepted unsupported parent ODE")\nendif()\n'
     result = configure(tmp_path, content)
     assert result.returncode == 0, result.stdout + result.stderr
-
-
-@pytest.mark.parametrize("version", ["7.1.3", "8.1.1", None])
-@pytest.mark.parametrize(
-    "version_source", ["metadata", "core.h", "base.h", "build-interface"]
-)
-def test_parent_fmt_target_version(tmp_path, version, version_source):
-    include = tmp_path / "fmt-parent" / "include"
-    header = (
-        include
-        / "fmt"
-        / ("base.h" if version_source == "build-interface" else version_source)
-    )
-    header.parent.mkdir(parents=True)
-    if version and version_source != "metadata":
-        major, minor, patch = map(int, version.split("."))
-        header.write_text(
-            f"#define FMT_VERSION {major * 10000 + minor * 100 + patch}\n"
-        )
-    include_path = (
-        f"$<BUILD_INTERFACE:{include.as_posix()}>"
-        if version_source == "build-interface"
-        else include.as_posix()
-    )
-    content = (
-        "set(DART_USE_SYSTEM_FMT OFF)\n"
-        "add_library(fmt::fmt INTERFACE IMPORTED)\n"
-        f'set_target_properties(fmt::fmt PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "{include_path}")\n'
-    )
-    if version and version_source == "metadata":
-        content += f"set(fmt_VERSION {version})\n"
-    result = configure(tmp_path, content + "include(DARTFindfmt)\n")
-    if version == "8.1.1":
-        assert result.returncode == 0, result.stdout + result.stderr
-    else:
-        assert result.returncode != 0, result.stdout + result.stderr
-        assert "fmt >= 8.1.1" in result.stdout + result.stderr
 
 
 @pytest.mark.parametrize("package", ["tinyxml2", "urdfdom", "ODE"])
@@ -2152,6 +2152,51 @@ def test_uninstall_manifest_preserves_spaces(tmp_path, staged, prefix_kind):
     assert not dangling.is_symlink()
 
 
+@pytest.mark.parametrize("force_legacy", [False, True])
+def test_logging_float_fixture_builds_without_availability_suppression(
+    tmp_path, force_legacy
+):
+    # Compile the real implementation and a C++14 consumer on either path.
+    # Native Apple deployment/symbol checks run in the system-toolchain CI step.
+    assert (
+        "_LIBCPP_DISABLE_AVAILABILITY" not in (ROOT / "dart/CMakeLists.txt").read_text()
+    )
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.28)\n"
+        "project(LoggingFloat LANGUAGES CXX)\n"
+        "find_package(Threads REQUIRED)\n"
+        'file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/dart/config.hpp" "#define DART_ACTIVE_LOG_LEVEL 0\\n")\n'
+        f'add_library(logging STATIC "{ROOT.as_posix()}/dart/common/Logging.cpp" "{ROOT.as_posix()}/dart/common/Console.cpp")\n'
+        "set_target_properties(logging PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)\n"
+        f'target_include_directories(logging PUBLIC "{ROOT.as_posix()}" "${{CMAKE_CURRENT_BINARY_DIR}}")\n'
+        "target_link_libraries(logging PUBLIC Threads::Threads)\n"
+        f'add_executable(check_float "{ROOT.as_posix()}/scripts/check_logging_float.cpp")\n'
+        "set_target_properties(check_float PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)\n"
+        "target_link_libraries(check_float PRIVATE logging)\n"
+        + (
+            "target_compile_definitions(logging PRIVATE DART_LOGGING_FORCE_LEGACY_FLOAT=1)\n"
+            "target_compile_definitions(check_float PRIVATE DART_CHECK_LOGGING_FLOAT_ALLOCATION_FAILURES=1)\n"
+            if force_legacy
+            else ""
+        )
+        + "enable_testing()\nadd_test(NAME float_fixture COMMAND check_float 0)\n"
+    )
+    build = tmp_path / "build"
+    commands = [
+        [shutil.which("cmake"), "-G", "Ninja", "-S", str(source), "-B", str(build)],
+        [shutil.which("cmake"), "--build", str(build), "--parallel", "2"],
+        [shutil.which("ctest"), "--test-dir", str(build), "-V"],
+    ]
+    for command in commands:
+        result = subprocess.run(command, capture_output=True, text=True, check=False)
+        assert result.returncode == 0, result.stdout + result.stderr
+    assert re.search(
+        r"fixed_checks=[1-9][0-9]* oracle_checks=0 failures=0", result.stdout
+    )
+
+
 def test_spdlog_finder_is_a_compatibility_noop(tmp_path):
     result = configure(
         tmp_path,
@@ -2281,3 +2326,148 @@ def test_require_optional_dependencies(
             assert text in output
     else:
         assert result.returncode == 0, output
+
+
+def write_nanobind_package(package, version, internals=22):
+    """Write a fake nanobind package whose header decides the manual checks."""
+    (package / "include/nanobind").mkdir(parents=True)
+    (package / "src").mkdir()
+    (package / "include/nanobind/nanobind.h").write_text(
+        "".join(
+            f"#define NB_VERSION_{part} {value}\n"
+            for part, value in zip(("MAJOR", "MINOR", "PATCH"), version.split("."))
+        )
+    )
+    (package / "src/nb_internals.h").write_text(
+        f"#  define NB_INTERNALS_VERSION {internals}\n"
+    )
+    (package / "nanobindConfig.cmake").write_text(
+        f'set(NB_DIR "{package.as_posix()}")\n'
+    )
+    # Always compatible, so CMake's 3.1 request never preempts a manual check.
+    (package / "nanobindConfigVersion.cmake").write_text(
+        f'set(PACKAGE_VERSION "{version}")\n' "set(PACKAGE_VERSION_COMPATIBLE TRUE)\n"
+    )
+
+
+@pytest.mark.parametrize("system", [True, False])
+@pytest.mark.parametrize(
+    "version,internals,missing,accepted",
+    [
+        ("3.0.2", 21, None, False),
+        ("3.1.0", 22, None, True),
+        ("3.1.9", 22, None, True),
+        ("3.2.0", 22, None, False),
+        ("4.0.0", 23, None, False),
+        ("3.1.0", 23, None, False),
+        ("3.1.0", 220, None, False),
+        ("3.1.0", "22\r", None, True),
+        ("3.1.0", "22 // ABI version", None, True),
+        ("3.1.0", 22, "NB_DIR", False),
+        ("3.1.0", 22, "include/nanobind/nanobind.h", False),
+        ("3.1.0", 22, "src/nb_internals.h", False),
+    ],
+)
+def test_nanobind_version_and_internals(
+    tmp_path, system, version, internals, missing, accepted
+):
+    modules = tmp_path / "modules"
+    modules.mkdir()
+    (modules / "FindPython.cmake").write_text("set(Python_FOUND TRUE)\n")
+    package = tmp_path / "nanobind"
+    write_nanobind_package(package, version, internals)
+    (package / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.22.1)\n"
+        f'set(NB_DIR "{package.as_posix()}" PARENT_SCOPE)\n'
+    )
+    if missing == "NB_DIR":
+        (package / "nanobindConfig.cmake").write_text("")
+        (package / "CMakeLists.txt").write_text(
+            "cmake_minimum_required(VERSION 3.22.1)\n"
+        )
+    elif missing:
+        (package / missing).unlink()
+    for name in ("dartpy", "tests", "examples", "tutorials"):
+        directory = tmp_path / "source" / name
+        directory.mkdir(parents=True)
+        (directory / "CMakeLists.txt").write_text(
+            'file(WRITE "${CMAKE_BINARY_DIR}/dartpy-reached" "")\n'
+            if name == "dartpy"
+            else ""
+        )
+    result = configure(
+        tmp_path,
+        "include(DARTMacros)\n"
+        "set(DART_BUILD_DARTPY ON)\n"
+        f"set(DART_USE_SYSTEM_NANOBIND {'ON' if system else 'OFF'})\n"
+        f'set(nanobind_DIR "{package.as_posix()}")\n'
+        f'set(FETCHCONTENT_SOURCE_DIR_NANOBIND "{package.as_posix()}")\n'
+        f'include("{ROOT.as_posix()}/python/CMakeLists.txt")\n',
+    )
+    output = result.stdout + result.stderr
+    assert (result.returncode == 0) == accepted, output
+    assert (tmp_path / "build/dartpy-reached").exists() == accepted
+    if not accepted:
+        if missing:
+            assert "dartpy requires a complete nanobind 3.1.x package" in output
+            assert "NB_DIR must contain" in output
+            assert "file STRINGS" not in output
+        elif version == "3.1.0":
+            assert "NB_INTERNALS_VERSION=22" in output
+        else:
+            assert "dartpy requires nanobind 3.1.x" in output
+            assert f"found {version}" in output
+
+
+def test_nanobind_search_skips_old_package_before_running_its_config(
+    tmp_path, monkeypatch
+):
+    old = tmp_path / "prefix/lib/cmake/nanobind"
+    old.mkdir(parents=True)
+    (old / "nanobindConfig.cmake").write_text(
+        'message(FATAL_ERROR "old nanobind config executed")\n'
+    )
+    (old / "nanobindConfigVersion.cmake").write_text(
+        'set(PACKAGE_VERSION "3.0.2")\n'
+        "if(PACKAGE_VERSION VERSION_LESS PACKAGE_FIND_VERSION)\n"
+        "  set(PACKAGE_VERSION_COMPATIBLE FALSE)\n"
+        "else()\n"
+        "  set(PACKAGE_VERSION_COMPATIBLE TRUE)\n"
+        "endif()\n"
+    )
+    hinted = tmp_path / "hinted"
+    write_nanobind_package(hinted, "3.1.4")
+    (hinted / "nanobindConfig.cmake").write_text(
+        f'set(NB_DIR "{hinted.as_posix()}")\nset(hinted_config_ran TRUE)\n'
+    )
+    # Stands in for the nanobind package whose `-m nanobind --cmake_dir` is the hint.
+    stub = tmp_path / "pythonpath/nanobind"
+    stub.mkdir(parents=True)
+    (stub / "__init__.py").write_text("")
+    (stub / "__main__.py").write_text(f"print({hinted.as_posix()!r})\n")
+    monkeypatch.setenv("PYTHONPATH", str(stub.parent))
+    modules = tmp_path / "modules"
+    modules.mkdir()
+    (modules / "FindPython.cmake").write_text("set(Python_FOUND TRUE)\n")
+    for name in ("dartpy", "tests", "examples", "tutorials"):
+        directory = tmp_path / "source" / name
+        directory.mkdir(parents=True)
+        (directory / "CMakeLists.txt").write_text(
+            'file(WRITE "${CMAKE_BINARY_DIR}/dartpy-reached" "")\n'
+            if name == "dartpy"
+            else ""
+        )
+    result = configure(
+        tmp_path,
+        "set(DART_BUILD_DARTPY ON)\n"
+        "set(DART_USE_SYSTEM_NANOBIND ON)\n"
+        f'set(Python_EXECUTABLE "{Path(sys.executable).as_posix()}")\n'
+        f'include("{ROOT.as_posix()}/python/CMakeLists.txt")\n'
+        "if(NOT hinted_config_ran)\n"
+        '  message(FATAL_ERROR "compatible hinted nanobind was not selected")\n'
+        "endif()\n",
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode == 0, output
+    assert "old nanobind config executed" not in output
+    assert (tmp_path / "build/dartpy-reached").exists()

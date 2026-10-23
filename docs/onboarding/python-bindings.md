@@ -91,10 +91,20 @@ M6a landed the renderer in [#3696](https://github.com/dartsim/dart/pull/3696);
 M6b still replaces the interim GUI module with `dart.render` and `dart.viewer`
 before the first release candidate. `release-6.20` retains pybind11 and OSG.
 
-Python 3.12 or newer and nanobind 3.1 or newer are required.
-`DART_USE_SYSTEM_NANOBIND` defaults to `OFF`, fetching nanobind v3.1.0 with its
-`robin_map` submodule. With `ON`, CMake uses `nanobind_DIR` when it is set and
-otherwise locates nanobind's CMake directory using
+Python 3.12 or newer, NumPy 1.26.4 or newer (including NumPy 2.x), and
+nanobind 3.1.x are required. CMake discovers Python once in
+`python/CMakeLists.txt` and caches the selected interpreter as
+`Python3_EXECUTABLE` for tests, examples and tutorials. Select the interpreter
+with `Python_EXECUTABLE`; `Python3_EXECUTABLE` only seeds a fresh configure.
+If both are set and differ, CMake warns unless `Python3_EXECUTABLE` still holds
+the value DART last cached, and uses `Python_EXECUTABLE`.
+Use `Python_ROOT_DIR` and other `Python_*` hints; the `Python3_*` forms no longer
+apply. C++ builds with
+`DART_BUILD_DARTPY=OFF` do not discover Python.
+`DART_USE_SYSTEM_NANOBIND` defaults to `OFF`, fetching the nanobind 3.1.0
+PyPI sdist by URL and SHA-256 with TLS verification. The sdist bundles
+`robin_map`. With `ON`, CMake uses `nanobind_DIR` when it is set and otherwise
+locates nanobind's CMake directory using
 `python -m nanobind --cmake_dir`. Set `nanobind_DIR` when the build's Python
 cannot import nanobind, as in cross builds and isolated pip builds. Source
 builds through `pip` use scikit-build-core (`pyproject.toml`) and keep the
@@ -104,6 +114,15 @@ examples import the staged package from `DART_PYTHONPATH`. The
 `DART_DARTPY_BINDER` and `DART_USE_SYSTEM_PYBIND11` options are removed.
 Passing the legacy binder value `pybind11` fails configure; `nanobind` is
 accepted for compatibility and removed from the cache.
+
+`python/dartpy/detail/construction.cpp` checks nanobind's internal factory
+attachment ABI (`NB_INTERNALS_VERSION=22`), pinning system nanobind to 3.1.x.
+CMake checks both the selected headers' version and internals version at
+configure time for system and fetched builds. When bumping nanobind, audit
+that check and re-diff `python/dartpy/detail/dart_eigen_dense.h` against
+nanobind's stock `include/nanobind/eigen/dense.h` to preserve DART's NumPy
+compatibility changes. The Eigen 5 toolchain CI lane also builds and tests
+with `DART_USE_SYSTEM_NANOBIND=ON`.
 
 ### Changes from DART 6.20 (pybind11)
 
@@ -199,6 +218,12 @@ without touching Python. There is no default handler: with no logging
 configuration, Python's last-resort handler prints warnings and errors to
 stderr, and info messages stay quiet; set the logger's level or handlers to
 silence or route DART output.
+The GUI App separately observes callback-consumed records at the native sink
+threshold and queues its panel notifications until the GUI owner drains them.
+It neither installs another Python bridge nor invokes Python from producers.
+Closing a capture discards pending panel notifications without changing the
+automatic Python bridge. The superseded manual enable/disable API is removed;
+configure the Python logger and use `flush_logs()` for explicit delivery.
 
 `dartpy._testing` holds hooks for dartpy's own tests (worker-thread logging,
 destructor-time logging, throwing a named C++ exception). It is not part of
@@ -521,3 +546,6 @@ The repaired-wheel smoke test requires all four parser APIs and constructs a
 display. It also parses an inline URDF model, so missing IO or GUI support fails
 acceptance. Linux release wheels run this check in the fresh manylinux
 container without a display.
+
+On Python 3.12, the smoke test pins NumPy 1.26.4 and round-trips vector and
+matrix arrays through dartpy. The Python 3.13 abi3 smoke test uses current NumPy.

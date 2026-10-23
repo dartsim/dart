@@ -43,6 +43,7 @@
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
@@ -68,6 +69,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <cmath>
@@ -97,39 +99,148 @@ struct XmlRetriever : common::LocalResourceRetriever
 };
 
 //==============================================================================
-TEST(MjcfParserTest, ParseDetailMujocoAnt)
+TEST(MjcfParserTest, WorldbodySites)
 {
-  const auto uri = "dart://sample/mjcf/openai/ant.xml";
+  for (const auto* geom : {"", "<geom type='sphere' size='.2'/>"}) {
+    auto retriever = std::make_shared<XmlRetriever>();
+    retriever->xml = std::string("<mujoco><worldbody>") + geom + R"(
+      <site name="target" pos="1 2 3" size=".1"/>
+      <site name="other" pos="4 5 6" size=".2"/>
+    </worldbody></mujoco>)";
+    MujocoModel mujoco;
+    ASSERT_TRUE(mujoco.read("memory.xml", retriever).empty());
+    const auto& worldbody = mujoco.getWorldbody();
+    ASSERT_EQ(worldbody.getNumSites(), 2u);
+    EXPECT_EQ(worldbody.getSite(0).getName(), "target");
+    EXPECT_EQ(worldbody.getSite(1).getName(), "other");
+    EXPECT_TRUE(equals(
+        worldbody.getSite(0).getRelativeTransform().translation().eval(),
+        Eigen::Vector3d(1, 2, 3)));
 
-  auto mujoco = utils::MjcfParser::detail::MujocoModel();
-  auto errors = mujoco.read(uri, createRetriever());
-  ASSERT_TRUE(errors.empty());
+    const utils::MjcfParser::Options options(retriever);
+    auto world = utils::MjcfParser::readWorld("memory.xml", options);
+    ASSERT_NE(world, nullptr);
+    EXPECT_EQ(world->getNumSkeletons(), *geom == '\0' ? 2u : 3u);
+    auto target
+        = world->getSkeleton(options.mSiteSkeletonNamePrefix + "target");
+    ASSERT_NE(target, nullptr);
+    EXPECT_FALSE(target->isMobile());
+    EXPECT_TRUE(equals(
+        target->getBodyNode(0)->getWorldTransform().translation().eval(),
+        Eigen::Vector3d(1, 2, 3)));
+    auto* shape = target->getBodyNode(0)->getShapeNode(0);
+    EXPECT_TRUE(shape->hasVisualAspect());
+    EXPECT_FALSE(shape->hasCollisionAspect());
+    EXPECT_NE(
+        world->getSkeleton(options.mSiteSkeletonNamePrefix + "other"), nullptr);
+  }
+}
 
-  EXPECT_EQ(mujoco.getModel(), "ant");
-
-  const auto& compiler = mujoco.getCompiler();
-  EXPECT_EQ(compiler.getAngle(), Angle::DEGREE);
-  EXPECT_EQ(compiler.getCoordinate(), Coordinate::LOCAL);
-
-  const auto& option = mujoco.getOption();
-  EXPECT_EQ(option.getIntegrator(), Integrator::RK4);
-  EXPECT_DOUBLE_EQ(option.getTimestep(), 0.01);
-
-  const auto& worldbody = mujoco.getWorldbody();
-
-  ASSERT_EQ(worldbody.getNumGeoms(), 1);
-
-  ASSERT_EQ(worldbody.getNumRootBodies(), 1);
-  const auto& rootBody0 = worldbody.getRootBody(0);
-  EXPECT_EQ(rootBody0.getName(), "torso");
+//==============================================================================
+TEST(MjcfParserTest, FreeJointShorthand)
+{
+  auto retriever = std::make_shared<XmlRetriever>();
+  retriever->xml = R"(
+    <mujoco><worldbody><body name="floating" pos="1 2 3">
+      <freejoint/>
+      <geom type="sphere" size=".1"/>
+    </body></worldbody></mujoco>)";
+  auto world = utils::MjcfParser::readWorld("memory.xml", {retriever});
+  ASSERT_NE(world, nullptr);
+  auto skel = world->getSkeleton("floating");
+  ASSERT_NE(skel, nullptr);
+  EXPECT_EQ(skel->getNumDofs(), 6u);
+  EXPECT_EQ(
+      skel->getRootJoint()->getType(), dynamics::FreeJoint::getStaticType());
   EXPECT_TRUE(equals(
-      rootBody0.getRelativeTransform().translation().eval(),
-      Eigen::Vector3d(0, 0, 0.75)));
+      skel->getRootBodyNode()->getWorldTransform().translation().eval(),
+      Eigen::Vector3d(1, 2, 3)));
+}
 
-  ASSERT_EQ(rootBody0.getNumJoints(), 1);
-  const auto& rootJoint0 = rootBody0.getJoint(0);
-  EXPECT_EQ(rootJoint0.getType(), JointType::FREE);
-  EXPECT_EQ(rootJoint0.getName(), "root");
+//==============================================================================
+TEST(MjcfParserTest, FreeJointShorthandIgnoresDefaults)
+{
+  auto retriever = std::make_shared<XmlRetriever>();
+  retriever->xml = R"(
+    <mujoco>
+      <default>
+        <joint type="slide" damping="7" limited="true" range="-1 2"
+               springref=".5" pos=".1 .2 .3"/>
+        <default class="child"><joint damping="9" springref="1"/></default>
+      </default>
+      <worldbody>
+        <body name="main"><freejoint name="main_free"/>
+          <geom type="sphere" size=".1"/></body>
+        <body name="child" childclass="child"><freejoint name="child_free" group="2"/>
+          <geom type="sphere" size=".1"/></body>
+        <body name="ordinary" childclass="child"><joint name="inherited"/>
+          <geom type="sphere" size=".1"/></body>
+      </worldbody>
+    </mujoco>)";
+  MujocoModel mujoco;
+  ASSERT_TRUE(mujoco.read("memory.xml", retriever).empty());
+  const auto& worldbody = mujoco.getWorldbody();
+  ASSERT_EQ(worldbody.getNumRootBodies(), 3u);
+  for (auto i = 0u; i < 2u; ++i) {
+    const auto& body = worldbody.getRootBody(i);
+    ASSERT_EQ(body.getNumJoints(), 1u);
+    const auto& joint = body.getJoint(0);
+    EXPECT_EQ(joint.getName(), body.getName() + "_free");
+    EXPECT_EQ(joint.getType(), JointType::FREE);
+    EXPECT_FALSE(joint.isLimited());
+    EXPECT_DOUBLE_EQ(joint.getDamping(), 0);
+    EXPECT_DOUBLE_EQ(joint.getSpringRef(), 0);
+    EXPECT_TRUE(joint.getPos().isZero());
+    EXPECT_TRUE(joint.getRange().isZero());
+  }
+  const auto& inherited = worldbody.getRootBody(2).getJoint(0);
+  EXPECT_EQ(inherited.getType(), JointType::SLIDE);
+  EXPECT_DOUBLE_EQ(inherited.getDamping(), 9);
+  EXPECT_DOUBLE_EQ(inherited.getSpringRef(), 1);
+  EXPECT_TRUE(inherited.isLimited());
+
+  auto world = utils::MjcfParser::readWorld("memory.xml", {retriever});
+  ASSERT_NE(world, nullptr);
+  for (const auto* name : {"main", "child"}) {
+    auto skel = world->getSkeleton(name);
+    ASSERT_NE(skel, nullptr);
+    EXPECT_EQ(skel->getNumDofs(), 6u);
+    auto* joint = skel->getRootJoint();
+    EXPECT_EQ(joint->getType(), dynamics::FreeJoint::getStaticType());
+    for (auto i = 0u; i < joint->getNumDofs(); ++i) {
+      EXPECT_DOUBLE_EQ(joint->getDampingCoefficient(i), 0);
+      EXPECT_DOUBLE_EQ(joint->getSpringStiffness(i), 0);
+      EXPECT_EQ(joint->getPositionLowerLimit(i), -math::constantsd::inf());
+      EXPECT_EQ(joint->getPositionUpperLimit(i), math::constantsd::inf());
+    }
+  }
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ParseDetailQuadruped)
+{
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  const auto errors = mujoco.read(
+      "dart://sample/mjcf/deepmind/quadruped.xml", createRetriever());
+  ASSERT_TRUE(errors.empty());
+  EXPECT_EQ(mujoco.getModel(), "quadruped");
+  EXPECT_EQ(mujoco.getCompiler().getAngle(), Angle::DEGREE);
+  EXPECT_EQ(mujoco.getCompiler().getCoordinate(), Coordinate::LOCAL);
+  EXPECT_EQ(mujoco.getOption().getIntegrator(), Integrator::EULER);
+  EXPECT_DOUBLE_EQ(mujoco.getOption().getTimestep(), 0.005);
+  const auto& worldbody = mujoco.getWorldbody();
+  EXPECT_EQ(worldbody.getNumGeoms(), 5u);
+  ASSERT_EQ(worldbody.getNumSites(), 1u);
+  EXPECT_EQ(worldbody.getSite(0).getName(), "target");
+  ASSERT_EQ(worldbody.getNumRootBodies(), 2u);
+  const auto& torso = worldbody.getRootBody(0);
+  EXPECT_EQ(torso.getName(), "torso");
+  EXPECT_TRUE(equals(
+      torso.getRelativeTransform().translation().eval(),
+      Eigen::Vector3d(0, 0, 0.57)));
+  ASSERT_EQ(torso.getNumJoints(), 1u);
+  EXPECT_EQ(torso.getJoint(0).getType(), JointType::FREE);
+  EXPECT_EQ(torso.getJoint(0).getName(), "root");
 }
 
 //==============================================================================
@@ -217,129 +328,150 @@ TEST(MjcfParserTest, IncludeDefaultSettings)
 }
 
 //==============================================================================
-TEST(MjcfParserTest, Ant)
+TEST(MjcfParserTest, Quadruped)
 {
-  const auto uri = "dart://sample/mjcf/openai/ant.xml";
-  const auto options = utils::MjcfParser::Options();
-  auto world = utils::MjcfParser::readWorld(uri);
+  auto world = utils::MjcfParser::readWorld(
+      "dart://sample/mjcf/deepmind/quadruped.xml");
   ASSERT_NE(world, nullptr);
-
-  // The number of skeletons are the sum of the number of root <geom>s and root
-  // <body>s in <worldbody>. In this case, there are one root <geom> and one
-  // root <body> so it's 2.
-  ASSERT_EQ(world->getNumSkeletons(), 2);
-
-  auto antSkel = world->getSkeleton("torso");
-  ASSERT_NE(antSkel, nullptr);
-  // The number of bodies are 13: one for the torso and three bodies in each
-  // four legs.
-  ASSERT_EQ(antSkel->getNumBodyNodes(), 13);
-  // The ant model is free floating.
+  // Five root geoms, a target site and two root bodies.
+  ASSERT_EQ(world->getNumSkeletons(), 8u);
+  auto skel = world->getSkeleton("torso");
+  ASSERT_NE(skel, nullptr);
+  // Torso + four four-body legs + one carrier for each hip's two hinges.
+  EXPECT_EQ(skel->getNumBodyNodes(), 21u);
+  EXPECT_EQ(skel->getNumJoints(), 21u);
+  EXPECT_EQ(skel->getNumDofs(), 22u);
   EXPECT_EQ(
-      antSkel->getRootJoint()->getType(), dynamics::FreeJoint::getStaticType());
-
-  auto floorSkele
-      = world->getSkeleton(options.mGeomSkeletonNamePrefix + "floor");
-  ASSERT_NE(floorSkele, nullptr);
+      skel->getRootJoint()->getType(), dynamics::FreeJoint::getStaticType());
+  ASSERT_NE(world->getSkeleton("ball"), nullptr);
+  EXPECT_EQ(world->getSkeleton("ball")->getNumDofs(), 6u);
+  auto yaw = skel->getJoint("yaw_front_left");
+  ASSERT_NE(yaw, nullptr);
+  EXPECT_TRUE(yaw->areLimitsEnforced());
+  EXPECT_DOUBLE_EQ(
+      yaw->getPositionLowerLimit(0), -50 * math::constantsd::pi() / 180);
+  EXPECT_DOUBLE_EQ(
+      yaw->getPositionUpperLimit(0), 50 * math::constantsd::pi() / 180);
 }
 
 //==============================================================================
-TEST(MjcfParserTest, InvertedPendulum)
+TEST(MjcfParserTest, Cartpole)
 {
-  const auto uri = "dart://sample/mjcf/openai/inverted_pendulum.xml";
-  const auto options = utils::MjcfParser::Options();
-  auto world = utils::MjcfParser::readWorld(uri);
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  ASSERT_TRUE(
+      mujoco.read("dart://sample/mjcf/deepmind/cartpole.xml", createRetriever())
+          .empty());
+  EXPECT_EQ(mujoco.getOption().getIntegrator(), Integrator::RK4);
+  EXPECT_DOUBLE_EQ(mujoco.getOption().getTimestep(), 0.01);
+  auto world = utils::MjcfParser::readWorld(
+      "dart://sample/mjcf/deepmind/cartpole.xml");
   ASSERT_NE(world, nullptr);
-
-  // The number of skeletons are the sum of the number of root <geom>s and root
-  // <body>s in <worldbody>.
-  ASSERT_EQ(world->getNumSkeletons(), 2);
-
-  auto invertedPendulumSkel = world->getSkeleton("cart");
-  ASSERT_NE(invertedPendulumSkel, nullptr);
-  ASSERT_EQ(invertedPendulumSkel->getNumBodyNodes(), 2);
+  // Floor, two rails and the cart body.
+  ASSERT_EQ(world->getNumSkeletons(), 4u);
+  auto skel = world->getSkeleton("cart");
+  ASSERT_NE(skel, nullptr);
+  ASSERT_EQ(skel->getNumBodyNodes(), 2u);
+  EXPECT_EQ(skel->getNumJoints(), 2u);
+  EXPECT_EQ(skel->getNumDofs(), 2u);
   EXPECT_EQ(
-      invertedPendulumSkel->getRootJoint()->getType(),
+      skel->getRootJoint()->getType(),
       dynamics::PrismaticJoint::getStaticType());
-
-  auto railSkel = world->getSkeleton(options.mGeomSkeletonNamePrefix + "rail");
-  ASSERT_NE(railSkel, nullptr);
+  EXPECT_DOUBLE_EQ(skel->getRootJoint()->getPositionLowerLimit(0), -1.8);
+  EXPECT_DOUBLE_EQ(skel->getRootJoint()->getPositionUpperLimit(0), 1.8);
+  EXPECT_DOUBLE_EQ(skel->getBodyNode("cart")->getMass(), 1.0);
+  EXPECT_DOUBLE_EQ(skel->getBodyNode("pole_1")->getMass(), 0.1);
+  const auto options = utils::MjcfParser::Options();
+  for (const auto* name : {"floor", "rail1", "rail2"})
+    EXPECT_TRUE(world->hasSkeleton(options.mGeomSkeletonNamePrefix + name));
 }
 
 //==============================================================================
-TEST(MjcfParserTest, InvertedDoublePendulum)
+TEST(MjcfParserTest, Acrobot)
 {
-  const auto uri = "dart://sample/mjcf/openai/inverted_double_pendulum.xml";
-  const auto options = utils::MjcfParser::Options();
-  auto world = utils::MjcfParser::readWorld(uri);
+  auto world
+      = utils::MjcfParser::readWorld("dart://sample/mjcf/deepmind/acrobot.xml");
   ASSERT_NE(world, nullptr);
-
-  // The number of skeletons are the sum of the number of root <geom>s and root
-  // <body>s in <worldbody>.
-  ASSERT_EQ(world->getNumSkeletons(), 3);
-
-  auto invertedPendulumSkel = world->getSkeleton("cart");
-  ASSERT_NE(invertedPendulumSkel, nullptr);
-  ASSERT_EQ(invertedPendulumSkel->getNumBodyNodes(), 3);
+  // Floor, target site and the two-link arm.
+  ASSERT_EQ(world->getNumSkeletons(), 3u);
+  auto skel = world->getSkeleton("upper_arm");
+  ASSERT_NE(skel, nullptr);
+  ASSERT_EQ(skel->getNumBodyNodes(), 2u);
+  EXPECT_EQ(skel->getNumJoints(), 2u);
+  EXPECT_EQ(skel->getNumDofs(), 2u);
   EXPECT_EQ(
-      invertedPendulumSkel->getRootJoint()->getType(),
-      dynamics::PrismaticJoint::getStaticType());
+      skel->getRootJoint()->getType(),
+      dynamics::RevoluteJoint::getStaticType());
+  EXPECT_DOUBLE_EQ(skel->getBodyNode("upper_arm")->getMass(), 1.0);
+  EXPECT_DOUBLE_EQ(skel->getBodyNode("lower_arm")->getMass(), 1.0);
+}
 
-  auto floorSkele
-      = world->getSkeleton(options.mGeomSkeletonNamePrefix + "floor");
-  ASSERT_NE(floorSkele, nullptr);
-
-  auto railSkel = world->getSkeleton(options.mGeomSkeletonNamePrefix + "rail");
-  ASSERT_NE(railSkel, nullptr);
+//==============================================================================
+TEST(MjcfParserTest, Pendulum)
+{
+  auto world = utils::MjcfParser::readWorld(
+      "dart://sample/mjcf/deepmind/pendulum.xml");
+  ASSERT_NE(world, nullptr);
+  ASSERT_EQ(world->getNumSkeletons(), 2u);
+  auto skel = world->getSkeleton("pole");
+  ASSERT_NE(skel, nullptr);
+  EXPECT_EQ(skel->getNumBodyNodes(), 1u);
+  EXPECT_EQ(skel->getNumJoints(), 1u);
+  EXPECT_EQ(skel->getNumDofs(), 1u);
+  EXPECT_DOUBLE_EQ(skel->getMass(), 1.0);
 }
 
 //==============================================================================
 TEST(MjcfParserTest, Reacher)
 {
-  const auto uri = "dart://sample/mjcf/openai/reacher.xml";
-  const auto options = utils::MjcfParser::Options();
-  auto world = utils::MjcfParser::readWorld(uri);
+  auto world
+      = utils::MjcfParser::readWorld("dart://sample/mjcf/deepmind/reacher.xml");
   ASSERT_NE(world, nullptr);
-
-  // The number of skeletons are the sum of the number of root <geom>s and root
-  // <body>s in <worldbody>.
-  ASSERT_EQ(world->getNumSkeletons(), 8);
-
-  auto reacherSkel = world->getSkeleton("body0");
-  ASSERT_NE(reacherSkel, nullptr);
-  ASSERT_EQ(reacherSkel->getNumBodyNodes(), 3);
+  // Seven root geoms and one three-body arm.
+  ASSERT_EQ(world->getNumSkeletons(), 8u);
+  auto skel = world->getSkeleton("arm");
+  ASSERT_NE(skel, nullptr);
+  EXPECT_EQ(skel->getNumBodyNodes(), 3u);
+  EXPECT_EQ(skel->getNumJoints(), 3u);
+  EXPECT_EQ(skel->getNumDofs(), 2u);
   EXPECT_EQ(
-      reacherSkel->getRootJoint()->getType(),
+      skel->getRootJoint()->getType(),
       dynamics::RevoluteJoint::getStaticType());
-
-  auto targetSkel = world->getSkeleton("target");
-  ASSERT_NE(targetSkel, nullptr);
-
-  EXPECT_TRUE(world->hasSkeleton(options.mGeomSkeletonNamePrefix + "ground"));
-  EXPECT_TRUE(world->hasSkeleton(options.mGeomSkeletonNamePrefix + "sideS"));
-  EXPECT_TRUE(world->hasSkeleton(options.mGeomSkeletonNamePrefix + "sideE"));
-  EXPECT_TRUE(world->hasSkeleton(options.mGeomSkeletonNamePrefix + "sideN"));
-  EXPECT_TRUE(world->hasSkeleton(options.mGeomSkeletonNamePrefix + "sideW"));
-  EXPECT_TRUE(world->hasSkeleton(options.mGeomSkeletonNamePrefix + "root"));
+  auto wrist = skel->getJoint("wrist");
+  ASSERT_NE(wrist, nullptr);
+  EXPECT_TRUE(wrist->areLimitsEnforced());
+  EXPECT_DOUBLE_EQ(
+      wrist->getPositionLowerLimit(0), -160 * math::constantsd::pi() / 180);
+  EXPECT_DOUBLE_EQ(
+      wrist->getPositionUpperLimit(0), 160 * math::constantsd::pi() / 180);
+  const auto options = utils::MjcfParser::Options();
+  for (const auto* name :
+       {"ground",
+        "wall_x",
+        "wall_y",
+        "wall_neg_x",
+        "wall_neg_y",
+        "root",
+        "target"})
+    EXPECT_TRUE(world->hasSkeleton(options.mGeomSkeletonNamePrefix + name));
 }
 
 //==============================================================================
-TEST(MjcfParserTest, Striker)
+TEST(MjcfParserTest, VisualOnlyGeoms)
 {
-  const auto uri = "dart://sample/mjcf/openai/striker.xml";
+  const auto uri = "dart://sample/mjcf/test/manipulation/scene.xml";
   const auto options = utils::MjcfParser::Options();
   auto world = utils::MjcfParser::readWorld(uri);
   ASSERT_NE(world, nullptr);
 
   // The number of skeletons are the sum of the number of root <geom>s and root
   // <body>s in <worldbody>.
-  ASSERT_EQ(world->getNumSkeletons(), 4);
+  ASSERT_EQ(world->getNumSkeletons(), 6);
 
-  auto strikerSkel = world->getSkeleton("r_shoulder_pan_link");
-  ASSERT_NE(strikerSkel, nullptr);
-  ASSERT_EQ(strikerSkel->getNumBodyNodes(), 10);
+  auto armSkel = world->getSkeleton("arm");
+  ASSERT_NE(armSkel, nullptr);
+  ASSERT_EQ(armSkel->getNumBodyNodes(), 3);
   EXPECT_EQ(
-      strikerSkel->getRootJoint()->getType(),
+      armSkel->getRootJoint()->getType(),
       dynamics::RevoluteJoint::getStaticType());
 
   auto objectSkel = world->getSkeleton("object");
@@ -350,26 +482,21 @@ TEST(MjcfParserTest, Striker)
 
   EXPECT_TRUE(world->hasSkeleton(options.mGeomSkeletonNamePrefix + "table"));
 
-  // striker.xml's <default> sets contype="0" conaffinity="0" on <geom>, so
-  // every geom that doesn't override these (e.g. the arm's decorative
-  // shoulder geoms) must be visual-only: no CollisionAspect at all. This is
-  // what keeps the density=1e6 "coaster" marker cylinder (nested under the
-  // "goal" body, resting inside the table) from ever generating a contact.
-  auto shoulderPanLink = strikerSkel->getBodyNode("r_shoulder_pan_link");
-  ASSERT_NE(shoulderPanLink, nullptr);
-  ASSERT_GT(shoulderPanLink->getNumShapeNodes(), 0u);
-  EXPECT_FALSE(
-      shoulderPanLink->getShapeNode(0)->has<dynamics::CollisionAspect>());
+  // The inherited zero masks keep the arm and goal markers visual-only.
+  auto armBody = armSkel->getBodyNode("arm");
+  ASSERT_NE(armBody, nullptr);
+  ASSERT_GT(armBody->getNumShapeNodes(), 0u);
+  EXPECT_FALSE(armBody->getShapeNode(0)->has<dynamics::CollisionAspect>());
 
   auto goalRootBody = goalSkel->getRootBodyNode();
   ASSERT_NE(goalRootBody, nullptr);
   ASSERT_GT(goalRootBody->getNumShapeNodes(), 0u);
   EXPECT_FALSE(goalRootBody->getShapeNode(0)->has<dynamics::CollisionAspect>());
 
-  auto coasterBody = goalSkel->getBodyNode("coaster");
-  ASSERT_NE(coasterBody, nullptr);
-  ASSERT_GT(coasterBody->getNumShapeNodes(), 0u);
-  EXPECT_FALSE(coasterBody->getShapeNode(0)->has<dynamics::CollisionAspect>());
+  auto markerBody = goalSkel->getBodyNode("marker");
+  ASSERT_NE(markerBody, nullptr);
+  ASSERT_GT(markerBody->getNumShapeNodes(), 0u);
+  EXPECT_FALSE(markerBody->getShapeNode(0)->has<dynamics::CollisionAspect>());
 
   // Geoms that explicitly re-enable collision (contype="1" conaffinity="1")
   // must still get a CollisionAspect: the table and the arm-tip geoms.
@@ -386,26 +513,17 @@ TEST(MjcfParserTest, Striker)
   EXPECT_DOUBLE_EQ(
       tableShapeNode->getDynamicsAspect()->getFrictionCoeff(), 0.0);
 
-  auto tipsArmBody = strikerSkel->getBodyNode("tips_arm");
-  ASSERT_NE(tipsArmBody, nullptr);
-  ASSERT_GT(tipsArmBody->getNumShapeNodes(), 0u);
-  EXPECT_TRUE(tipsArmBody->getShapeNode(0)->has<dynamics::CollisionAspect>());
+  auto tipBody = armSkel->getBodyNode("tip");
+  ASSERT_NE(tipBody, nullptr);
+  ASSERT_GT(tipBody->getNumShapeNodes(), 0u);
+  EXPECT_TRUE(tipBody->getShapeNode(0)->has<dynamics::CollisionAspect>());
 
-  auto wristRollBody = strikerSkel->getBodyNode("r_wrist_roll_link");
-  ASSERT_NE(wristRollBody, nullptr);
-  ASSERT_GT(wristRollBody->getNumShapeNodes(), 0u);
-  EXPECT_TRUE(wristRollBody->getShapeNode(0)->has<dynamics::CollisionAspect>());
+  auto wristBody = armSkel->getBodyNode("wrist");
+  ASSERT_NE(wristBody, nullptr);
+  ASSERT_GT(wristBody->getNumShapeNodes(), 0u);
+  EXPECT_TRUE(wristBody->getShapeNode(0)->has<dynamics::CollisionAspect>());
 
-  // Before the contype/conaffinity fix, the coaster marker (density 1e6)
-  // would be given a CollisionAspect and collide with the table, producing a
-  // ~1e6 mass-ratio contact that MuJoCo never generates and that makes the
-  // Dantzig primary solver fail every step. With the fix, contype==0 &&
-  // conaffinity==0 geoms (the coaster and the goal-root marker) carry no
-  // CollisionAspect at all, so no contact can ever involve them. Note the
-  // goal's thin side walls are contype=0 conaffinity=1 and DO legitimately
-  // collide with the table and the ball under MuJoCo's pair rule
-  // ((ctA & caB) || (ctB & caA)); asserting zero goal contacts would
-  // contradict the model's own semantics.
+  // The heavy marker overlaps the table but must never generate a contact.
   world->getConstraintSolver()->setCollisionDetector(
       collision::DARTCollisionDetector::create());
 
@@ -417,93 +535,43 @@ TEST(MjcfParserTest, Striker)
       const auto& contact = result.getContact(j);
       const auto bn1 = contact.getBodyNodePtr1();
       const auto bn2 = contact.getBodyNodePtr2();
-      const bool involvesCoaster = (bn1 && bn1.get() == coasterBody)
-                                   || (bn2 && bn2.get() == coasterBody);
-      EXPECT_FALSE(involvesCoaster)
-          << "Contact involving the aspect-less coaster marker at step " << i
+      const bool involvesMarker = (bn1 && bn1.get() == markerBody)
+                                  || (bn2 && bn2.get() == markerBody);
+      EXPECT_FALSE(involvesMarker)
+          << "Contact involving the visual-only marker at step " << i
           << ", contact index " << j;
     }
   }
 
-  // The arm must stay well-behaved. The free ball is deliberately not
-  // asserted: with faithful masks and friction the model exposes ball
-  // contacts against the goal's 1 mm frictionless walls, a thin-geometry
-  // hard-contact stress case (MuJoCo absorbs it with margin/soft contacts)
-  // that is an engine-robustness item, not a parser-fidelity one.
-  EXPECT_TRUE(strikerSkel->getPositions().allFinite());
-  EXPECT_TRUE(strikerSkel->getVelocities().allFinite());
+  EXPECT_TRUE(armSkel->getPositions().allFinite());
+  EXPECT_TRUE(armSkel->getVelocities().allFinite());
 }
 
 //==============================================================================
 TEST(MjcfParserTest, GeomFriction)
 {
-  // striker.xml's <default> sets friction=".0 .0 .0", and the "table" geom
-  // (contype="1" conaffinity="1", no friction override) inherits it.
-  {
-    auto world
-        = utils::MjcfParser::readWorld("dart://sample/mjcf/openai/striker.xml");
-    ASSERT_NE(world, nullptr);
-
-    const auto options = utils::MjcfParser::Options();
-    auto tableSkel
-        = world->getSkeleton(options.mGeomSkeletonNamePrefix + "table");
-    ASSERT_NE(tableSkel, nullptr);
-    ASSERT_GT(tableSkel->getBodyNode(0)->getNumShapeNodes(), 0u);
-    auto tableShapeNode = tableSkel->getBodyNode(0)->getShapeNode(0);
-    ASSERT_TRUE(tableShapeNode->has<dynamics::DynamicsAspect>());
+  auto world = utils::MjcfParser::readWorld(
+      "dart://sample/mjcf/test/manipulation/scene.xml");
+  ASSERT_NE(world, nullptr);
+  const auto options = utils::MjcfParser::Options();
+  // Top-level default, nested default class, then an explicit override.
+  for (const auto& entry :
+       {std::make_pair("table", 0.0), std::make_pair("floor", 0.8)}) {
+    auto skel
+        = world->getSkeleton(options.mGeomSkeletonNamePrefix + entry.first);
+    ASSERT_NE(skel, nullptr);
+    auto shape = skel->getBodyNode(0)->getShapeNode(0);
+    ASSERT_TRUE(shape->has<dynamics::DynamicsAspect>());
     EXPECT_DOUBLE_EQ(
-        tableShapeNode->getDynamicsAspect()->getFrictionCoeff(), 0.0);
+        shape->getDynamicsAspect()->getFrictionCoeff(), entry.second);
   }
-
-  // thrower.xml's <default> sets friction=".8 .1 .1", and the (unnamed) floor
-  // geom (contype="1" conaffinity="1", no friction override) inherits it.
-  {
-    auto world
-        = utils::MjcfParser::readWorld("dart://sample/mjcf/openai/thrower.xml");
-    ASSERT_NE(world, nullptr);
-
-    const auto options = utils::MjcfParser::Options();
-    auto floorSkel = world->getSkeleton(options.mGeomSkeletonNamePrefix + "");
-    ASSERT_NE(floorSkel, nullptr);
-    ASSERT_GT(floorSkel->getBodyNode(0)->getNumShapeNodes(), 0u);
-    auto floorShapeNode = floorSkel->getBodyNode(0)->getShapeNode(0);
-    ASSERT_TRUE(floorShapeNode->has<dynamics::DynamicsAspect>());
-    EXPECT_DOUBLE_EQ(
-        floorShapeNode->getDynamicsAspect()->getFrictionCoeff(), 0.8);
-  }
-
-  // walker2d.xml demonstrates both inheritance and override within the same
-  // file: the "floor" geom doesn't set friction and inherits the <default>
-  // class's friction=".7 .1 .1", while "torso_geom" explicitly overrides it
-  // to 0.9.
-  {
-    auto world = utils::MjcfParser::readWorld(
-        "dart://sample/mjcf/openai/walker2d.xml");
-    ASSERT_NE(world, nullptr);
-
-    auto torsoSkel = world->getSkeleton("torso");
-    ASSERT_NE(torsoSkel, nullptr);
-
-    // "floor" is a root <geom>, which lives in its own kinematic Skeleton
-    // rather than under "torso".
-    const auto options = utils::MjcfParser::Options();
-    auto floorSkel
-        = world->getSkeleton(options.mGeomSkeletonNamePrefix + "floor");
-    ASSERT_NE(floorSkel, nullptr);
-    ASSERT_GT(floorSkel->getBodyNode(0)->getNumShapeNodes(), 0u);
-    auto floorShapeNode = floorSkel->getBodyNode(0)->getShapeNode(0);
-    ASSERT_TRUE(floorShapeNode->has<dynamics::DynamicsAspect>());
-    EXPECT_DOUBLE_EQ(
-        floorShapeNode->getDynamicsAspect()->getFrictionCoeff(), 0.7);
-
-    auto torsoBody = torsoSkel->getBodyNode("torso");
-    ASSERT_NE(torsoBody, nullptr);
-    ASSERT_GT(torsoBody->getNumShapeNodes(), 0u);
-    auto torsoShapeNode = torsoBody->getShapeNode(0);
-    ASSERT_TRUE(torsoShapeNode->has<dynamics::DynamicsAspect>());
-    EXPECT_DOUBLE_EQ(
-        torsoShapeNode->getDynamicsAspect()->getFrictionCoeff(), 0.9);
-  }
+  auto arm = world->getSkeleton("arm");
+  ASSERT_NE(arm, nullptr);
+  auto wrist = arm->getBodyNode("wrist");
+  ASSERT_NE(wrist, nullptr);
+  auto shape = wrist->getShapeNode(0);
+  ASSERT_TRUE(shape->has<dynamics::DynamicsAspect>());
+  EXPECT_DOUBLE_EQ(shape->getDynamicsAspect()->getFrictionCoeff(), 0.9);
 }
 
 //==============================================================================
@@ -560,42 +628,52 @@ TEST(MjcfParserTest, ContypeConaffinityPairRule)
 }
 
 //==============================================================================
-TEST(MjcfParserTest, Thrower)
+TEST(MjcfParserTest, IncludedMeshScene)
 {
-  const auto uri = "dart://sample/mjcf/openai/thrower.xml";
-  const auto options = utils::MjcfParser::Options();
-  auto world = utils::MjcfParser::readWorld(uri);
+  auto world = utils::MjcfParser::readWorld(
+      "dart://sample/mjcf/test/manipulation/scene.xml");
   ASSERT_NE(world, nullptr);
-
-  // The number of skeletons are the sum of the number of root <geom>s and root
-  // <body>s in <worldbody>.
-  ASSERT_EQ(world->getNumSkeletons(), 4);
-
-  auto throwerSkel = world->getSkeleton("r_shoulder_pan_link");
-  ASSERT_NE(throwerSkel, nullptr);
-  ASSERT_EQ(throwerSkel->getNumBodyNodes(), 16);
+  ASSERT_EQ(world->getNumSkeletons(), 6u);
+  auto arm = world->getSkeleton("arm");
+  ASSERT_NE(arm, nullptr);
+  ASSERT_EQ(arm->getNumBodyNodes(), 3u);
+  EXPECT_EQ(arm->getNumDofs(), 2u);
+  auto tip = arm->getBodyNode("tip");
+  ASSERT_NE(tip, nullptr);
+  ASSERT_NE(tip->getParentBodyNode(), nullptr);
+  EXPECT_EQ(tip->getParentBodyNode()->getName(), "wrist");
   EXPECT_EQ(
-      throwerSkel->getRootJoint()->getType(),
-      dynamics::RevoluteJoint::getStaticType());
-
-  auto goalSkel = world->getSkeleton("goal");
-  ASSERT_NE(goalSkel, nullptr);
-
-  auto ballSkel = world->getSkeleton("ball");
-  ASSERT_NE(ballSkel, nullptr);
-
-  EXPECT_TRUE(world->hasSkeleton(options.mGeomSkeletonNamePrefix + ""));
+      tip->getParentJoint()->getType(), dynamics::WeldJoint::getStaticType());
+  auto object = world->getSkeleton("object");
+  ASSERT_NE(object, nullptr);
+  EXPECT_EQ(object->getNumBodyNodes(), 1u);
+  EXPECT_EQ(object->getNumDofs(), 2u);
+  auto shape = object->getBodyNode(0)->getShapeNode(0)->getShape();
+  ASSERT_NE(shape, nullptr);
+  EXPECT_EQ(shape->getType(), dynamics::MeshShape::getStaticType());
+  EXPECT_TRUE(shape->getBoundingBox().computeFullExtents().isApprox(
+      Eigen::Vector3d::Constant(0.04), 1e-6));
+  ASSERT_NE(world->getSkeleton("ball"), nullptr);
+  EXPECT_EQ(
+      world->getSkeleton("ball")->getRootJoint()->getType(),
+      dynamics::FreeJoint::getStaticType());
 }
 
 //==============================================================================
-TEST(MjcfParserTest, RoboticsFetch)
+TEST(MjcfParserTest, FailedWorldWithWeld)
 {
-  const common::Uri uri
-      = "dart://sample/mjcf/openai/robotics/fetch/pick_and_place.xml";
-  auto world = utils::MjcfParser::readWorld(uri);
-  ASSERT_NE(world, nullptr);
-
-  ASSERT_EQ(world->getNumSkeletons(), 6);
+  const auto retriever = std::make_shared<XmlRetriever>();
+  retriever->xml = R"(<mujoco><worldbody><body name="invalid">
+    <joint type="ball"/><joint type="hinge"/>
+    <geom type="sphere" size=".1"/>
+    </body></worldbody><equality><weld body1="invalid"/></equality></mujoco>)";
+  // Parsing succeeds; construction rejects the ball/hinge stack before welds.
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  ASSERT_TRUE(mujoco.read("invalid.xml", retriever).empty());
+  EXPECT_EQ(
+      utils::MjcfParser::readWorld(
+          "invalid.xml", utils::MjcfParser::Options(retriever)),
+      nullptr);
 }
 
 //==============================================================================
@@ -641,9 +719,9 @@ void expectStackedJointDynamicsWellPosed(const dynamics::SkeletonPtr& skeleton)
 TEST(MjcfParserTest, HumanoidStackedHingeJoints)
 {
   // The humanoid model has several bodies with 2 or 3 stacked hinge joints
-  // (lwaist: 2, right_thigh/left_thigh: 3, right_upper_arm/left_upper_arm: 2)
-  // that are not any of the predefined multi-DOF joint compositions.
-  const auto uri = "dart://sample/mjcf/openai/humanoid.xml";
+  // (lower_waist: 2, right_thigh/left_thigh: 3, right_upper_arm/left_upper_arm:
+  // 2) that are not any of the predefined multi-DOF joint compositions.
+  const auto uri = "dart://sample/mjcf/deepmind/humanoid.xml";
   auto world = utils::MjcfParser::readWorld(uri);
   ASSERT_NE(world, nullptr);
 
@@ -652,19 +730,17 @@ TEST(MjcfParserTest, HumanoidStackedHingeJoints)
   auto humanoidSkel = world->getSkeleton("torso");
   ASSERT_NE(humanoidSkel, nullptr);
 
-  // 6 DOFs from the free root joint + 17 DOFs from the hinge joints.
-  EXPECT_EQ(humanoidSkel->getNumDofs(), 23u);
+  // 6 DOFs from the free root joint + 21 DOFs from the hinge joints.
+  EXPECT_EQ(humanoidSkel->getNumDofs(), 27u);
 
-  // 13 real bodies plus 7 massless intermediate bodies inserted to represent
-  // the joint stacks: lwaist (2 joints -> 1 dummy), right_thigh and
-  // left_thigh (3 joints -> 2 dummies each), right_upper_arm and
-  // left_upper_arm (2 joints -> 1 dummy each).
-  EXPECT_EQ(humanoidSkel->getNumBodyNodes(), 20u);
-  EXPECT_EQ(countStackedJointDummyBodies(humanoidSkel), 7u);
+  // 16 real bodies + 9 carriers: waist (1), thighs (4), feet (2), arms (2).
+  EXPECT_EQ(humanoidSkel->getNumBodyNodes(), 25u);
+  EXPECT_EQ(countStackedJointDummyBodies(humanoidSkel), 9u);
 
   const std::vector<std::string> realBodyNames
       = {"torso",
-         "lwaist",
+         "head",
+         "lower_waist",
          "pelvis",
          "right_thigh",
          "right_shin",
@@ -674,8 +750,10 @@ TEST(MjcfParserTest, HumanoidStackedHingeJoints)
          "left_foot",
          "right_upper_arm",
          "right_lower_arm",
+         "right_hand",
          "left_upper_arm",
-         "left_lower_arm"};
+         "left_lower_arm",
+         "left_hand"};
   for (const auto& name : realBodyNames) {
     EXPECT_NE(humanoidSkel->getBodyNode(name), nullptr) << name;
   }
@@ -698,10 +776,10 @@ TEST(MjcfParserTest, HumanoidStackedHingeJoints)
 }
 
 //==============================================================================
-TEST(MjcfParserTest, HumanoidStandupStackedHingeJoints)
+TEST(MjcfParserTest, HumanoidDefaultDetector)
 {
-  // Same body/joint topology as humanoid.xml, just different geometry.
-  const auto uri = "dart://sample/mjcf/openai/humanoidstandup.xml";
+  // Exercise the same humanoid through the parser's default detector.
+  const auto uri = "dart://sample/mjcf/deepmind/humanoid.xml";
   auto world = utils::MjcfParser::readWorld(uri);
   ASSERT_NE(world, nullptr);
 
@@ -710,9 +788,9 @@ TEST(MjcfParserTest, HumanoidStandupStackedHingeJoints)
   auto humanoidSkel = world->getSkeleton("torso");
   ASSERT_NE(humanoidSkel, nullptr);
 
-  EXPECT_EQ(humanoidSkel->getNumDofs(), 23u);
-  EXPECT_EQ(humanoidSkel->getNumBodyNodes(), 20u);
-  EXPECT_EQ(countStackedJointDummyBodies(humanoidSkel), 7u);
+  EXPECT_EQ(humanoidSkel->getNumDofs(), 27u);
+  EXPECT_EQ(humanoidSkel->getNumBodyNodes(), 25u);
+  EXPECT_EQ(countStackedJointDummyBodies(humanoidSkel), 9u);
 
   for (auto i = 0; i < 10; ++i) {
     world->step();
@@ -723,11 +801,11 @@ TEST(MjcfParserTest, HumanoidStandupStackedHingeJoints)
 }
 
 //==============================================================================
-TEST(MjcfParserTest, Walker2dMixedJointStack)
+TEST(MjcfParserTest, WalkerMixedJointStack)
 {
-  // torso has a 2-slide + 1-hinge stack (rootx, rootz, rooty), which is not
+  // torso has a 2-slide + 1-hinge stack (rootz, rootx, rooty), which is not
   // the predefined 3-slide TranslationalJoint composition.
-  const auto uri = "dart://sample/mjcf/openai/walker2d.xml";
+  const auto uri = "dart://sample/mjcf/deepmind/walker.xml";
   auto world = utils::MjcfParser::readWorld(uri);
   ASSERT_NE(world, nullptr);
 
@@ -736,7 +814,7 @@ TEST(MjcfParserTest, Walker2dMixedJointStack)
   auto skel = world->getSkeleton("torso");
   ASSERT_NE(skel, nullptr);
 
-  // 7 real bodies (torso, thigh, leg, foot, thigh_left, leg_left, foot_left)
+  // 7 real bodies (torso and three in each leg)
   // + 2 dummies for the torso's 3-joint stack.
   EXPECT_EQ(skel->getNumBodyNodes(), 9u);
   EXPECT_EQ(countStackedJointDummyBodies(skel), 2u);
@@ -755,7 +833,7 @@ TEST(MjcfParserTest, Walker2dMixedJointStack)
 //==============================================================================
 TEST(MjcfParserTest, HopperMixedJointStack)
 {
-  const auto uri = "dart://sample/mjcf/openai/hopper.xml";
+  const auto uri = "dart://sample/mjcf/deepmind/hopper.xml";
   auto world = utils::MjcfParser::readWorld(uri);
   ASSERT_NE(world, nullptr);
 
@@ -764,10 +842,10 @@ TEST(MjcfParserTest, HopperMixedJointStack)
   auto skel = world->getSkeleton("torso");
   ASSERT_NE(skel, nullptr);
 
-  // 4 real bodies (torso, thigh, leg, foot) + 2 dummies for torso's stack.
-  EXPECT_EQ(skel->getNumBodyNodes(), 6u);
+  // 5 real bodies (torso, pelvis, thigh, calf, foot) + 2 root-stack carriers.
+  EXPECT_EQ(skel->getNumBodyNodes(), 7u);
   EXPECT_EQ(countStackedJointDummyBodies(skel), 2u);
-  EXPECT_EQ(skel->getNumDofs(), 6u);
+  EXPECT_EQ(skel->getNumDofs(), 7u);
 
   for (auto i = 0; i < 10; ++i) {
     world->step();
@@ -778,9 +856,9 @@ TEST(MjcfParserTest, HopperMixedJointStack)
 }
 
 //==============================================================================
-TEST(MjcfParserTest, HalfCheetahMixedJointStack)
+TEST(MjcfParserTest, CheetahMixedJointStack)
 {
-  const auto uri = "dart://sample/mjcf/openai/half_cheetah.xml";
+  const auto uri = "dart://sample/mjcf/deepmind/cheetah.xml";
   auto world = utils::MjcfParser::readWorld(uri);
   ASSERT_NE(world, nullptr);
 
@@ -806,19 +884,31 @@ TEST(MjcfParserTest, HalfCheetahMixedJointStack)
 //==============================================================================
 TEST(MjcfParserTest, SwimmerMixedJointStack)
 {
-  const auto uri = "dart://sample/mjcf/openai/swimmer.xml";
+  const auto uri = "dart://sample/mjcf/deepmind/swimmer.xml";
   auto world = utils::MjcfParser::readWorld(uri);
   ASSERT_NE(world, nullptr);
 
-  ASSERT_EQ(world->getNumSkeletons(), 2);
+  ASSERT_EQ(world->getNumSkeletons(), 3);
 
-  auto skel = world->getSkeleton("torso");
+  auto skel = world->getSkeleton("head");
   ASSERT_NE(skel, nullptr);
 
-  // 3 real bodies (torso, mid, back) + 2 dummies for torso's stack.
+  // Head and two generated segments + 2 carriers for the head's root stack.
   EXPECT_EQ(skel->getNumBodyNodes(), 5u);
   EXPECT_EQ(countStackedJointDummyBodies(skel), 2u);
   EXPECT_EQ(skel->getNumDofs(), 5u);
+  // Only the three inertial geoms contribute mass (0.01 each).
+  EXPECT_DOUBLE_EQ(skel->getMass(), 0.03);
+  // The generated segment hinges inherit limited="true" with +/-120 degrees.
+  for (const auto* name : {"joint_0", "joint_1"}) {
+    const auto* joint = skel->getJoint(name);
+    ASSERT_NE(joint, nullptr) << name;
+    EXPECT_TRUE(joint->areLimitsEnforced()) << name;
+    EXPECT_DOUBLE_EQ(
+        joint->getPositionLowerLimit(0), -120 * math::constantsd::pi() / 180);
+    EXPECT_DOUBLE_EQ(
+        joint->getPositionUpperLimit(0), 120 * math::constantsd::pi() / 180);
+  }
 
   expectStackedJointDynamicsWellPosed(skel);
 
@@ -882,14 +972,13 @@ TEST(MjcfParserTest, GeomFilterPreservesDeactivationSnapshots)
   auto box = world->getSkeleton("box");
   ASSERT_NE(box, nullptr);
   ASSERT_TRUE(box->isMobile());
+  EXPECT_EQ(box->getNumDofs(), 6u);
+  EXPECT_EQ(
+      box->getRootJoint()->getType(), dynamics::FreeJoint::getStaticType());
 
-  // Establish a stable contact before forcing the already-settled fixture
-  // into the resting state. This isolates snapshot preservation from the
-  // separate sleep-candidate dwell policy.
-  for (std::size_t i = 0u; i < 10u; ++i)
+  // A free body must settle into a valid contact island before it can sleep.
+  for (std::size_t i = 0u; i < 10000u && !box->isResting(); ++i)
     world->step();
-  box->setVelocities(Eigen::VectorXd::Zero(box->getNumDofs()));
-  box->setResting(true);
   ASSERT_TRUE(box->isResting());
 
   const Eigen::VectorXd frozenPositions = box->getPositions();
@@ -961,6 +1050,11 @@ TEST(MjcfParserTest, StackedJointPreservesLogicalBodyAdjacency)
 
   auto skeleton = world->getSkeleton("parent");
   ASSERT_NE(skeleton, nullptr);
+  // A free parent and two child hinges, including the massless carrier.
+  EXPECT_EQ(skeleton->getNumDofs(), 8u);
+  EXPECT_EQ(
+      skeleton->getRootJoint()->getType(),
+      dynamics::FreeJoint::getStaticType());
   skeleton->enableSelfCollisionCheck();
 
   auto collisionGroup = world->getConstraintSolver()

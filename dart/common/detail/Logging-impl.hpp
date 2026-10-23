@@ -36,9 +36,12 @@
 #include <dart/common/Logging.hpp>
 
 #include <array>
+#include <memory>
+#include <mutex>
 #include <type_traits>
 #include <utility>
 
+#include <cerrno>
 #include <cstddef>
 
 #if defined(__GLIBCXX__)
@@ -48,6 +51,68 @@
 namespace dart {
 namespace common {
 namespace detail {
+
+// Keep errno intact through argument construction, delivery and cleanup.
+class LogErrnoScope
+{
+public:
+  LogErrnoScope() : mErrno(errno) {}
+
+  ~LogErrnoScope()
+  {
+    restore();
+  }
+
+  void restore() const
+  {
+    errno = mErrno;
+  }
+
+private:
+  const int mErrno;
+};
+
+/// Forward a record to the console without reentering the installed sink.
+void defaultLogSink(LogLevel level, const std::string& message);
+
+// Serialize capture stream-buffer changes with ordinary sink dispatch.
+std::recursive_mutex& logSinkMutex();
+
+// Capture the previous sink and publish its wrapper under the logging mutex.
+// The wrapper callback must be non-empty; an empty result resets to default.
+std::shared_ptr<LogSink> wrapLogSink(
+    const std::function<LogSink(std::shared_ptr<LogSink>)>& wrap);
+void restoreLogSinkIf(
+    std::shared_ptr<LogSink> installed, std::shared_ptr<LogSink> previous);
+
+// Scoped GUI observation after callback consumption; registration is
+// owner-thread only. Weak payloads never retain captures or their previous
+// output sinks.
+struct LogObserver;
+LogObserver* registerLogObserver(const std::shared_ptr<LogSink>& observer);
+void unregisterLogObserver(LogObserver* observer);
+
+// Legacy console streams bypass the formatter and runtime threshold.
+bool hasCustomLogSink();
+void logRecord(LogLevel level, const std::string& message);
+void logConsoleRecord(
+    LogLevel level,
+    const std::string& message,
+    std::size_t prefixLength,
+    int color,
+    bool newline);
+
+// The Windows console API is injected so the color decision is testable
+// without changing the process console or requiring a Windows host.
+template <typename GetMode, typename SetMode>
+bool enableVirtualTerminal(GetMode getMode, SetMode setMode)
+{
+  constexpr unsigned long virtualTerminalProcessing = 0x0004;
+  unsigned long mode = 0;
+  return getMode(mode)
+         && ((mode & virtualTerminalProcessing)
+             || setMode(mode | virtualTerminalProcessing));
+}
 
 // Keep formatter types out of installed headers and preserve scalar types until
 // formatting in the library. This boundary must also compile as C++14.
@@ -81,6 +146,7 @@ struct LogArgument
   std::string stringValue;
 
   LogArgument(const std::string& value);
+  LogArgument(std::string&& value);
   LogArgument(const char* value);
   LogArgument(bool value);
   LogArgument(char value);
@@ -177,8 +243,11 @@ void log(LogLevel level, const S& format)
   if (level < getLogLevel() && !hasLogCallback())
     return;
 
+  LogErrnoScope errnoScope;
   try {
-    logMessage(level, std::string(format), nullptr, 0);
+    const std::string formatString(format);
+    errnoScope.restore();
+    logMessage(level, formatString, nullptr, 0);
 #if defined(__GLIBCXX__)
   } catch (const abi::__forced_unwind&) {
     throw;
@@ -196,10 +265,13 @@ void log(LogLevel level, const S& format, Args&&... args)
   if (level < getLogLevel() && !hasLogCallback())
     return;
 
+  LogErrnoScope errnoScope;
   try {
     const std::array<LogArgument, sizeof...(Args)> arguments{
         {LogArgument(std::forward<Args>(args))...}};
-    logMessage(level, std::string(format), arguments.data(), arguments.size());
+    const std::string formatString(format);
+    errnoScope.restore();
+    logMessage(level, formatString, arguments.data(), arguments.size());
 #if defined(__GLIBCXX__)
   } catch (const abi::__forced_unwind&) {
     throw;

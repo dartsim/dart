@@ -28,9 +28,17 @@ def test_package_metadata_support_boundaries():
         for value in metadata["dependencies"]
         if Requirement(value).name == "numpy"
     ).specifier
-    assert "1.21.4" not in numpy
-    assert "1.21.5" in numpy
+    assert "1.26.3" not in numpy
+    assert "1.26.4" in numpy
     assert "2.3.0" in numpy
+
+    pixi = tomllib.loads((ROOT / "pixi.toml").read_text())
+    pixi_numpy = SpecifierSet(pixi["dependencies"]["numpy"])
+    assert "1.26.3" not in pixi_numpy
+    assert "1.26.4" in pixi_numpy
+    assert "2.3.0" in pixi_numpy
+    assert pixi["dependencies"]["nanobind"] == "3.1.*"
+    assert not {"py310-wheel", "py311-wheel"} & pixi["environments"].keys()
 
     build_system = project["build-system"]
     assert build_system["build-backend"] == "dartpy_backend"
@@ -85,6 +93,13 @@ def test_linux_matrix_covers_baseline_and_forward_compilers():
     }
     # Packagers build against Eigen 5, which the lockfile does not cover.
     assert [row["eigen"] for row in rows if "eigen" in row] == ["5.*"]
+    system_nanobind = [row for row in rows if row.get("system_nanobind") == "true"]
+    assert len(system_nanobind) == 1
+    assert "eigen" in system_nanobind[0]
+    assert any(
+        step.get("if") == "matrix.eigen" and "pixi run test-py" in step.get("run", "")
+        for step in job["steps"]
+    )
     assert job["runs-on"] == "${{ matrix.runner }}"
     build = next(
         step for step in job["steps"] if "pixi run build-tests" in step.get("run", "")
@@ -97,6 +112,8 @@ def test_linux_matrix_covers_baseline_and_forward_compilers():
     # GitHub rejects the workflow if job-level env uses the runner context.
     assert "runner." not in str(job.get("env", {}))
     assert "pixi run test-build-requirements" in build["run"]
+    assert "-DDART_USE_SYSTEM_NANOBIND=ON" in build["run"]
+    assert "matrix.system_nanobind" in build["run"]
 
 
 def test_windows_matrix_preserves_required_checks_and_selects_vs2022():

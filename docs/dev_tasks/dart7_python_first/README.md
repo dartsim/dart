@@ -439,13 +439,15 @@ M6a merged in [#3696](https://github.com/dartsim/dart/pull/3696) on 2026-10-11
 
 M6a closed on 2026-10-18. Its task folder is retired, and the
 [closeout evidence](verification.md#m6a-closeout) is in the program record.
-The Nightly `dartpy-wheels` rows build, repair, verify and test all eight
-Filament wheels: Linux x86_64 and aarch64 for CPython 3.10, 3.11 and the 3.12
-stable ABI, plus the Windows and macOS stable-ABI wheels. The stable-ABI
-wheels also pass `abi3audit`, and both Linux stable-ABI rows pass the
-slim-container headless import. The slowest row finishes in under an hour of
-its 120-minute limit, so the image keeps building the pinned SDK during the
-wheel build; the separately cached SDK stage that M6a planned is unnecessary.
+At M6a closeout, the Nightly `dartpy-wheels` rows built, repaired, verified and
+tested all eight Filament wheels: Linux x86_64 and aarch64 for CPython 3.10,
+3.11 and the 3.12 stable ABI, plus the Windows and macOS stable-ABI wheels.
+Current wheels require Python 3.12 or newer and use the 3.12 stable ABI on
+every platform. The stable-ABI wheels also passed `abi3audit`, and both Linux
+stable-ABI rows passed the slim-container headless import. The slowest row
+finished in under an hour of its 120-minute limit, so the image keeps building
+the pinned SDK during the wheel build; the separately cached SDK stage that
+M6a planned is unnecessary.
 M6a's two open release gates, quiet-host renderer performance and the final
 renderer reviews, are part of [C2](#release-train-and-checkpoints).
 
