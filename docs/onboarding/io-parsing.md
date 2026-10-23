@@ -114,3 +114,10 @@ hashes, adaptations and test mappings. Atlas v3 control and soft-foot examples
 retain their tuned models. The DART-authored six-axis arm, WAM and synthetic
 skeletons remain useful teaching or regression fixtures; model age alone is
 not a removal criterion.
+
+The bundled [Atlas v3 model](../../data/sdf/atlas/README.md) retains its
+Apache-2.0 meshes and textures with attribution and DART modification notices.
+The [WAM model](../../data/urdf/wam/README.md) uses the upstream BSD-3-Clause
+visual STLs in place of the removed GPL COLLADA meshes and JPEG textures.
+The WAM model URI and kinematics stay the same; visuals lose textures and have
+small geometry differences (up to 12.09 mm in link-frame bounds).

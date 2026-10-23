@@ -1,3 +1,4 @@
+<!-- Modified by DART: adapted Atlas v3 description; see README.md. -->
 <sdf version='1.4'>
   <model name='drc_skeleton'>
     <link name='pelvis'>
