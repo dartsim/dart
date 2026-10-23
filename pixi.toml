@@ -186,11 +186,17 @@ check-lint-cmake = { cmd = ["python", "scripts/lint_cmake.py", "--check"] }
 
 check-lint-spell = { cmd = "codespell --config .codespellrc" }
 
+# Changelog fragments on main (changelog.d/README.md): validate them, or move
+# them into CHANGELOG.md at a checkpoint.
+check-changelog-fragments = { cmd = "python scripts/changelog_fragments.py check" }
+changelog-assemble = { cmd = "python scripts/changelog_fragments.py assemble" }
+
 check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-cmake",
   "check-lint-py",
   "check-lint-spell",
+  "check-changelog-fragments",
   "check-ai-commands",
   "check-ai-infra",
 ] }
@@ -219,6 +225,7 @@ test-ai-infra = { cmd = [
   "tests/test_install_git_hooks.py",
   "tests/test_check_local_paths.py",
   "tests/test_lint_cmake.py",
+  "tests/test_changelog_fragments.py",
   "tests/test_third_party_notices.py",
   "-q",
 ] }
@@ -693,6 +700,7 @@ check-lint-spell = { cmd = "codespell --config .codespellrc" }
 check-lint = { depends-on = [
   "check-lint-spell",
   "check-lint-py",
+  "check-changelog-fragments",
   "check-ai-infra",
 ] }
 

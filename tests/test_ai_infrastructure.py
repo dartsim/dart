@@ -7361,6 +7361,12 @@ def test_ci_wiring_requires_the_check_lint_aggregate(tmp_path):
     )
 
 
+def test_windows_check_lint_validates_changelog_fragments():
+    pixi = infra.read_toml(ROOT / "pixi.toml")
+    lint = pixi["target"]["win-64"]["tasks"]["check-lint"]
+    assert "check-changelog-fragments" in lint["depends-on"]
+
+
 def test_ci_wiring_requires_check_lint_to_run_the_semantic_ai_check(tmp_path):
     workflow = tmp_path / ".github" / "workflows" / "ci_ubuntu.yml"
     workflow.parent.mkdir(parents=True)
