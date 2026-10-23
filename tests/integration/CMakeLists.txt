@@ -254,8 +254,9 @@ endif()
 
 if(TARGET dart-utils-urdf)
   if(NOT MSVC)
+    dart_find_package(urdfdom)
     dart_add_test("integration" test_DartLoader)
-    target_link_libraries(test_DartLoader dart-utils-urdf)
+    target_link_libraries(test_DartLoader dart-utils-urdf urdfdom)
   endif()
 endif()
 

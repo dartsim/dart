@@ -10,7 +10,7 @@ dart_find_package(urdfdom)
 if(NOT urdfdom_FOUND)
   message(
     FATAL_ERROR
-    "dart-io requires urdfdom >= 3.0.0; install it or set DART_BUILD_IO=OFF."
+    "dart-io requires urdfdom >= 4.0.0; install it or set DART_BUILD_IO=OFF."
   )
 endif()
 # Search all header and source files
@@ -43,12 +43,11 @@ set(component_name io)
 dart_add_library(${target_name} ${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs} ${dart_utils_headers} ${dart_utils_sources})
 target_link_libraries(
   ${target_name}
+  PRIVATE urdfdom
   PUBLIC
     dart
     $<BUILD_INTERFACE:tinyxml2::tinyxml2>
-    $<BUILD_INTERFACE:urdfdom>
     $<INSTALL_INTERFACE:$<1:tinyxml2::tinyxml2>>
-    $<INSTALL_INTERFACE:$<1:urdfdom>>
 )
 
 if(HAVE_SDFORMAT)
@@ -59,7 +58,10 @@ endif()
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
-add_component_dependency_packages(${PROJECT_NAME} ${component_name} tinyxml2 urdfdom)
+add_component_dependency_packages(${PROJECT_NAME} ${component_name} tinyxml2)
+if(NOT BUILD_SHARED_LIBS)
+  add_component_dependency_packages(${PROJECT_NAME} ${component_name} urdfdom)
+endif()
 if(HAVE_SDFORMAT)
   add_library(${PROJECT_NAME}-io-sdf INTERFACE)
   target_link_libraries(${PROJECT_NAME}-io-sdf INTERFACE ${target_name})

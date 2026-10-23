@@ -7,10 +7,12 @@ files are covered only by explicit NOTICE globs, not declaration scanning.
 """
 
 import fnmatch
+import hashlib
 import re
 import shutil
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
@@ -66,6 +68,10 @@ KNOWN_SOURCES = {
     "DeepMind Control Suite model assets": "data/mjcf/deepmind/cartpole.xml",
     "tsl::robin_map": None,
     "Eigen": None,
+    "Atlas v3 sample model and retained Atlas textures": (
+        "data/sdf/atlas/atlas_v3.urdf"
+    ),
+    "WAM sample model (herb_description BSD files)": "data/urdf/wam/wam.urdf",
 }
 
 
@@ -199,6 +205,41 @@ def test_tracked_foreign_copyrights_have_notices(declarations):
 
 def test_notice_globs_match_tracked_paths(paths):
     assert not unmatched_patterns((ROOT / "NOTICE").read_text(encoding="utf-8"), paths)
+
+
+@pytest.mark.parametrize(
+    "path, sha256",
+    [
+        (
+            "data/sdf/atlas/LICENSE",
+            "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        ),
+        (
+            "data/urdf/wam/LICENSE.bsd",
+            "a8fed4eab54a94f01ba8f721c883efa928da5ae3f62c7528b9bee2a24028d31c",
+        ),
+    ],
+)
+def test_sample_model_license_matches_upstream(path, sha256):
+    # Windows checkouts may convert the upstream LF line endings to CRLF.
+    text = (ROOT / path).read_bytes().replace(b"\r\n", b"\n")
+    assert hashlib.sha256(text).hexdigest() == sha256
+
+
+def test_wam_distributes_only_bsd_meshes():
+    model = ROOT / "data/urdf/wam"
+    meshes = sorted(path for path in (model / "meshes").rglob("*") if path.is_file())
+    assert len(meshes) == 16
+    assert all(path.suffix == ".STL" for path in meshes)
+    robot = ET.parse(model / "wam.urdf").getroot()
+    visuals = robot.findall("link/visual/geometry/mesh")
+    assert {Path(mesh.attrib["filename"]).name for mesh in visuals} == {
+        "wam_base.STL",
+        *(f"wam{i}.STL" for i in range(1, 8)),
+    }
+    for mesh in robot.findall(".//mesh"):
+        relative = mesh.attrib["filename"].removeprefix("package://herb_description/")
+        assert (model / relative).is_file()
 
 
 @pytest.mark.parametrize(

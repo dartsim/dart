@@ -31,6 +31,11 @@ behavior or debug a cache-specific toolchain issue.
 For package or dependency changes, validate both the default configure/build
 path and any feature environment affected by the change.
 
+`DART_BUILD_IO=ON` (the default) requires urdfdom 4.0.0 or newer for URDF
+parsing. The default Pixi environment uses urdfdom 6. Ubuntu 22.04's apt
+urdfdom (3.0) is below the floor: use Pixi, build urdfdom 4 or newer, or set
+`DART_BUILD_IO=OFF`.
+
 ## Filament GUI
 
 `pixi run config` builds the Filament GUI (`DART_BUILD_GUI=ON`, the default)

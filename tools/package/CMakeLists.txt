@@ -50,3 +50,15 @@ if(
   target_link_libraries(package_gui PRIVATE dart-gui)
   add_test(NAME package_gui COMMAND package_gui)
 endif()
+
+if(
+  collision-ode IN_LIST DART_TEST_COMPONENTS
+  AND collision-bullet IN_LIST DART_TEST_COMPONENTS
+)
+  add_executable(package_collision collision.cpp)
+  target_link_libraries(
+    package_collision
+    PRIVATE dart-collision-ode dart-collision-bullet
+  )
+  add_test(NAME package_collision COMMAND package_collision)
+endif()

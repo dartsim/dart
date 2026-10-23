@@ -7,6 +7,18 @@ headers as compatibility surfaces.
 Run focused IO tests when touching parser code, model-loading dependencies, or
 package metadata used by IO components.
 
+## URDF Loading
+
+Use `dart/utils/urdf/DartLoader.hpp` and `dart::utils::DartLoader` to load
+URDF skeletons and worlds. `DartLoader::parseWorld` loads a world file;
+`DartLoader::parseWorldString` loads world XML from a string.
+
+`IncludeUrdf.hpp` and `urdf_world_parser.hpp`, including
+`dart::utils::urdf_parsing::parseWorldURDF`, are private implementation
+headers under `dart/utils/urdf/detail/` and are no longer installed. Shared
+DART consumers do not need urdfdom development packages; building DART or
+consuming a static installation still requires urdfdom.
+
 ## SDF Loading
 
 `SdfParser` uses sdformat for schema validation, version conversion and frame
@@ -111,3 +123,10 @@ hashes, adaptations and test mappings. Atlas v3 control and soft-foot examples
 retain their tuned models. The DART-authored six-axis arm, WAM and synthetic
 skeletons remain useful teaching or regression fixtures; model age alone is
 not a removal criterion.
+
+The bundled [Atlas v3 model](../../data/sdf/atlas/README.md) retains its
+Apache-2.0 meshes and textures with attribution and DART modification notices.
+The [WAM model](../../data/urdf/wam/README.md) uses the upstream BSD-3-Clause
+visual STLs in place of the removed GPL COLLADA meshes and JPEG textures.
+The WAM model URI and kinematics stay the same; visuals lose textures and have
+small geometry differences (up to 12.09 mm in link-frame bounds).

@@ -40,16 +40,84 @@ def test_repository_ai_infrastructure_is_valid():
 FETCHES = ("fetchcontent_makeavailable", "fetchcontent_populate")
 FMT_CALLER = "cmake/DARTFindDependencies.cmake"
 
+LEGACY_WRAPPER = "dart_fetchcontent_makeavailable_legacy"
+MACROS = "cmake/DARTMacros.cmake"
+
+
+def _is_wrapper(arguments):
+    tokens = infra.cmake_argument_tokens(arguments)
+    return [infra.cmake_unquote_bracket(t).strip().lower() for t in tokens[:1]] == [
+        LEGACY_WRAPPER
+    ]
+
+
+def _verify_legacy_wrapper(commands):
+    """Return the wrapper's fetch record, or fail unless it forwards `name` only."""
+    openers = {c[2][0] for c in commands if c[2][:1] and c[2][0][0] == "function"}
+    openers = [o for o in openers if _is_wrapper(o[1])]
+    assert len(openers) == 1, f"{MACROS}: {LEGACY_WRAPPER} must be defined once"
+    scope = openers[0]
+    assert infra.cmake_argument_tokens(scope[1]) == [LEGACY_WRAPPER, "name"], scope
+    body = [c for c in commands if c[2][:1] == (scope,)]
+    fetches = [c for c in body if c[0] in FETCHES]
+    assert (
+        len(fetches) == 1
+        and fetches[0][0] == "fetchcontent_makeavailable"
+        and fetches[0][2] == (scope,)
+        and fetches[0][1].strip() == "${name}"
+    ), f"{MACROS}: {LEGACY_WRAPPER} must forward its name to exactly one fetch"
+    allowed_targets = {
+        "CMAKE_POLICY_VERSION_MINIMUM",
+        "${name}_SOURCE_DIR",
+        "${name}_BINARY_DIR",
+    }
+    for command, arguments, _, line in body:
+        if command in FETCHES:
+            continue
+        tokens = infra.cmake_argument_tokens(arguments)
+        assert (
+            command == "set" and tokens and tokens[0] in allowed_targets
+        ), f"{MACROS}:{line}: unexpected {command} in {LEGACY_WRAPPER}"
+    return fetches[0]
+
 
 def fetchcontent_postcheck_errors(sources):
     """Report fetches not followed by their same-scope dart_check_fetchcontent."""
     errors = []
-    for relative, text in sources.items():
-        commands = infra.cmake_scoped_command_origin_details(text)
+    scanned = {
+        path: infra.cmake_scoped_command_origin_details(text)
+        for path, text in sources.items()
+    }
+    definitions = [
+        (path, line)
+        for path, text in sources.items()
+        for command, arguments, line in infra.cmake_command_details(text)
+        if command in ("function", "macro") and _is_wrapper(arguments)
+    ]
+    calls = any(c[0] == LEGACY_WRAPPER for cmds in scanned.values() for c in cmds)
+    wrapper = None
+    if definitions or calls:
+        try:
+            assert len(definitions) == 1, f"{LEGACY_WRAPPER} definitions: {definitions}"
+            assert definitions[0][0] == MACROS, definitions
+            wrapper = _verify_legacy_wrapper(scanned[MACROS])
+        except AssertionError as error:
+            return [f"{LEGACY_WRAPPER}: invalid forwarder: {error}"]
+    for relative, commands in scanned.items():
         for index, (command, arguments, scope, line) in enumerate(commands):
-            if command not in FETCHES:
+            if command not in (*FETCHES, LEGACY_WRAPPER):
                 continue
+            if wrapper is not None and (relative, command, arguments, scope, line) == (
+                MACROS,
+                *wrapper[:4],
+            ):
+                continue  # The uniquely verified forwarder's callers are checked.
             names = infra.cmake_argument_tokens(arguments)
+            if command == LEGACY_WRAPPER and len(names) != 1:
+                errors.append(
+                    f"{relative}:{line}: {LEGACY_WRAPPER} needs one literal name"
+                )
+                continue
             if relative == "cmake/DARTFindfmt.cmake" and names == ["fmt"]:
                 errors.extend(fmt_postcheck_errors(sources.get(FMT_CALLER)))
                 continue
@@ -59,12 +127,17 @@ def fetchcontent_postcheck_errors(sources):
                 if "$" in name:
                     errors.append(f"{where} has a dynamic name")
                     continue
+                if ";" in name:
+                    errors.append(f"{where} has a list-valued name")
+                    continue
                 check = following[offset] if offset < len(following) else None
                 if check is None or check[0] != "dart_check_fetchcontent":
                     errors.append(f"{where} is not immediately post-checked")
                 elif check[2] != scope:
                     errors.append(f"{where} is post-checked in another scope")
-                elif infra.cmake_argument_tokens(check[1])[0].lower() != name.lower():
+                elif [t.lower() for t in infra.cmake_argument_tokens(check[1])[:1]] != [
+                    name.lower()
+                ]:
                     errors.append(f"{where} is post-checked under another name")
     return errors
 
@@ -148,7 +221,7 @@ def tracked_cmake_sources():
 
 def test_build_fetchcontent_calls_have_offline_postchecks():
     sources = tracked_cmake_sources()
-    assert fetchcontent_postcheck_errors(sources) == []
+    check_fetchcontent_offline_guards(sources)
     assert any("FetchContent_Make" in text for text in sources.values())
 
 
@@ -166,6 +239,10 @@ FMT_CALLER_OK = (
     "text,expected",
     [
         ("FetchContent_MakeAvailable(a)\ndart_check_fetchcontent(A OPT)\n", None),
+        (
+            "FetchContent_MakeAvailable(a b)\ndart_check_fetchcontent(a OPT)\ndart_check_fetchcontent(b OPT)\n",
+            None,
+        ),
         (
             "if(X)\n  FetchContent_Populate(a)\n  dart_check_fetchcontent(a OPT)\nendif()\n",
             None,
@@ -290,6 +367,125 @@ def test_fetchcontent_postcheck_scanner_fmt_fixtures(caller, expected):
         assert errors == []
     else:
         assert len(errors) == 1 and expected in errors[0], errors
+
+
+def check_fetchcontent_offline_guards(sources):
+    """Require postchecks and a uniquely verified transparent legacy wrapper."""
+    assert fetchcontent_postcheck_errors(sources) == []
+    assert any(
+        command == LEGACY_WRAPPER
+        for text in sources.values()
+        for command, _, _ in infra.cmake_command_details(text)
+    ), f"no {LEGACY_WRAPPER} caller scanned"
+
+
+_WRAPPER = (
+    f"function({LEGACY_WRAPPER} name)\n"
+    "  set(CMAKE_POLICY_VERSION_MINIMUM 3.5)\n"
+    "  FetchContent_MakeAvailable(${name})\n"
+    '  set(${name}_SOURCE_DIR "${${name}_SOURCE_DIR}" PARENT_SCOPE)\n'
+    "endfunction()\n"
+)
+_GUARDED = (
+    "if(NOT DART_USE_SYSTEM_ODE)\n  {call}\n  dart_check_fetchcontent(ode X)\nendif()\n"
+)
+
+
+def _fixture(call=f"{LEGACY_WRAPPER}(ode)", wrapper=_WRAPPER, deps=None):
+    return {
+        MACROS: wrapper,
+        "cmake/DARTFindDependencies.cmake": deps or _GUARDED.format(call=call),
+    }
+
+
+@pytest.mark.parametrize("name", ["ode", "bullet"])
+def test_offline_scan_accepts_guarded_legacy_wrapper(name):
+    deps = _GUARDED.format(call=f"{LEGACY_WRAPPER}({name})").replace(
+        "ode X", f"{name} X"
+    )
+    check_fetchcontent_offline_guards(_fixture(deps=deps))
+
+
+@pytest.mark.parametrize("command", [*FETCHES, LEGACY_WRAPPER])
+def test_offline_scan_rejects_list_valued_fetch_names(command):
+    deps = f'{command}("ode;extra")\ndart_check_fetchcontent("ode;extra" X)\n'
+    errors = fetchcontent_postcheck_errors(_fixture(deps=deps))
+    assert len(errors) == 1 and "list-valued name" in errors[0], errors
+
+
+@pytest.mark.parametrize(
+    "deps",
+    [
+        f"{LEGACY_WRAPPER}(ode)\n",
+        f"{LEGACY_WRAPPER}()\ndart_check_fetchcontent(ode X)\n",
+        f"{LEGACY_WRAPPER}(ode extra)\ndart_check_fetchcontent(ode X)\n",
+        f"{LEGACY_WRAPPER}(ode)\nreturn()\ndart_check_fetchcontent(ode X)\n",
+        f"if(A)\n {LEGACY_WRAPPER}(ode)\nelse()\n dart_check_fetchcontent(ode X)\nendif()\n",
+        f"dart_check_fetchcontent(bullet X)\n{LEGACY_WRAPPER}(ode)\n",
+        f"dart_check_fetchcontent(ode X)\n{LEGACY_WRAPPER}(ode)\n",
+        f"if(A)\n dart_check_fetchcontent(ode X)\nelse()\n {LEGACY_WRAPPER}(ode)\nendif()\n",
+        "FetchContent_MakeAvailable(ode)\n",
+        f"if(A)\n dart_check_fetchcontent(ode X)\nelseif(B)\n {LEGACY_WRAPPER}(ode)\nelseif(B)\n {LEGACY_WRAPPER}(ode)\nendif()\n",
+        "function(f name)\n  FetchContent_Populate(${name})\nendfunction()\n",
+        f"function({LEGACY_WRAPPER} name)\nendfunction()\n{_GUARDED.format(call=f'{LEGACY_WRAPPER}(ode)')}",
+        "dart_check_fetchcontent(ode X)\n",
+        # A same-text `if` block is a distinct scope from the guarded one.
+        f"if(A)\n {LEGACY_WRAPPER}(ode)\nendif()\nif(A)\n dart_check_fetchcontent(ode X)\nendif()\n",
+        "if(A)\n FetchContent_MakeAvailable(ode)\nendif()\nif(A)\n dart_check_fetchcontent(ode X)\nendif()\n",
+    ],
+)
+def test_offline_scan_rejects_unguarded_fetches(deps):
+    with pytest.raises(AssertionError):
+        check_fetchcontent_offline_guards(_fixture(deps=deps))
+
+
+@pytest.mark.parametrize(
+    "wrapper",
+    [
+        _WRAPPER.replace("${name}", "${other}", 1),
+        _WRAPPER.replace(
+            "  FetchContent_Make", "  set(name other)\n  FetchContent_Make"
+        ),
+        _WRAPPER.replace("FetchContent_MakeAvailable", "FetchContent_Populate"),
+        _WRAPPER + f"FUNCTION({LEGACY_WRAPPER.upper()} name)\nENDFUNCTION()\n",
+        _WRAPPER.replace("endfunction", "  FetchContent_Populate(extra)\nendfunction"),
+        _WRAPPER.replace("endfunction", "  file(DOWNLOAD x y)\nendfunction"),
+        _WRAPPER.replace(
+            "  FetchContent_MakeAvailable(${name})\n",
+            "if(X)\n  FetchContent_MakeAvailable(${name})\nendif()\n",
+        ),
+        _WRAPPER.replace(" name)", " name other)", 1),
+        "",
+        _WRAPPER + f"function({LEGACY_WRAPPER} name)\nendfunction()\n",
+        _WRAPPER + f"function({LEGACY_WRAPPER} other)\nendfunction()\n",
+        _WRAPPER + f"macro({LEGACY_WRAPPER})\nendmacro()\n",
+    ],
+)
+def test_offline_scan_rejects_malformed_legacy_wrapper(wrapper):
+    with pytest.raises(AssertionError):
+        check_fetchcontent_offline_guards(_fixture(wrapper=wrapper))
+
+
+@pytest.mark.parametrize("kind", ["function", "macro"])
+@pytest.mark.parametrize("delimiter", ["", "="])
+@pytest.mark.parametrize("same_file", [False, True])
+@pytest.mark.parametrize("initial_newline", ["", "\n"])
+def test_offline_scan_rejects_bracket_quoted_wrapper_redefinition(
+    kind, delimiter, same_file, initial_newline
+):
+    name = f"[{delimiter}[{initial_newline}{LEGACY_WRAPPER.upper()}]{delimiter}]"
+    replacement = (
+        f"{kind}({name} other)\n"
+        "  cmake_language(CALL FetchContent_MakeAvailable unguarded_extra)\n"
+        f"end{kind}()\n"
+    )
+    sources = _fixture()
+    if same_file:
+        sources[MACROS] += replacement
+    else:
+        sources["cmake/elsewhere.cmake"] = replacement
+    with pytest.raises(AssertionError, match="invalid forwarder"):
+        check_fetchcontent_offline_guards(sources)
 
 
 def test_repository_rejects_missing_release_target_row(monkeypatch):
