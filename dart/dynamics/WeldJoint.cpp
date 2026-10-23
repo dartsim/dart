@@ -33,6 +33,7 @@
 #include "dart/dynamics/WeldJoint.hpp"
 
 #include "dart/common/Logging.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/FixedFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -118,6 +119,8 @@ BodyNode* WeldJoint::merge()
     return nullptr;
   }
 
+  common::detail::checkTopologyMutation(parent);
+  common::detail::checkTopologyMutation(child);
   const Eigen::Isometry3d parentToChild = getRelativeTransform();
 
   // Combine inertial properties in the parent frame.

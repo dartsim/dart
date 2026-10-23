@@ -1108,6 +1108,8 @@ public:
   friend class EndEffector;
   friend class collision::BodyNodeCollisionFilter;
   friend class simulation::World;
+  friend std::size_t common::detail::incrementAspectVersion(
+      common::VersionCounter*, const common::Aspect*);
   friend class constraint::BoxedLcpConstraintSolver;
   friend class constraint::ConstraintSolver;
 

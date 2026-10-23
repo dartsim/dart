@@ -37,6 +37,8 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
+#include <stdexcept>
+
 namespace dart {
 namespace collision {
 
@@ -44,6 +46,38 @@ namespace {
 
 thread_local bool gSolverRestingContactFilterActive = false;
 thread_local bool gPreserveRestingIslandContacts = false;
+
+// Composite filters querying their children on this thread, innermost first,
+// with the child each one is visiting.
+struct CompositeIteration
+{
+  const CompositeCollisionFilter* mFilter;
+  const CollisionFilter* mChild;
+  const CompositeIteration* mOuter;
+  const CompositeIteration** mSlot;
+};
+thread_local const CompositeIteration* gCompositeIterations = nullptr;
+
+// Whether `filter` is querying `child` on this thread, or any child when
+// `child` is null.
+bool isQuerying(
+    const CompositeCollisionFilter* filter, const CollisionFilter* child)
+{
+  for (auto* entry = gCompositeIterations; entry; entry = entry->mOuter) {
+    if (entry->mFilter == filter && (!child || entry->mChild == child))
+      return true;
+  }
+  return false;
+}
+
+// Edits that invalidate a running query's iterator were undefined in DART 6,
+// so they are rejected before the set changes. Erasing another child or
+// inserting without a rehash keeps that iterator valid and stays allowed.
+[[noreturn]] void throwQueryInvalidated()
+{
+  throw std::runtime_error(
+      "CompositeCollisionFilter: edit would invalidate its running query");
+}
 
 } // namespace
 
@@ -67,6 +101,11 @@ void CompositeCollisionFilter::addCollisionFilter(const CollisionFilter* filter)
   if (!filter)
     return;
 
+  // Only an insert that rehashes invalidates a running query's iterator.
+  if (mFilters.size() + 1u
+          > mFilters.max_load_factor() * mFilters.bucket_count()
+      && isQuerying(this, nullptr) && mFilters.count(filter) == 0u)
+    throwQueryInvalidated();
   mFilters.insert(filter);
 }
 
@@ -74,12 +113,16 @@ void CompositeCollisionFilter::addCollisionFilter(const CollisionFilter* filter)
 void CompositeCollisionFilter::removeCollisionFilter(
     const CollisionFilter* filter)
 {
+  if (filter && isQuerying(this, filter))
+    throwQueryInvalidated();
   mFilters.erase(filter);
 }
 
 //==============================================================================
 void CompositeCollisionFilter::removeAllCollisionFilters()
 {
+  if (isQuerying(this, nullptr))
+    throwQueryInvalidated();
   mFilters.clear();
 }
 
@@ -87,7 +130,21 @@ void CompositeCollisionFilter::removeAllCollisionFilters()
 bool CompositeCollisionFilter::ignoresCollision(
     const CollisionObject* object1, const CollisionObject* object2) const
 {
+  auto& head = gCompositeIterations;
+  CompositeIteration iteration{this, nullptr, head, &head};
+  head = &iteration;
+  // Restores the outer entry when a child returns or throws.
+  struct Pop
+  {
+    const CompositeIteration& mIteration;
+    ~Pop()
+    {
+      *mIteration.mSlot = mIteration.mOuter;
+    }
+  } pop{iteration};
+
   for (const auto* filter : mFilters) {
+    iteration.mChild = filter;
     if (filter->ignoresCollision(object1, object2))
       return true;
   }

@@ -161,7 +161,7 @@ void PointCloudShape::setPointShapeType(PointCloudShape::PointShapeType type)
     return;
 
   mPointShapeType = type;
-  incrementVersion();
+  incrementVisualVersion();
 }
 
 //==============================================================================
@@ -228,7 +228,7 @@ PointCloudShape::getColors() const
 void PointCloudShape::setVisualSize(double size)
 {
   mVisualSize = size;
-  incrementVersion();
+  incrementVisualVersion();
 }
 
 //==============================================================================
@@ -240,7 +240,7 @@ double PointCloudShape::getVisualSize() const
 //==============================================================================
 void PointCloudShape::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
 {
-  incrementVersion();
+  incrementVisualVersion();
 }
 
 //==============================================================================

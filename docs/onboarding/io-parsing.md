@@ -99,5 +99,6 @@ MJCF samples are replaced by pinned Apache-2.0
 [DeepMind Control Suite models](../../data/mjcf/deepmind/README.md), for example
 `dart://sample/mjcf/deepmind/cartpole.xml`. That README records source revisions,
 hashes, adaptations and test mappings. Atlas v3 control and soft-foot examples
-retain their tuned models. KR5, WAM and synthetic skeletons remain useful
-teaching or regression fixtures; model age alone is not a removal criterion.
+retain their tuned models. The DART-authored six-axis arm, WAM and synthetic
+skeletons remain useful teaching or regression fixtures; model age alone is
+not a removal criterion.

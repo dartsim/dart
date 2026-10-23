@@ -121,7 +121,16 @@ void FCLCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
     mUnboundedObjects.push_back(fclObject);
   } else {
     mFiniteObjects.push_back(fclObject);
-    mBroadPhaseAlg->registerObject(fclObject);
+    try {
+      mBroadPhaseAlg->registerObject(fclObject);
+    } catch (...) {
+      // FCL may have inserted a tree leaf without its lookup-table entry.
+      mFiniteObjects.pop_back();
+      mBroadPhaseAlg->clear();
+      mBroadPhaseAlg->registerObjects(mFiniteObjects);
+      initializeEngineData();
+      throw;
+    }
   }
 
   initializeEngineData();

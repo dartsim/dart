@@ -1,3 +1,29 @@
+if(BUILD_TESTING)
+  set(dartpy_gc_test_abi)
+  if(DART_DARTPY_STABLE_ABI)
+    set(dartpy_gc_test_abi STABLE_ABI)
+  endif()
+  nanobind_add_module(
+    dartpy_gc_test NB_STATIC PROTECT_STACK ${dartpy_gc_test_abi}
+    native/gc_owner.cpp
+  )
+  set_target_properties(
+    dartpy_gc_test
+    PROPERTIES
+      OUTPUT_NAME _dartpy_gc_test
+      DEBUG_POSTFIX ""
+      EXCLUDE_FROM_ALL TRUE
+      LIBRARY_OUTPUT_DIRECTORY "${DART_DARTPY_BUILD_DIR}"
+  )
+  target_compile_features(dartpy_gc_test PRIVATE cxx_std_17)
+  target_include_directories(
+    dartpy_gc_test
+    PRIVATE "${PROJECT_SOURCE_DIR}/python/dartpy"
+  )
+  target_link_libraries(dartpy_gc_test PRIVATE dart)
+  dart_format_add(native/gc_owner.cpp)
+endif()
+
 # Make sure pytest is installed
 execute_process(
   COMMAND ${Python3_EXECUTABLE} -c "import pytest; print(pytest.__version__)"
@@ -53,6 +79,9 @@ if(DARTPY_PYTEST_FOUND)
       "${PROJECT_SOURCE_DIR}/scripts/run_pytest.py"
     DEPENDS dartpy
   )
+  if(TARGET dartpy_gc_test)
+    add_dependencies(pytest dartpy_gc_test)
+  endif()
 else()
   add_custom_target(
     pytest
@@ -91,3 +120,7 @@ foreach(dartpy_test_file ${dartpy_test_files})
   get_filename_component(dartpy_test_name ${dartpy_test_file} NAME_WE)
   dartpy_add_test(py_${dartpy_test_name} ${dartpy_test_file})
 endforeach()
+
+if(TARGET dartpy_gc_test)
+  add_dependencies(py_test_gc dartpy_gc_test)
+endif()

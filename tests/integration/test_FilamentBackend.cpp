@@ -956,8 +956,8 @@ TEST(FilamentBackend, AssimpPointLineTexturesRetainUvsAndVertexColors)
   plain.mFaces[1].mNumIndices = 2;
   plain.mFaces[1].mIndices = new unsigned int[2]{1, 2};
   DART_SUPPRESS_DEPRECATED_BEGIN
-  auto shape = std::make_shared<dart::dynamics::MeshShape>(
-      Eigen::Vector3d::Ones(), scene);
+  auto shape = std::shared_ptr<dart::dynamics::MeshShape>(
+      new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
   DART_SUPPRESS_DEPRECATED_END
   shape->setColorMode(dart::dynamics::MeshShape::COLOR_INDEX);
   dart::gui::RenderableDescriptor descriptor;

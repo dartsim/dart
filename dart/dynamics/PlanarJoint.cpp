@@ -34,6 +34,7 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
@@ -68,7 +69,7 @@ void PlanarJoint::setAspectProperties(const AspectProperties& properties)
   mAspectProperties = properties;
   Joint::notifyPositionUpdated();
   updateRelativeJacobian(true);
-  Joint::incrementVersion();
+  Joint::incrementParameterVersion();
 }
 
 //==============================================================================
@@ -148,6 +149,7 @@ void PlanarJoint::setXYPlane(bool _renameDofs)
   if (_renameDofs)
     updateDegreeOfFreedomNames();
   notifyPositionUpdated();
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
@@ -158,6 +160,7 @@ void PlanarJoint::setYZPlane(bool _renameDofs)
   if (_renameDofs)
     updateDegreeOfFreedomNames();
   notifyPositionUpdated();
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
@@ -168,6 +171,7 @@ void PlanarJoint::setZXPlane(bool _renameDofs)
   if (_renameDofs)
     updateDegreeOfFreedomNames();
   notifyPositionUpdated();
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
@@ -181,6 +185,7 @@ void PlanarJoint::setArbitraryPlane(
   if (_renameDofs)
     updateDegreeOfFreedomNames();
   notifyPositionUpdated();
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================

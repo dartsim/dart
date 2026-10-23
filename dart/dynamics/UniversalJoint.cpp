@@ -123,7 +123,7 @@ void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis)
 {
   mAspectProperties.mAxis[0] = _axis;
   Joint::notifyPositionUpdated();
-  Joint::incrementVersion();
+  Joint::incrementParameterVersion();
 }
 
 //==============================================================================
@@ -131,7 +131,7 @@ void UniversalJoint::setAxis2(const Eigen::Vector3d& _axis)
 {
   mAspectProperties.mAxis[1] = _axis;
   Joint::notifyPositionUpdated();
-  Joint::incrementVersion();
+  Joint::incrementParameterVersion();
 }
 
 //==============================================================================

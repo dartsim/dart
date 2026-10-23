@@ -33,11 +33,40 @@
 #include "dart/dynamics/Shape.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 
 #define PRIMITIVE_MAGIC_NUMBER 1000
 
 namespace dart {
 namespace dynamics {
+
+namespace {
+
+thread_local const Shape* pendingVisualVersion = nullptr;
+thread_local const Shape* currentVisualVersion = nullptr;
+thread_local const Shape* pendingTopologyVersion = nullptr;
+thread_local const Shape* currentTopologyVersion = nullptr;
+
+class ScopedShapeVersion
+{
+public:
+  ScopedShapeVersion(const Shape*& slot, const Shape* shape)
+    : mSlot(slot), mPrevious(slot)
+  {
+    mSlot = shape;
+  }
+
+  ~ScopedShapeVersion()
+  {
+    mSlot = mPrevious;
+  }
+
+private:
+  const Shape*& mSlot;
+  const Shape* mPrevious;
+};
+
+} // namespace
 
 //==============================================================================
 Shape::Shape(ShapeType type)
@@ -181,6 +210,12 @@ void Shape::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
 //==============================================================================
 std::size_t Shape::incrementVersion()
 {
+  const ScopedShapeVersion current(
+      currentVisualVersion, pendingVisualVersion == this ? this : nullptr);
+  const ScopedShapeVersion pending(pendingVisualVersion, nullptr);
+  const ScopedShapeVersion currentTopology(
+      currentTopologyVersion, pendingTopologyVersion == this ? this : nullptr);
+  const ScopedShapeVersion pendingTopology(pendingTopologyVersion, nullptr);
   ++mVersion;
   mVersionChangedSignal.raise(this, mVersion);
 
@@ -188,7 +223,37 @@ std::size_t Shape::incrementVersion()
 }
 
 //==============================================================================
+std::size_t Shape::incrementVisualVersion()
+{
+  const ScopedShapeVersion pending(pendingVisualVersion, this);
+  return incrementVersion();
+}
+
+//==============================================================================
 std::atomic_int Shape::mCounter{PRIMITIVE_MAGIC_NUMBER};
 
 } // namespace dynamics
+
+namespace common {
+namespace detail {
+
+std::size_t incrementShapeTopologyVersion(dynamics::Shape* shape)
+{
+  const dynamics::ScopedShapeVersion pending(
+      dynamics::pendingTopologyVersion, shape);
+  return shape->incrementVersion();
+}
+
+bool isTopologyShapeVersionUpdate(const dynamics::Shape* shape)
+{
+  return dynamics::currentTopologyVersion == shape;
+}
+
+bool isVisualShapeVersionUpdate(const dynamics::Shape* shape)
+{
+  return dynamics::currentVisualVersion == shape;
+}
+
+} // namespace detail
+} // namespace common
 } // namespace dart

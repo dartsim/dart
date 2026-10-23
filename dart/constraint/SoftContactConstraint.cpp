@@ -35,6 +35,7 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/Shape.hpp"
@@ -376,7 +377,10 @@ void SoftContactConstraint::setErrorAllowance(double _allowance)
     _allowance = 0.0;
   }
 
-  mErrorAllowance = _allowance;
+  if (mErrorAllowance != _allowance) {
+    mErrorAllowance = _allowance;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
 }
 
 //==============================================================================
@@ -400,7 +404,10 @@ void SoftContactConstraint::setErrorReductionParameter(double _erp)
     _erp = 1.0;
   }
 
-  mErrorReductionParameter = _erp;
+  if (mErrorReductionParameter != _erp) {
+    mErrorReductionParameter = _erp;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
 }
 
 //==============================================================================
@@ -420,7 +427,10 @@ void SoftContactConstraint::setMaxErrorReductionVelocity(double _erv)
     _erv = 0.0;
   }
 
-  mMaxErrorReductionVelocity = _erv;
+  if (mMaxErrorReductionVelocity != _erv) {
+    mMaxErrorReductionVelocity = _erv;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
 }
 
 //==============================================================================
@@ -440,7 +450,10 @@ void SoftContactConstraint::setConstraintForceMixing(double _cfm)
     _cfm = 1e-9;
   }
 
-  mConstraintForceMixing = _cfm;
+  if (mConstraintForceMixing != _cfm) {
+    mConstraintForceMixing = _cfm;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
 }
 
 //==============================================================================
@@ -452,7 +465,11 @@ double SoftContactConstraint::getConstraintForceMixing()
 //==============================================================================
 void SoftContactConstraint::setFrictionDirection(const Eigen::Vector3d& _dir)
 {
-  mFirstFrictionalDirection = _dir.normalized();
+  const Eigen::Vector3d direction = _dir.normalized();
+  if (mFirstFrictionalDirection == direction)
+    return;
+  mFirstFrictionalDirection = direction;
+  detail::notifyConstraintParameterMutation(this);
 }
 
 //==============================================================================

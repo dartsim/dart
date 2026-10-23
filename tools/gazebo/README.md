@@ -42,7 +42,7 @@ comparison with DART 6.19.5 does not replace them.
 
 The other Gazebo libraries come from conda-forge. Ionic uses gz-sim 9.5.0
 because 9.6.0 needs a newer gz-common6 than conda-forge ships. Harmonic and
-Jetty pin newer urdfdom, fmt and spdlog than DART's default environment, so
+Jetty pin newer urdfdom and fmt than DART's default environment, so
 their environments take DART's build dependencies from the `gz-compat-base`
 feature instead of the default feature. The lane tasks require Linux.
 
