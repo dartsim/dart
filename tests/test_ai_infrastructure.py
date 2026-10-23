@@ -3359,7 +3359,9 @@ set(HAVE_ODE TRUE CACHE BOOL "")
 if(DART_VERSION_OVERRIDE)
   set(DART_VERSION "${DART_VERSION_OVERRIDE}")
 endif()
-find_package(Python3 COMPONENTS Interpreter REQUIRED)
+find_package(Python COMPONENTS Interpreter REQUIRED)
+set(Python_EXECUTABLE "${Python_EXECUTABLE}" CACHE FILEPATH "" FORCE)
+set(Python3_EXECUTABLE "${Python_EXECUTABLE}" CACHE FILEPATH "" FORCE)
 enable_testing()
 set(BUILD_TESTING ON CACHE BOOL "")
 set(DART_BUILD_DARTPY ON CACHE BOOL "")
@@ -3529,6 +3531,29 @@ testpaths = ["tests"]
 
 def test_cmake_semantic_graph_probe_accepts_effective_runtime_graph(tmp_path):
     build = _configure_semantic_graph_fixture(tmp_path)
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    assert errors == []
+
+
+@pytest.mark.parametrize("primary_interpreter", (True, False))
+def test_cmake_semantic_graph_ignores_stale_findpython3_internal(
+    tmp_path, primary_interpreter
+):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    cmake = tmp_path / "CMakeLists.txt"
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8")
+        + '\nset(_Python3_EXECUTABLE "${CMAKE_COMMAND}" CACHE INTERNAL "" FORCE)\n'
+        + (
+            'set(Python3_EXECUTABLE "${CMAKE_COMMAND}" CACHE FILEPATH "" FORCE)\n'
+            if primary_interpreter
+            else "unset(Python_EXECUTABLE CACHE)\n"
+        ),
+        encoding="utf-8",
+    )
     errors = []
 
     infra.check_cmake_test_graph(tmp_path, build, errors)
@@ -5391,8 +5416,8 @@ def test_cmake_semantic_graph_probe_rejects_pytest_fallback(tmp_path):
         (
             "add_subdirectory(python/tests)",
             (
-                'set(_Python3_EXECUTABLE "${CMAKE_COMMAND}" '
-                'CACHE INTERNAL "" FORCE)\n'
+                'set(Python_EXECUTABLE "${CMAKE_COMMAND}" '
+                'CACHE FILEPATH "" FORCE)\n'
                 'set(Python3_EXECUTABLE "${CMAKE_COMMAND}")\n'
             ),
         ),

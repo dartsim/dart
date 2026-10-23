@@ -1,0 +1,14 @@
+<!-- Copyright (c) 2026, The DART development contributors. -->
+<!-- SPDX-License-Identifier: BSD-2-Clause -->
+<mujoco>
+  <default>
+    <joint type="hinge" axis="0 0 1" damping="1"/>
+    <geom type="sphere" size=".05" contype="0" conaffinity="0" friction="0 0 0"/>
+    <default class="floor">
+      <geom contype="1" conaffinity="1" friction=".8 .1 .1"/>
+    </default>
+  </default>
+  <asset>
+    <mesh name="tetrahedron" file="tetrahedron.obj"/>
+  </asset>
+</mujoco>

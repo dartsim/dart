@@ -33,7 +33,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #===============================================================================
 # dart - common, math, lcpsolver, optimizer, dynamics, collision,
 #        collision/dart, collision/fcl, optional collision/bullet and
-#        collision/ode, constraint, simulation, [assimp, eigen3, fcl, fmt]
+#        collision/ode, constraint, simulation, [assimp, eigen3, fcl]
 # dart-collision-bullet, dart-collision-ode - forwarding interfaces to dart
 # dart-io - {dart}, utils, utils/mjcf, utils/sdf, utils/urdf, [tinyxml2, urdfdom]
 # dart-utils, dart-utils-urdf - forwarding interfaces to dart-io
@@ -166,19 +166,6 @@ if(ASSIMP_VERSION_MAJOR)
   )
 endif()
 
-# Embed the private formatter so static installs also need no fmt link target.
-target_compile_definitions(dart PRIVATE FMT_HEADER_ONLY)
-if(TARGET fmt::fmt-header-only)
-  target_link_libraries(dart PRIVATE "$<BUILD_INTERFACE:fmt::fmt-header-only>")
-elseif(TARGET fmt::fmt)
-  target_include_directories(
-    dart
-    PRIVATE "$<TARGET_PROPERTY:fmt::fmt,INTERFACE_INCLUDE_DIRECTORIES>"
-  )
-else()
-  message(FATAL_ERROR "Failed to find fmt targets")
-endif()
-
 # octomap settings
 if(TARGET octomap)
   target_link_libraries(dart PUBLIC octomap)
@@ -261,4 +248,8 @@ endif()
 
 install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
 
-dart_format_add(${dart_core_headers} ${dart_core_sources})
+dart_format_add(
+  ${dart_core_headers}
+  ${dart_core_sources}
+  ${PROJECT_SOURCE_DIR}/scripts/check_logging_float.cpp
+)

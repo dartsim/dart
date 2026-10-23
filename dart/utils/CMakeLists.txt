@@ -3,7 +3,7 @@ dart_find_package(tinyxml2)
 if(NOT TINYXML2_FOUND OR DART_SKIP_TINYXML2)
   message(
     FATAL_ERROR
-    "dart-io requires tinyxml2 >= 9.0.0; install it or set DART_BUILD_IO=OFF."
+    "dart-io requires tinyxml2 >= 10.0.0; install it or set DART_BUILD_IO=OFF."
   )
 endif()
 dart_find_package(urdfdom)
@@ -60,20 +60,6 @@ target_link_libraries(
     $<INSTALL_INTERFACE:$<1:tinyxml2::tinyxml2>>
     $<INSTALL_INTERFACE:$<1:urdfdom>>
 )
-
-# XmlHelpers.cpp uses fmt privately until the formatter dependency is removed.
-if(TARGET fmt::fmt-header-only)
-  target_link_libraries(
-    ${target_name}
-    PRIVATE "$<BUILD_INTERFACE:fmt::fmt-header-only>"
-  )
-else()
-  target_compile_definitions(${target_name} PRIVATE FMT_HEADER_ONLY)
-  target_include_directories(
-    ${target_name}
-    PRIVATE "$<TARGET_PROPERTY:fmt::fmt,INTERFACE_INCLUDE_DIRECTORIES>"
-  )
-endif()
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})
