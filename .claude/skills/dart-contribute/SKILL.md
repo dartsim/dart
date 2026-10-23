@@ -108,10 +108,13 @@ before the first release tag or from published release tags.
 
 Use `docs/onboarding/changelog.md` as the source of truth. `CHANGELOG.md` is
 written for users of the released library and packages, so keep each entry to
-what the reader must know or do. After the approved PR exists, check if
-`CHANGELOG.md` needs updating:
+what the reader must know or do. After the approved PR exists, check whether
+the change needs an entry. On `main`, the entry is a `changelog.d/` fragment
+and only checkpoint assembly adds entries to `CHANGELOG.md`; `release-*`
+branches edit
+`CHANGELOG.md` directly:
 
-| Change Type                      | Update CHANGELOG?                    |
+| Change Type                      | Needs an entry?                      |
 | -------------------------------- | ------------------------------------ |
 | Bug fixes                        | ✅ Yes                               |
 | New features                     | ✅ Yes                               |
@@ -122,11 +125,12 @@ what the reader must know or do. After the approved PR exists, check if
 | Dependency bumps                 | ⚠️ Maybe (if user-facing)            |
 | Typo fixes                       | ❌ No                                |
 
-Format: match the file's established style — `*` bullets nested under the
-category bullet, with the bare PR link on its own line at the end:
+Format on `main` (`changelog.d/README.md`): a `Section:` line naming the
+category, one blank line, then the entry in `CHANGELOG.md`'s established style,
+with the bare PR link on its own line at the end:
 
 ```markdown
-* Category
+Section: Category
 
   * Reader-visible outcome, stated for release readers:
     [#2446](https://github.com/dartsim/dart/pull/2446)

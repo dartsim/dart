@@ -33,6 +33,7 @@
 #include "dart/dynamics/Node.hpp"
 
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 
 #define REPORT_INVALID_NODE(func)                                              \
@@ -200,13 +201,10 @@ void Node::attach()
     return;
   }
 
-  // If we are in release mode, and the Node believes it is attached, then we
-  // can shortcut this procedure
-#ifdef NDEBUG
   if (mAmAttached)
     return;
-#endif
 
+  common::detail::checkTopologyMutation(mBodyNode);
   using NodeMapPair = std::pair<std::type_index, std::vector<Node*>>;
 
   // Add empty list of Node pointers only when typeid(*this) doesn't exist.
@@ -242,6 +240,7 @@ void Node::attach()
     skel->registerNode(this);
 
   mAmAttached = true;
+  common::detail::notifyTopologyMutation(mBodyNode);
 }
 
 //==============================================================================
@@ -252,13 +251,10 @@ void Node::stageForRemoval()
     return;
   }
 
-  // If we are in release mode, and the Node believes it is detached, then we
-  // can shortcut this procedure.
-#ifdef NDEBUG
   if (!mAmAttached)
     return;
-#endif
 
+  common::detail::checkTopologyMutation(mBodyNode);
   mBodyNode->incrementVersion();
   BodyNode::NodeMap::iterator it = mBodyNode->mNodeMap.find(typeid(*this));
   NodeDestructorPtr destructor = getOrCreateDestructor();
@@ -299,6 +295,7 @@ void Node::stageForRemoval()
 
   mIndexInBodyNode = INVALID_INDEX;
   mAmAttached = false;
+  common::detail::notifyTopologyMutation(mBodyNode);
 }
 
 } // namespace dynamics

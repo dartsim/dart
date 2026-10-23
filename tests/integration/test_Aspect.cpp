@@ -64,10 +64,12 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <new>
 #include <type_traits>
 #include <vector>
 
 #include <cstddef>
+#include <cstring>
 
 using namespace dart::common;
 
@@ -121,6 +123,94 @@ static_assert(embeddedAspectHostIsImmobile<
               EmbeddedAspectGenericJointHost<dart::math::SE3Space>>);
 
 } // namespace
+
+namespace {
+
+// Custom aspect hosts expose incrementVersion() without promising an
+// accessible, unique VersionCounter base.
+class PrivateVersionedHost final : public Composite, private VersionCounter
+{
+public:
+  using VersionCounter::getVersion;
+  using VersionCounter::incrementVersion;
+};
+
+struct FirstVersionCounter : VersionCounter
+{
+};
+
+struct SecondVersionCounter : VersionCounter
+{
+};
+
+class AmbiguousVersionedHost final : public Composite,
+                                     public FirstVersionCounter,
+                                     public SecondVersionCounter
+{
+public:
+  std::size_t incrementVersion() override
+  {
+    return FirstVersionCounter::incrementVersion();
+  }
+
+  std::size_t getVersion() const override
+  {
+    return FirstVersionCounter::getVersion();
+  }
+};
+
+static_assert(std::is_base_of<VersionCounter, PrivateVersionedHost>::value);
+static_assert(
+    !std::is_convertible<PrivateVersionedHost*, VersionCounter*>::value);
+static_assert(std::is_base_of<VersionCounter, AmbiguousVersionedHost>::value);
+static_assert(
+    !std::is_convertible<AmbiguousVersionedHost*, VersionCounter*>::value);
+
+struct CustomVersionProperties
+{
+  int mValue = 0;
+};
+
+template <class Host>
+class CustomVersionAspect final : public AspectWithVersionedProperties<
+                                      CustomVersionAspect<Host>,
+                                      CustomVersionProperties,
+                                      Host>
+{
+public:
+  using Base = AspectWithVersionedProperties<
+      CustomVersionAspect<Host>,
+      CustomVersionProperties,
+      Host>;
+  using Base::Base;
+};
+
+} // namespace
+
+TEST(Aspect, PrivateVersionCounterHostRetainsPublicVersionContract)
+{
+  PrivateVersionedHost host;
+  auto* aspect = host.createAspect<CustomVersionAspect<PrivateVersionedHost>>();
+  const auto previous = host.getVersion();
+  CustomVersionProperties properties;
+  properties.mValue = 7;
+  aspect->setProperties(properties);
+  EXPECT_EQ(host.getVersion(), previous + 1u);
+  EXPECT_EQ(aspect->getProperties().mValue, 7);
+}
+
+TEST(Aspect, AmbiguousVersionCounterHostRetainsPublicVersionContract)
+{
+  AmbiguousVersionedHost host;
+  auto* aspect
+      = host.createAspect<CustomVersionAspect<AmbiguousVersionedHost>>();
+  const auto previous = host.getVersion();
+  CustomVersionProperties properties;
+  properties.mValue = 11;
+  aspect->setProperties(properties);
+  EXPECT_EQ(host.getVersion(), previous + 1u);
+  EXPECT_EQ(aspect->getProperties().mValue, 11);
+}
 
 struct EmbeddedStateData
 {
@@ -1041,6 +1131,33 @@ TEST(Aspect, Construction)
   EXPECT_NE(comp.get<DoubleAspect>()->mState.val, s1);
   EXPECT_EQ(comp.get<DoubleAspect>()->mState.val, s2);
   EXPECT_EQ(comp.get<DoubleAspect>()->mProperties.val, p);
+}
+
+TEST(Aspect, VisualPropertiesInitializeAndCopyDefaultColor)
+{
+  using Properties = dart::dynamics::detail::VisualAspectProperties;
+  alignas(Properties) unsigned char storage[sizeof(Properties)];
+  std::memset(storage, 0x80, sizeof(storage));
+  auto* properties = new (storage) Properties;
+
+  EXPECT_FALSE(properties->mUseDefaultColor);
+  EXPECT_TRUE(properties->mRGBA.isApprox(Eigen::Vector4d(0.5, 0.5, 1.0, 1.0)));
+  EXPECT_FALSE(properties->mHidden);
+  EXPECT_TRUE(properties->mShadowed);
+
+  const Properties copied(*properties);
+  EXPECT_FALSE(copied.mUseDefaultColor);
+  properties->mUseDefaultColor = true;
+  const Properties copiedEnabled(*properties);
+  EXPECT_TRUE(copiedEnabled.mUseDefaultColor);
+
+  Properties assigned;
+  assigned = copied;
+  EXPECT_FALSE(assigned.mUseDefaultColor);
+  assigned = copiedEnabled;
+  EXPECT_TRUE(assigned.mUseDefaultColor);
+
+  properties->~Properties();
 }
 
 TEST(Aspect, Joints)

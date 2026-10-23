@@ -37,6 +37,261 @@ def test_repository_ai_infrastructure_is_valid():
     assert infra.run_checks(ROOT) == []
 
 
+FETCHES = ("fetchcontent_makeavailable", "fetchcontent_populate")
+FMT_CALLER = "cmake/DARTFindDependencies.cmake"
+
+
+def fetchcontent_postcheck_errors(sources):
+    """Report fetches not followed by their same-scope dart_check_fetchcontent."""
+    errors = []
+    for relative, text in sources.items():
+        commands = infra.cmake_scoped_command_origin_details(text)
+        for index, (command, arguments, scope, line) in enumerate(commands):
+            if command not in FETCHES:
+                continue
+            names = infra.cmake_argument_tokens(arguments)
+            if relative == "cmake/DARTFindfmt.cmake" and names == ["fmt"]:
+                errors.extend(fmt_postcheck_errors(sources.get(FMT_CALLER)))
+                continue
+            following = commands[index + 1 : index + 1 + len(names)]
+            for offset, name in enumerate(names):
+                where = f"{relative}:{line}: {name}"
+                if "$" in name:
+                    errors.append(f"{where} has a dynamic name")
+                    continue
+                check = following[offset] if offset < len(following) else None
+                if check is None or check[0] != "dart_check_fetchcontent":
+                    errors.append(f"{where} is not immediately post-checked")
+                elif check[2] != scope:
+                    errors.append(f"{where} is post-checked in another scope")
+                elif infra.cmake_argument_tokens(check[1])[0].lower() != name.lower():
+                    errors.append(f"{where} is post-checked under another name")
+    return errors
+
+
+def fmt_postcheck_errors(caller):
+    """The installed fmt finder fetches; its build caller must post-check it."""
+    if caller is None:
+        return [f"{FMT_CALLER}: missing fmt caller"]
+    commands = infra.cmake_scoped_command_origin_details(caller)
+    find = next(
+        (
+            i
+            for i, (cmd, args, _, _) in enumerate(commands)
+            if cmd == "dart_find_package" and args == "fmt"
+        ),
+        None,
+    )
+    if find is None or find + 1 >= len(commands):
+        return [f"{FMT_CALLER}: fmt finder call has no post-check"]
+    cmd, args, scope, _ = commands[find + 1]
+    base = commands[find][2]
+    if (
+        cmd != "dart_check_fetchcontent"
+        or infra.cmake_argument_tokens(args)[:2] != ["fmt", "DART_USE_SYSTEM_FMT"]
+        or len(scope) != len(base) + 1
+        or scope[:-1] != base
+        or scope[-1][0] != "if"
+    ):
+        return [f"{FMT_CALLER}: fmt post-check is not directly after the finder"]
+    flag = scope[-1][1]
+    # The snapshot must be taken before the finder, under the finder's own
+    # fetch predicate, because fmt::fmt exists once the finder has run. The
+    # reset, the single-if snapshot, and the finder must be adjacent so nothing
+    # can disable or overwrite the flag in between.
+    predicate = (
+        "DEFINED DART_USE_SYSTEM_FMT AND NOT DART_USE_SYSTEM_FMT"
+        " AND NOT TARGET fmt::fmt"
+    ).split()
+    resets = [
+        i
+        for i, (c, a, s, _) in enumerate(commands[:find])
+        if c == "set" and a == f"{flag} FALSE" and s == base
+    ]
+    ok = len(resets) == 1 and re.fullmatch(r"_[a-z][a-z0-9_]*", flag) is not None
+    if ok:
+        # Only the fetch include may sit between reset and snapshot.
+        between = commands[resets[0] + 1 : find]
+        snap_scope = between[-1][2] if between else ()
+        ok = (
+            bool(between)
+            and between[-1][:2] == ("set", f"{flag} TRUE")
+            and len(snap_scope) == len(base) + 1
+            and snap_scope[:-1] == base
+            and snap_scope[-1][0] == "if"
+            and infra.cmake_argument_tokens(snap_scope[-1][1]) == predicate
+            and all(
+                c == "include" and a == "FetchContent" and s == snap_scope
+                for c, a, s, _ in between[:-1]
+            )
+        )
+    if not ok:
+        return [f"{FMT_CALLER}: fmt post-check lacks the saved fetch predicate"]
+    return []
+
+
+def tracked_cmake_sources():
+    paths = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.split("\0")
+    return {
+        relative: (ROOT / relative).read_text()
+        for relative in paths
+        if Path(relative).name == "CMakeLists.txt"
+        or relative.endswith((".cmake", ".cmake.in"))
+    }
+
+
+def test_build_fetchcontent_calls_have_offline_postchecks():
+    sources = tracked_cmake_sources()
+    assert fetchcontent_postcheck_errors(sources) == []
+    assert any("FetchContent_Make" in text for text in sources.values())
+
+
+FMT_FINDER = "FetchContent_MakeAvailable(fmt)\n"
+FMT_CALLER_OK = (
+    "set(_f FALSE)\n"
+    "if(DEFINED DART_USE_SYSTEM_FMT AND NOT DART_USE_SYSTEM_FMT AND NOT TARGET fmt::fmt)\n"
+    "  set(_f TRUE)\nendif()\n"
+    "dart_find_package(fmt)\n"
+    "if(_f)\n  dart_check_fetchcontent(fmt DART_USE_SYSTEM_FMT)\nendif()\n"
+)
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("FetchContent_MakeAvailable(a)\ndart_check_fetchcontent(A OPT)\n", None),
+        (
+            "if(X)\n  FetchContent_Populate(a)\n  dart_check_fetchcontent(a OPT)\nendif()\n",
+            None,
+        ),
+        ("FetchContent_MakeAvailable(a)\n", "not immediately"),
+        (
+            "dart_check_fetchcontent(a OPT)\nFetchContent_MakeAvailable(a)\n",
+            "not immediately",
+        ),
+        (
+            "FetchContent_MakeAvailable(a)\ndart_check_fetchcontent(b OPT)\n",
+            "another name",
+        ),
+        (
+            "FetchContent_MakeAvailable(a)\nreturn()\ndart_check_fetchcontent(a OPT)\n",
+            "not immediately",
+        ),
+        (
+            "FetchContent_MakeAvailable(a)\nset(x 1)\ndart_check_fetchcontent(a OPT)\n",
+            "not immediately",
+        ),
+        (
+            "if(X)\n  FetchContent_MakeAvailable(a)\nelse()\n  dart_check_fetchcontent(a OPT)\nendif()\n",
+            "another scope",
+        ),
+        (
+            "if(X)\n  FetchContent_MakeAvailable(a)\nendif()\nif(X)\n  dart_check_fetchcontent(a OPT)\nendif()\n",
+            "another scope",
+        ),
+        (
+            "function(f)\n  FetchContent_MakeAvailable(a)\nendfunction()\nfunction(g)\n  dart_check_fetchcontent(a OPT)\nendfunction()\n",
+            "another scope",
+        ),
+        (
+            "FetchContent_MakeAvailable(${name})\ndart_check_fetchcontent(${name} OPT)\n",
+            "dynamic",
+        ),
+        (
+            "FetchContent_MakeAvailable(a b)\ndart_check_fetchcontent(a OPT)\n",
+            "not immediately",
+        ),
+    ],
+)
+def test_fetchcontent_postcheck_scanner_fixtures(text, expected):
+    errors = fetchcontent_postcheck_errors({"CMakeLists.txt": text})
+    if expected is None:
+        assert errors == []
+    else:
+        assert len(errors) == 1 and expected in errors[0], errors
+
+
+def fmt_flag_as(name):
+    return FMT_CALLER_OK.replace("set(_f ", f"set({name} ").replace(
+        "if(_f)", f"if({name})"
+    )
+
+
+@pytest.mark.parametrize(
+    "caller,expected",
+    [
+        (FMT_CALLER_OK, None),
+        (
+            FMT_CALLER_OK.replace(
+                "  dart_check_fetchcontent(fmt DART_USE_SYSTEM_FMT)\n", ""
+            ),
+            "no post-check",
+        ),
+        (FMT_CALLER_OK.replace("(fmt DART", "(ode DART"), "not directly"),
+        (FMT_CALLER_OK.replace("AND NOT TARGET fmt::fmt", ""), "saved fetch predicate"),
+        (FMT_CALLER_OK.replace("set(_f FALSE)\n", ""), "saved fetch predicate"),
+        (
+            FMT_CALLER_OK.replace(
+                "  set(_f TRUE)\nendif()\n",
+                "  function(never_called)\n    set(_f TRUE)\n  endfunction()\nendif()\n",
+            ),
+            "saved fetch predicate",
+        ),
+        (
+            FMT_CALLER_OK.replace(
+                "NOT TARGET fmt::fmt)", "NOT TARGET fmt::fmt AND FALSE)"
+            ),
+            "saved fetch predicate",
+        ),
+        (
+            FMT_CALLER_OK.replace(
+                "endif()\ndart_find", "endif()\nset(_f FALSE)\ndart_find"
+            ),
+            "saved fetch predicate",
+        ),
+        (
+            FMT_CALLER_OK.replace("if(DEFINED", "if(X)\nif(DEFINED").replace(
+                "  set(_f TRUE)\nendif()", "  set(_f TRUE)\nendif()\nendif()"
+            ),
+            "saved fetch predicate",
+        ),
+        (fmt_flag_as("_dart_fmt_fetched"), None),
+        (fmt_flag_as("FALSE"), "saved fetch predicate"),
+        (fmt_flag_as("OFF"), "saved fetch predicate"),
+        (fmt_flag_as("0"), "saved fetch predicate"),
+        (FMT_CALLER_OK.replace("  set(_f TRUE)\n", ""), "saved fetch predicate"),
+        (
+            FMT_CALLER_OK.replace(
+                "dart_find_package(fmt)\nif(_f)",
+                "dart_find_package(fmt)\nset(x 1)\nif(_f)",
+            ),
+            "not directly",
+        ),
+        (
+            FMT_CALLER_OK.replace(
+                "if(_f)\n  dart_check_fetchcontent(fmt DART_USE_SYSTEM_FMT)\nendif()\n",
+                "dart_check_fetchcontent(fmt DART_USE_SYSTEM_FMT)\n",
+            ),
+            "not directly",
+        ),
+    ],
+)
+def test_fetchcontent_postcheck_scanner_fmt_fixtures(caller, expected):
+    errors = fetchcontent_postcheck_errors(
+        {"cmake/DARTFindfmt.cmake": FMT_FINDER, FMT_CALLER: caller}
+    )
+    if expected is None:
+        assert errors == []
+    else:
+        assert len(errors) == 1 and expected in errors[0], errors
+
+
 def test_repository_rejects_missing_release_target_row(monkeypatch):
     owner = ROOT / "docs/onboarding/release-management.md"
     text = owner.read_text(encoding="utf-8")
@@ -2145,6 +2400,7 @@ def test_single_cmake_target_build_contract(command, target, expected):
             True,
         ),
         ("cmake -S . -B build/default -DDART_BUILD_GUI=ON", True),
+        ("cmake -S . -B build/default -DDART_USE_SYSTEM_DEPENDENCIES=ON", True),
         ("cmake -S . -B build/default -DUNKNOWN_OPTION=OFF", False),
         (
             "cmake -S . -B build/default -DDART_BUILD_UTILS_ASSETS=ON",
@@ -7384,6 +7640,12 @@ def test_ci_wiring_requires_the_check_lint_aggregate(tmp_path):
         "`pixi run check-lint`" in error
         for error in errors
     )
+
+
+def test_windows_check_lint_validates_changelog_fragments():
+    pixi = infra.read_toml(ROOT / "pixi.toml")
+    lint = pixi["target"]["win-64"]["tasks"]["check-lint"]
+    assert "check-changelog-fragments" in lint["depends-on"]
 
 
 def test_ci_wiring_requires_check_lint_to_run_the_semantic_ai_check(tmp_path):

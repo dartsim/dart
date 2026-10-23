@@ -175,19 +175,14 @@ builtins; bad input raises, it is never logged and ignored.
 DART's C++ diagnostics reach `logging.getLogger("dartpy")`. The bridge in
 `detail/logging.cpp` registers a `dart::common::setLogCallback()` callback
 for the `DART_WARN` family and redirects the `dtwarn`/`dterr`/`dtmsg`/`dtdbg`
-console streams through `dart::common::setConsoleStreams()`. The callback,
-not a spdlog logger: spdlog is header-only in some builds, which gives
-libdart and the extension separate spdlog registries, so a logger installed
-from the extension would miss diagnostics emitted inside libdart. The
-callback hook lives in libdart, keeps spdlog out of the installed headers,
-and the logging templates format each message once and offer it to the
-callback before touching spdlog's registry, so the bridged path takes no
-spdlog lock, works with or without spdlog, and survives `spdlog::drop_all()`;
-a message the callback declines goes to spdlog's default logger, or to the
-console when none exists. The callback
-receives every message that `DART_ACTIVE_LOG_LEVEL` compiles in, whatever
-spdlog's runtime level: with a callback installed, spdlog is out of the
-loop, and `logging.getLogger("dartpy")` filters by its own level. The
+console streams through `dart::common::setConsoleStreams()`. The callback
+hook lives in libdart, so it receives diagnostics emitted inside libdart and
+from the extension. The logging implementation formats each message once
+and offers it to the callback before acquiring or initializing sink state.
+A message the callback declines goes to the selected sink or console streams,
+subject to the runtime threshold. The callback receives every message that
+`DART_ACTIVE_LOG_LEVEL` compiles in, regardless of `setLogLevel()`, including
+`Off`; `logging.getLogger("dartpy")` filters by its own level. The
 bridge does not apply that level before queueing a record. Python's
 `logging` has no hook that fires when a level changes, so a cached
 threshold could go stale and silently drop messages a user just enabled,
@@ -214,7 +209,7 @@ child an unlocked, empty queue, so a child forked from a single-threaded
 process can log and flush. Forking a process that has other running threads
 is unsupported: a thread the child does not have may hold a lock below the
 bridge, such as libstdc++'s locale mutex that any stream construction takes
-under a non-classic global locale, or a spdlog sink mutex, and the child then
+under a non-classic global locale, or a selected log sink mutex, and the child then
 blocks on its first log. CPython warns about forking a multi-threaded process
 for the same reason; use the `spawn` or `forkserver` start method there.
 Python's `atexit` drains the queue and switches the bridge to pass-through,
@@ -395,6 +390,80 @@ Reusable porting and API probes live under `scripts/nanobind/`. The regular
 changes from DART 6.20. Regular Python CI jobs cover GUI construction and
 ownership; `CI Filament` runs the rendering tests. Windows uses its existing
 unity build.
+
+### Transform and Rotation values
+
+`dartpy.math.Transform` and `dartpy.math.Rotation` (re-exported at the top
+level) are immutable values backed by contiguous `Eigen::Isometry3d` storage:
+one item for a scalar, `N >= 1` items for a batch built from arrays with a
+leading axis (an empty leading axis raises `ValueError`). Constructors are
+keyword-only and take at most one rotation form (`rotation=` a 3x3 or a
+`Rotation`, `wxyz=`, `xyzw=`, `rpy=`) plus `translation=` for a `Transform`.
+Alternatively, `Transform(matrix=...)` takes a homogeneous matrix that already
+contains translation and excludes `translation=` and all other rotation forms.
+No rotation form gives the identity, and
+`identity()` spells that out. `Rotation.from_axis_angle(axis, angle)` builds a
+scalar rotation from a nonzero axis of any magnitude (it is scaled by its
+largest component before normalization) and an angle in radians. `rpy` is
+extrinsic X-Y-Z, `Rz(yaw) Ry(pitch) Rx(roll)`, the URDF/SDF convention;
+`Rotation.as_rpy()` inverts it with roll set to 0 at gimbal lock. It does not
+use `dart::math::eulerXYZToMatrix`, whose convention differs. Read-only array
+properties are `matrix` (3x3 for a `Rotation`, 4x4 for a `Transform`),
+`translation`, `wxyz` and `xyzw`, each with a leading `N` for a batch, and
+`Transform.rotation` returns the rotation part as a `Rotation`. Only `@` is
+defined: it composes values, with a scalar broadcasting against a batch
+and batches requiring equal length. Scalar values apply to `(..., 3)` point
+arrays of any rank (rows are points). Batched values accept a single `(3,)`
+point broadcast to every value or a pairwise `(N, 3)` point array.
+`__array_ufunc__ = None`, so `points @ value` raises `TypeError`
+instead of letting NumPy broadcast.
+
+Validation raises `ValueError` and checks finite values,
+`|R^T R - I|_F`, `|det R - 1|`, the homogeneous row of a 4x4 input and
+`|norm(q) - 1|`, all against a default tolerance of `1e-5`. The calibration
+measured composition of up to 1e4 rotations (below 1e-13), quaternion round
+trips (below 1e-14), text with six to nine significant digits (2.3e-6 down to
+2.4e-9), float32 round trips (1.2e-7) and per-entry noise (1e-6 gives 1e-5,
+1e-4 gives 1e-3); the tolerance sits one order of magnitude above the worst
+legitimate source and one below inputs that must fail. `normalize=True`
+projects a matrix onto the nearest rotation through SVD (`U V^T`) and rescales
+a quaternion coefficient by coefficient (each is divided by the largest
+magnitude, then by the norm of that scaled vector, so coefficients near 1e308
+or subnormal still normalize). It accepts a matrix only when its determinant
+is positive, every singular value lies within `1e-2` of 1, and the relative
+spread of the singular values `(max - min) / max` is at most `1e-3`. Stretch
+alone bounds the operator-norm distance to the nearest rotation but admits a
+shear of 0.005 (singular values `1 +- 0.0025`); the spread catches shear and
+non-uniform scale while a uniform `1.001` scale or float32 rounding (spread
+about 1e-7) still passes. Reflections, and shear or non-uniform scale beyond
+that spread, raise, and
+the error message suggests `normalize=True` only for inputs that meet both
+criteria. Composition and
+`inverse()` never normalize: a chain of 1e4 compositions drifts by about 1e-13,
+and `Transform(matrix=value.matrix, normalize=True)` restores exactness when
+needed. Composition and `inverse()` raise `ValueError` if any result entry is
+nonfinite or its rotation leaves the near-rotation envelope above; batch errors
+identify the first failing index.
+
+Quaternion order is always named (`wxyz=`/`xyzw=` in, `.wxyz`/`.xyzw` out).
+Matrix-to-quaternion conversion uses Eigen's largest-diagonal branch, and the
+sign policy makes `w >= 0` and, for `w == 0`, the first nonzero of `(x, y, z)`
+positive. The rule reads the exact bits: a `w` that rounds to `-1e-17` negates
+the quaternion, and only an exact zero defers to the next coefficient. Array
+properties return read-only copies. `==` and `hash()` are bit-exact over the
+stored 4x4 matrix, so `-0.0` and `0.0` are different values; `hash()` works for
+scalars only (batches raise `TypeError`, like NumPy arrays). Pickling keeps
+the exact bits, and unpickling validates byte length, finite entries, the
+homogeneous row, a rotation inside the `normalize=True` near-rotation envelope
+(positive determinant, singular-value stretch at most `1e-2` and relative
+spread at most `1e-3`), and zero translation for a `Rotation`. It preserves
+drift beyond the construction tolerance without projecting; crafted state
+outside these invariants raises `ValueError`. Restoring state on an already
+initialized value raises `TypeError`; pickle, copy and deepcopy create new values.
+`Transform.from_isometry()`
+validates a `dartpy.math.Isometry3` and `to_isometry()` returns a mutable
+copy for the camelCase API; there is no implicit conversion in either
+direction.
 
 ## Wheels
 

@@ -86,6 +86,7 @@ else()
     TLS_VERIFY ON
   )
   FetchContent_MakeAvailable(nanobind)
+  dart_check_fetchcontent(nanobind DART_USE_SYSTEM_NANOBIND)
 endif()
 # Factory attachment and the patched Eigen caster depend on nanobind internals.
 if(

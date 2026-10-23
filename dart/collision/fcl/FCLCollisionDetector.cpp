@@ -41,6 +41,7 @@
 #include "dart/collision/fcl/tri_tri_intersection_test.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
@@ -1001,7 +1002,11 @@ double FCLCollisionDetector::distance(
 void FCLCollisionDetector::setPrimitiveShapeType(
     FCLCollisionDetector::PrimitiveShape type)
 {
+  if (mPrimitiveShapeType == type)
+    return;
+  detail::checkWorldDetectorTopologyMutation(this);
   mPrimitiveShapeType = type;
+  detail::notifyWorldDetectorTopologyMutation(this);
 }
 
 //==============================================================================
@@ -1015,6 +1020,8 @@ FCLCollisionDetector::getPrimitiveShapeType() const
 void FCLCollisionDetector::setContactPointComputationMethod(
     FCLCollisionDetector::ContactPointComputationMethod method)
 {
+  if (mContactPointComputationMethod == method)
+    return;
   if (method == FCL) {
     dtwarn << "[FCLCollisionDetector::setContactPointComputationMethod] You "
            << "chose to use FCL's built in contact point computation while"
@@ -1026,6 +1033,7 @@ void FCLCollisionDetector::setContactPointComputationMethod(
   }
 
   mContactPointComputationMethod = method;
+  detail::notifyWorldDetectorParameterMutation(this);
 }
 
 //==============================================================================
@@ -1081,8 +1089,17 @@ FCLCollisionDetector::claimFCLCollisionGeometry(
     return fclCollGeom.lock();
   }
 
-  auto newfclCollGeom = createFCLCollisionGeometry(
-      shape, mPrimitiveShapeType, FCLCollisionGeometryDeleter(this, shape));
+  std::shared_ptr<fcl::CollisionGeometry> newfclCollGeom;
+  try {
+    newfclCollGeom = createFCLCollisionGeometry(
+        shape, mPrimitiveShapeType, FCLCollisionGeometryDeleter(this, shape));
+  } catch (...) {
+    // Only a geometry's deleter erases its entry, so drop the one inserted
+    // for a geometry that was never created (a throwing Shape override).
+    if (inserted)
+      mShapeMap.erase(shape);
+    throw;
+  }
   info.mShape = newfclCollGeom;
   info.mLastKnownVersion = currentVersion;
 

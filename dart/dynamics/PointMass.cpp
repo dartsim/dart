@@ -34,6 +34,7 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/math/Geometry.hpp"
@@ -257,9 +258,12 @@ void PointMass::addConnectedPointMass(PointMass* _pointMass)
 {
   DART_ASSERT(_pointMass != nullptr);
 
+  common::detail::checkTopologyMutation(mParentSoftBodyNode);
+  common::detail::checkTopologyMutation(_pointMass->mParentSoftBodyNode);
   mParentSoftBodyNode->mAspectProperties.mPointProps[mIndex]
       .mConnectedPointMassIndices.push_back(_pointMass->mIndex);
   mParentSoftBodyNode->incrementVersion();
+  common::detail::notifyTopologyMutation(mParentSoftBodyNode);
 }
 
 //==============================================================================
