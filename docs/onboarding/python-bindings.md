@@ -156,19 +156,14 @@ builtins; bad input raises, it is never logged and ignored.
 DART's C++ diagnostics reach `logging.getLogger("dartpy")`. The bridge in
 `detail/logging.cpp` registers a `dart::common::setLogCallback()` callback
 for the `DART_WARN` family and redirects the `dtwarn`/`dterr`/`dtmsg`/`dtdbg`
-console streams through `dart::common::setConsoleStreams()`. The callback,
-not a spdlog logger: spdlog is header-only in some builds, which gives
-libdart and the extension separate spdlog registries, so a logger installed
-from the extension would miss diagnostics emitted inside libdart. The
-callback hook lives in libdart, keeps spdlog out of the installed headers,
-and the logging templates format each message once and offer it to the
-callback before touching spdlog's registry, so the bridged path takes no
-spdlog lock, works with or without spdlog, and survives `spdlog::drop_all()`;
-a message the callback declines goes to spdlog's default logger, or to the
-console when none exists. The callback
-receives every message that `DART_ACTIVE_LOG_LEVEL` compiles in, whatever
-spdlog's runtime level: with a callback installed, spdlog is out of the
-loop, and `logging.getLogger("dartpy")` filters by its own level. The
+console streams through `dart::common::setConsoleStreams()`. The callback
+hook lives in libdart, so it receives diagnostics emitted inside libdart and
+from the extension. The logging implementation formats each message once
+and offers it to the callback before acquiring or initializing sink state.
+A message the callback declines goes to the selected sink or console streams,
+subject to the runtime threshold. The callback receives every message that
+`DART_ACTIVE_LOG_LEVEL` compiles in, regardless of `setLogLevel()`, including
+`Off`; `logging.getLogger("dartpy")` filters by its own level. The
 bridge does not apply that level before queueing a record. Python's
 `logging` has no hook that fires when a level changes, so a cached
 threshold could go stale and silently drop messages a user just enabled,
@@ -195,7 +190,7 @@ child an unlocked, empty queue, so a child forked from a single-threaded
 process can log and flush. Forking a process that has other running threads
 is unsupported: a thread the child does not have may hold a lock below the
 bridge, such as libstdc++'s locale mutex that any stream construction takes
-under a non-classic global locale, or a spdlog sink mutex, and the child then
+under a non-classic global locale, or a selected log sink mutex, and the child then
 blocks on its first log. CPython warns about forking a multi-threaded process
 for the same reason; use the `spawn` or `forkserver` start method there.
 Python's `atexit` drains the queue and switches the bridge to pass-through,

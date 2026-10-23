@@ -202,8 +202,8 @@ std::shared_ptr<dynamics::MeshShape> coloredMesh()
   child.mNumMeshes = 1;
   child.mMeshes = new unsigned[1]{0};
   DART_SUPPRESS_DEPRECATED_BEGIN
-  auto shape
-      = std::make_shared<dynamics::MeshShape>(Eigen::Vector3d::Ones(), scene);
+  auto shape = std::shared_ptr<dynamics::MeshShape>(
+      new dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
   DART_SUPPRESS_DEPRECATED_END
   return shape;
 }

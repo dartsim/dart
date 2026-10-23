@@ -225,7 +225,6 @@ DEPENDENCY_NAMES = (
     "OpenSceneGraph",
     "OSG",
     "Filament",
-    "spdlog",
     "fmt",
     "urdfdom",
     "tinyxml2",

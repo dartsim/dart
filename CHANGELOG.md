@@ -6,6 +6,15 @@
 
 * Breaking Changes
 
+  * DART no longer uses spdlog, and fmt is no longer part of its public
+    interface. Messages print as `[level] message`, with warnings and errors on
+    stderr and colors only on terminals (`NO_COLOR` disables them). spdlog's
+    logger settings no longer affect DART; use `dart::common::setLogLevel` and
+    `dart::common::setLogSink` instead. `DART_*` logging arguments must be
+    integers, floating-point values, strings, pointers or enums; convert other
+    types to strings first. Projects that used fmt through `find_package(DART)`
+    must find it themselves, and `DART_SKIP_spdlog` no longer has any effect.
+    [#3853](https://github.com/dartsim/dart/pull/3853)
   * Source builds require the Ubuntu 24.04 LTS toolchain or newer: GCC 13.2,
     LLVM Clang 18, Apple Clang 17 (Xcode 16.3), MSVC 19.32 (Visual Studio 2022
     17.2) and CMake 3.28. Projects that use an installed DART through
@@ -120,6 +129,11 @@
     [#3876](https://github.com/dartsim/dart/pull/3876)
 
 * API
+
+  * Add `dart::common::setLogSink`, `resetLogSink`, `setLogLevel` and
+    `getLogLevel` to route DART's log messages to an application and filter
+    them at run time.
+    [#3853](https://github.com/dartsim/dart/pull/3853)
 
   * URDF world loading returns `nullptr` when an include is missing its
     filename or model name, or an entity is missing its model, instead of

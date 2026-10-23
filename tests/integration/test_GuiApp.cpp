@@ -1396,6 +1396,84 @@ TEST(SceneContract, CommandLineRejectsInvalidNumbersAndNestedRuns)
 }
 
 //==============================================================================
+TEST(LogCapture, RecognizesLoggingSinkColors)
+{
+  std::vector<CapturedLogLevel> levels;
+  testing::internal::CaptureStderr();
+  {
+    LogCapture capture([&](CapturedLogLevel level, const std::string& line) {
+      levels.push_back(level);
+      EXPECT_EQ("message", line);
+    });
+    for (const int code : {31, 32, 33, 35, 36, 37})
+      std::cerr << "\033[1;" << code << "mmessage\033[0m\n";
+  }
+  testing::internal::GetCapturedStderr();
+  EXPECT_EQ(
+      (std::vector<CapturedLogLevel>{
+          CapturedLogLevel::Error,
+          CapturedLogLevel::Info,
+          CapturedLogLevel::Warning,
+          CapturedLogLevel::Error,
+          CapturedLogLevel::Info,
+          CapturedLogLevel::Info}),
+      levels);
+}
+
+//==============================================================================
+TEST(LogCapture, RecognizesLoggingSinkTextPrefixes)
+{
+  for (const bool colored : {false, true}) {
+    for (const bool fromCout : {false, true}) {
+      std::vector<CapturedLogLevel> levels;
+      std::vector<std::string> lines;
+      testing::internal::CaptureStdout();
+      testing::internal::CaptureStderr();
+      {
+        LogCapture capture(
+            [&](CapturedLogLevel level, const std::string& line) {
+              levels.push_back(level);
+              lines.push_back(line);
+            });
+        auto& stream = fromCout ? std::cout : std::cerr;
+        for (const auto* prefix :
+             {"[trace]", "[debug]", "[info]", "[warn]", "[error]", "[fatal]"}) {
+          if (colored)
+            stream << "\033[1;37m";
+          stream << prefix;
+          if (colored)
+            stream << "\033[0m";
+          stream << " message\n";
+        }
+        stream << "ordinary output\n";
+      }
+      testing::internal::GetCapturedStdout();
+      testing::internal::GetCapturedStderr();
+      EXPECT_EQ(
+          (std::vector<CapturedLogLevel>{
+              CapturedLogLevel::Info,
+              CapturedLogLevel::Info,
+              CapturedLogLevel::Info,
+              CapturedLogLevel::Warning,
+              CapturedLogLevel::Error,
+              CapturedLogLevel::Error,
+              fromCout ? CapturedLogLevel::Info : CapturedLogLevel::Warning}),
+          levels);
+      EXPECT_EQ(
+          (std::vector<std::string>{
+              "[trace] message",
+              "[debug] message",
+              "[info] message",
+              "[warn] message",
+              "[error] message",
+              "[fatal] message",
+              "ordinary output"}),
+          lines);
+    }
+  }
+}
+
+//==============================================================================
 TEST(LogCapture, SinkWritesAreForwardedButNotCapturedAgain)
 {
   int lines = 0;
