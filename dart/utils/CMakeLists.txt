@@ -61,20 +61,6 @@ target_link_libraries(
     $<INSTALL_INTERFACE:$<1:urdfdom>>
 )
 
-# XmlHelpers.cpp uses fmt privately until the formatter dependency is removed.
-if(TARGET fmt::fmt-header-only)
-  target_link_libraries(
-    ${target_name}
-    PRIVATE "$<BUILD_INTERFACE:fmt::fmt-header-only>"
-  )
-else()
-  target_compile_definitions(${target_name} PRIVATE FMT_HEADER_ONLY)
-  target_include_directories(
-    ${target_name}
-    PRIVATE "$<TARGET_PROPERTY:fmt::fmt,INTERFACE_INCLUDE_DIRECTORIES>"
-  )
-endif()
-
 # Component
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})

@@ -59,6 +59,78 @@ The arm starts at zero joint angles in an upright L, with a vertical upper arm a
 
 You can find additional example code at https://github.com/dartsim/dart/tree/main/python/examples
 
+Python logging
+--------------
+
+Importing dartpy automatically routes DART diagnostics through
+``logging.getLogger("dartpy")``. Configure that logger to filter or redirect
+messages; no ``enable_logging`` or ``disable_logging`` call is needed:
+
+.. code-block:: python
+
+   import logging
+   import dartpy as dart
+
+   logging.basicConfig(level=logging.INFO)
+   logging.getLogger("dartpy").setLevel(logging.WARNING)
+   world = dart.simulation.World()
+   world.setNumSimulationThreads(4)
+   for _ in range(100):
+       world.step()
+       dart.common.flush_logs()  # Optional explicit delivery boundary
+
+Native threads only enqueue records. Python's next main-thread safe point
+automatically delivers them; ``flush_logs()`` also delivers a queue snapshot
+on its calling thread under the GIL and returns the number drained, including
+any overflow notice. Handlers run without the queue mutex held. The queue
+retains the newest 1024 records and reports how many older records were dropped.
+Each producer's order is retained; scheduling determines the order between
+concurrent producers. Logger levels, filters and handlers apply at delivery.
+Native trace maps to level 5, debug to ``logging.DEBUG``, and fatal to
+``logging.CRITICAL``. The native sink threshold does not filter the automatic
+Python bridge. A failing handler is reported as unraisable for that record;
+later records are still delivered.
+
+Handlers may log back into DART or explicitly flush. Interpreter exit drains
+pending records, then switches native diagnostics to stderr without touching
+Python. On POSIX, a child forked from a single-threaded process starts with an
+empty queue and can log and flush. Forking a process with other running threads
+is unsupported; use ``spawn`` or ``forkserver`` in that case.
+
+The GUI App observes native records even when Python's automatic bridge
+consumes them. Its panel receives each record once at the native sink threshold;
+legacy console records remain unfiltered. Worker threads queue panel records,
+and the GUI owner drains them before drawing the log section. Both the pending
+panel queue and displayed log retain the newest 2000 entries. Ordinary previous
+sink output is forwarded immediately when the native callback does not consume
+a record. Closing the App discards undrawn panel records and leaves Python
+logging active. Nested GUI captures must be destroyed in reverse construction
+order; direct stdout/stderr writers must be quiescent during capture creation
+and destruction.
+
+Default C++ ``dtmsg``, ``dtdbg``, ``dtwarn`` and ``dterr`` console output is
+unchanged: text and legacy colors go immediately to stdout or stderr,
+regardless of the native threshold, unless console stream providers redirect it
+(as dartpy does). While a custom sink is installed, including
+inside the GUI App, these streams assemble records, at info, debug, warning
+and error severity
+respectively. Their literal text, including percent signs, braces and legacy
+prefixes, is preserved without added colors. Newline terminates a record;
+``std::flush`` or ``std::endl``, the next ``dt*`` statement on that thread,
+and thread exit deliver an unfinished line separately. Unterminated lines
+inside the GUI App therefore also wait for one of those events, so their
+terminal ordering relative to direct stdout/stderr writes can differ. Partial
+lines produced before a sink swap use the sink installed when they are
+flushed; swapping sinks does not flush them. Prefix-only statements (``dtmsg;``
+or ``dtmsg << std::flush``) print the legacy prefix to the terminal under any
+sink. A ``dt*`` call evaluated inside another ``dt*`` statement splits the
+enclosing statement into separate records for custom sinks.
+Recursive ``dt*`` output from a console-record callback goes
+directly to the configured console stream providers (stdout/stderr by default).
+GUI capture preserves legacy terminal bytes when those default providers are
+used. On Windows, enabling virtual terminal processing for native
+log colors leaves it enabled in that console.
+
 Interactive demo catalog
 ------------------------
 

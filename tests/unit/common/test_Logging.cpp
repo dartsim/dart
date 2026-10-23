@@ -42,10 +42,13 @@
 
 #include <atomic>
 #include <chrono>
+#include <future>
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <locale>
 #include <memory>
+#include <new>
 #include <ostream>
 #include <set>
 #include <sstream>
@@ -60,7 +63,12 @@
   #include <string_view>
 #endif
 
+#include <cerrno>
+#include <cfenv>
+#include <cmath>
+#include <cstdint>
 #include <cstdlib>
+#include <cstring>
 
 #if defined(__GLIBCXX__) && !defined(_WIN32)
   #include <pthread.h>
@@ -99,11 +107,14 @@ static_assert(
 struct LogAtShutdown
 {
   bool enabled = false;
+  bool consoleEnabled = false;
 
   ~LogAtShutdown()
   {
     if (enabled)
       warn("logging at static destruction {}", 42);
+    if (consoleEnabled)
+      dtwarn << "console logging at static destruction 100% {}";
   }
 } logAtShutdown;
 
@@ -296,8 +307,8 @@ TEST_F(LoggingTest, FormatsScalarAndStringArguments)
       "text c string true false x -2 3 -4 5 -6 7 -9223372036854775808 "
       "18446744073709551615 8",
       messages[0]);
-  info("{} {} {}", 0.1f, 0.1, 0.1L);
-  EXPECT_EQ("0.1 0.1 0.1", messages.back());
+  info("{} {} {}", 0.1f, 0.1, 0.125L);
+  EXPECT_EQ("0.1 0.1 0.125", messages.back());
   info("{:.4e} {:.6e} {:.2f} {:.3g}", 0.125, 0.125, 0.125, 0.125);
   EXPECT_EQ("1.2500e-01 1.250000e-01 0.12 0.125", messages.back());
   info("{{{}}} {{}}", "braces");
@@ -333,6 +344,333 @@ TEST_F(LoggingTest, FormatsScalarAndStringArguments)
       std::numeric_limits<double>::infinity(),
       std::numeric_limits<double>::quiet_NaN());
   EXPECT_EQ("inf nan", messages.back());
+}
+
+//==============================================================================
+TEST_F(LoggingTest, FormatTable)
+{
+  struct Case
+  {
+    std::string format;
+    std::vector<detail::LogArgument> arguments;
+    std::string expected;
+  };
+  const Case cases[]{
+      {"plain", {}, "plain"},
+      {"{{}}", {}, "{}"},
+      {"{{{}}}", {"text"}, "{text}"},
+      {"{}", {std::string("string")}, "string"},
+      {"{}", {"c string"}, "c string"},
+      {"{}", {static_cast<const char*>(nullptr)}, "(null)"},
+      {"{}", {true}, "true"},
+      {"{}", {false}, "false"},
+      {"{}", {'x'}, "x"},
+      {"{}", {'\0'}, std::string(1, '\0')},
+      {"{}", {static_cast<signed char>(-2)}, "-2"},
+      {"{}", {static_cast<unsigned char>(3)}, "3"},
+      {"{}", {static_cast<short>(-4)}, "-4"},
+      {"{}", {static_cast<unsigned short>(5)}, "5"},
+      {"{}", {-6}, "-6"},
+      {"{}", {7u}, "7"},
+      {"{}", {-8L}, "-8"},
+      {"{}", {9ul}, "9"},
+      {"{}", {std::numeric_limits<long long>::min()}, "-9223372036854775808"},
+      {"{}",
+       {std::numeric_limits<unsigned long long>::max()},
+       "18446744073709551615"},
+      {"{}", {std::size_t{10}}, "10"},
+      {"{}", {0.1f}, "0.1"},
+      {"{}", {0.1}, "0.1"},
+      {"{}", {0.125L}, "0.125"},
+      {"{}", {0.0}, "0"},
+      {"{}", {-0.0}, "-0"},
+      {"{}", {1e-4}, "0.0001"},
+      {"{}", {1e-5}, "1e-05"},
+      {"{}", {1e5f}, "100000"},
+      {"{}", {1234567.0f}, "1234567"},
+      {"{}", {9999999.0f}, "9999999"},
+      {"{}", {1e7f}, "1e+07"},
+      {"{}", {12345678.0f}, "1.2345678e+07"},
+      {"{}", {1e11f}, "1e+11"},
+      {"{}", {1e15f}, "1e+15"},
+      {"{}", {-1e11f}, "-1e+11"},
+      {"{}", {0.0001f}, "0.0001"},
+      {"{}", {1e-5f}, "1e-05"},
+      {"{}", {0.0125f}, "0.0125"},
+      {"{}", {12.5}, "12.5"},
+      {"{}", {1e15}, "1000000000000000"},
+      {"{}", {1e16}, "1e+16"},
+      {"{}", {1e17}, "1e+17"},
+      {"{}", {1.2345678f}, "1.2345678"},
+      {"{}", {1.2345678901234567}, "1.2345678901234567"},
+      {"{}", {std::numeric_limits<float>::denorm_min()}, "1e-45"},
+      {"{}", {std::numeric_limits<float>::max()}, "3.4028235e+38"},
+      {"{}", {std::numeric_limits<double>::denorm_min()}, "5e-324"},
+      {"{}", {std::numeric_limits<double>::max()}, "1.7976931348623157e+308"},
+      {"{}", {std::numeric_limits<double>::infinity()}, "inf"},
+      {"{}", {-std::numeric_limits<double>::infinity()}, "-inf"},
+      {"{}", {std::numeric_limits<double>::quiet_NaN()}, "nan"},
+      {"{}", {-std::numeric_limits<double>::quiet_NaN()}, "-nan"},
+      {"{}", {nullptr}, "0x0"},
+      {"{}", {static_cast<const void*>(nullptr)}, "0x0"},
+      {"{:.4e}", {0.125f}, "1.2500e-01"},
+      {"{:.4e}", {0.125}, "1.2500e-01"},
+      {"{:.4e}", {0.125L}, "1.2500e-01"},
+      {"{:.2f}", {0.125f}, "0.12"},
+      {"{:.2f}", {0.125}, "0.12"},
+      {"{:.2f}", {0.125L}, "0.12"},
+      {"{:.3g}", {0.125f}, "0.125"},
+      {"{:.3g}", {0.125}, "0.125"},
+      {"{:.3g}", {0.125L}, "0.125"},
+      {"{:.0e}", {1.5}, "2e+00"},
+      {"{:.0f}", {1.5}, "2"},
+      {"{:.0g}", {1.5f}, "2"},
+      {"{:.0g}", {1.5}, "2"},
+      {"{:.0g}", {1.5L}, "2"},
+      {"{:.140f}", {1.5}, "1.5" + std::string(139, '0')},
+      {"{:.1000f}", {1.5f}, "1.5" + std::string(999, '0')},
+      {"{:.1000f}", {1.5}, "1.5" + std::string(999, '0')},
+      {"{:.1000f}", {1.5L}, "1.5" + std::string(999, '0')},
+      {"{:.1001f}", {1.5f}, "[log format error: invalid precision] {:.1001f}"},
+      {"{:.1001e}", {1.5}, "[log format error: invalid precision] {:.1001e}"},
+      {"{:.1001g}", {1.5L}, "[log format error: invalid precision] {:.1001g}"},
+      {"{:.1001f}",
+       {std::numeric_limits<double>::infinity()},
+       "[log format error: invalid precision] {:.1001f}"},
+      {"{}", {}, "[log format error: too few arguments] {}"},
+      {"{} {}", {1}, "[log format error: too few arguments] {} {}"},
+      {"literal", {1}, "literal"},
+      {"{}", {1, 2}, "1"},
+      {"{", {}, "[log format error: unmatched '{'] {"},
+      {"}", {}, "[log format error: unmatched '}'] }"},
+      {"{}{", {1}, "[log format error: unmatched '{'] {}{"},
+      {"{0}", {1}, "[log format error: unsupported format field] {0}"},
+      {"{:bogus}",
+       {1},
+       "[log format error: unsupported format field] {:bogus}"},
+      {"{:x}", {1}, "[log format error: unsupported format field] {:x}"},
+      {"{:.f}", {1.5}, "[log format error: unsupported format field] {:.f}"},
+      {"{:.2E}", {1.5}, "[log format error: unsupported format field] {:.2E}"},
+      {"{:.+2f}",
+       {1.5},
+       "[log format error: unsupported format field] {:.+2f}"},
+      {"{:.2fX}",
+       {1.5},
+       "[log format error: unsupported format field] {:.2fX}"},
+      {"{:.{}f}",
+       {1.5},
+       "[log format error: unsupported format field] {:.{}f}"},
+      {"{:.2f}",
+       {1},
+       "[log format error: precision requires floating-point argument] {:.2f}"},
+      {"{:.2f}",
+       {"text"},
+       "[log format error: precision requires floating-point argument] {:.2f}"},
+      {"{:.999999999999f}",
+       {1.5},
+       "[log format error: invalid precision] {:.999999999999f}"},
+  };
+  for (const auto& test : cases) {
+    SCOPED_TRACE(test.format);
+    detail::logMessage(
+        LogLevel::Info,
+        test.format,
+        test.arguments.data(),
+        test.arguments.size());
+    ASSERT_FALSE(messages.empty());
+    EXPECT_EQ(test.expected, messages.back());
+    messages.clear();
+  }
+}
+
+//==============================================================================
+TEST_F(LoggingTest, FormatsNonFiniteValues)
+{
+  const auto check = [&](auto value) {
+    using T = decltype(value);
+    for (const std::string format : {"{}", "{:.2e}", "{:.2f}", "{:.2g}"}) {
+      SCOPED_TRACE(format);
+      for (const bool negative : {false, true}) {
+        const T sign = negative ? T(-1) : T(1);
+        info(format, std::copysign(std::numeric_limits<T>::quiet_NaN(), sign));
+        EXPECT_EQ(negative ? "-nan" : "nan", messages.back());
+        info(format, std::copysign(std::numeric_limits<T>::infinity(), sign));
+        EXPECT_EQ(negative ? "-inf" : "inf", messages.back());
+      }
+    }
+  };
+  check(0.0f);
+  check(0.0);
+  check(0.0L);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, FloatingShortestDigitsAtBinaryPowersAndLimits)
+{
+  const auto floatFromBits = [](std::uint32_t bits) {
+    float value;
+    std::memcpy(&value, &bits, sizeof value);
+    return value;
+  };
+  const auto doubleFromBits = [](std::uint64_t bits) {
+    double value;
+    std::memcpy(&value, &bits, sizeof value);
+    return value;
+  };
+  // 2^-96 and 2^-1017: the nearest N-digit decimal does not round-trip, so a
+  // plain precision search prints 1.26217745e-29 / 7.1202363472230444e-307.
+  info("{} {}", floatFromBits(0x0f800000u), floatFromBits(0x8f800000u));
+  EXPECT_EQ("1.2621775e-29 -1.2621775e-29", messages.back());
+  info(
+      "{} {}",
+      doubleFromBits(0x0060000000000000ull),
+      doubleFromBits(0x8060000000000000ull));
+  EXPECT_EQ("7.120236347223045e-307 -7.120236347223045e-307", messages.back());
+  info("{} {}", std::ldexp(1.0f, 87), std::ldexp(1.0f, 90));
+  EXPECT_EQ("1.5474251e+26 1.2379401e+27", messages.back());
+  info("{} {}", std::ldexp(-1.0f, 87), std::ldexp(-1.0f, 90));
+  EXPECT_EQ("-1.5474251e+26 -1.2379401e+27", messages.back());
+  info("{} {}", 0.0f, -0.0);
+  EXPECT_EQ("0 -0", messages.back());
+  info(
+      "{} {}",
+      std::numeric_limits<float>::min(),
+      std::numeric_limits<double>::min());
+  EXPECT_EQ("1.1754944e-38 2.2250738585072014e-308", messages.back());
+  info("{} {}", 9999999.0f, 0.00001f);
+  EXPECT_EQ("9999999 1e-05", messages.back());
+  info("{} {}", 1e16, 999999999999999.9);
+  EXPECT_EQ("1e+16 999999999999999.9", messages.back());
+  info("{:.1000f}", 0.0f);
+  EXPECT_EQ(1002u, messages.back().size());
+}
+
+//==============================================================================
+TEST_F(LoggingTest, FloatingFormattingIgnoresRoundingModeAndRestoresIt)
+{
+  struct Restore
+  {
+    int mode = std::fegetround();
+    ~Restore()
+    {
+      std::fesetround(mode);
+    }
+  } restore;
+  std::vector<int> sinkModes;
+  setLogSink([&](LogLevel, const std::string& message) {
+    sinkModes.push_back(std::fegetround());
+    messages.push_back(message);
+  });
+  for (const int mode : {FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO}) {
+    if (std::fesetround(mode) != 0)
+      continue;
+    sinkModes.clear();
+    messages.clear();
+    errno = EDOM;
+    info("{} {} {:.2f} {:.2e} {:.3g}", 0.1, 0.1f, 0.125, 0.125f, 0.125);
+    EXPECT_EQ("0.1 0.1 0.12 1.25e-01 0.125", messages.back());
+    info("{} {}", std::ldexp(1.0f, -96), std::ldexp(1.0, -1017));
+    EXPECT_EQ("1.2621775e-29 7.120236347223045e-307", messages.back());
+    EXPECT_EQ(EDOM, errno);
+    ASSERT_EQ(2u, sinkModes.size());
+    EXPECT_EQ(mode, sinkModes[0]);
+    EXPECT_EQ(mode, sinkModes[1]);
+    EXPECT_EQ(mode, std::fegetround());
+  }
+}
+
+//==============================================================================
+TEST_F(LoggingTest, StringConversionPreservesErrnoOnSuccessAndFailure)
+{
+  struct StringConversion
+  {
+    bool fail;
+    operator std::string() const
+    {
+      errno = ERANGE;
+      if (fail)
+        throw std::bad_alloc();
+      return "converted";
+    }
+  };
+  int calls = 0;
+  int sinkErrno = 0;
+  setLogSink([&](LogLevel, const std::string&) {
+    ++calls;
+    sinkErrno = errno;
+    errno = EINVAL;
+  });
+  for (const bool fail : {false, true}) {
+    calls = 0;
+    errno = EDOM;
+    info(StringConversion{fail});
+    const int formatErrno = errno;
+    EXPECT_EQ(EDOM, formatErrno);
+    EXPECT_EQ(fail ? 0 : 1, calls);
+    if (!fail) {
+      EXPECT_EQ(EDOM, sinkErrno);
+    }
+
+    calls = 0;
+    errno = EDOM;
+    info("{}", StringConversion{fail});
+    const int argumentErrno = errno;
+    EXPECT_EQ(EDOM, argumentErrno);
+    EXPECT_EQ(fail ? 0 : 1, calls);
+    if (!fail) {
+      EXPECT_EQ(EDOM, sinkErrno);
+    }
+  }
+}
+
+//==============================================================================
+TEST_F(LoggingTest, DefaultLongDoublePreservesRoundTrips)
+{
+  for (const long double value :
+       {0.1L,
+        std::nextafter(1.0L, 2.0L),
+        std::numeric_limits<long double>::min(),
+        std::numeric_limits<long double>::max()}) {
+    info("{}", value);
+    std::istringstream stream(messages.back());
+    stream.imbue(std::locale::classic());
+    long double parsed = 0;
+    ASSERT_TRUE(stream >> parsed);
+    EXPECT_EQ(value, parsed);
+  }
+}
+
+//==============================================================================
+TEST_F(LoggingTest, FormattingIgnoresGlobalLocale)
+{
+  struct CommaDecimal : std::numpunct<char>
+  {
+    char do_decimal_point() const override
+    {
+      return ',';
+    }
+  };
+  struct RestoreLocale
+  {
+    std::locale previous;
+    ~RestoreLocale()
+    {
+      std::locale::global(previous);
+    }
+  } restore{std::locale()};
+  std::locale::global(std::locale(restore.previous, new CommaDecimal));
+  info("{} {:.2f} {:.2f}", 1.5, 1.5f, 1.5L);
+  EXPECT_EQ("1.5 1.50 1.50", messages.back());
+}
+
+//==============================================================================
+TEST_F(LoggingTest, MovesStringArgument)
+{
+  std::string value(256, 'x');
+  const auto* data = value.data();
+  const detail::LogArgument argument(std::move(value));
+  EXPECT_EQ(data, argument.stringValue.data());
+  EXPECT_EQ(std::string(256, 'x'), argument.stringValue);
 }
 
 //==============================================================================
@@ -407,6 +745,313 @@ TEST_F(LoggingTest, MalformedFormatsDoNotThrow)
   }
   info("{}", "literal {} {broken}");
   EXPECT_EQ("literal {} {broken}", messages.back());
+}
+
+//==============================================================================
+TEST(LoggingConsole, RequiresOrEnablesVirtualTerminalProcessing)
+{
+  for (const bool readable : {false, true}) {
+    for (const bool enabled : {false, true}) {
+      for (const bool writable : {false, true}) {
+        bool setCalled = false;
+        const auto result = detail::enableVirtualTerminal(
+            [&](unsigned long& mode) {
+              mode = 0x10 | (enabled ? 0x04 : 0);
+              return readable;
+            },
+            [&](unsigned long mode) {
+              setCalled = true;
+              EXPECT_EQ(0x14u, mode);
+              return writable;
+            });
+        EXPECT_EQ(readable && (enabled || writable), result);
+        EXPECT_EQ(readable && !enabled, setCalled);
+      }
+    }
+  }
+}
+
+//==============================================================================
+TEST_F(LoggingTest, ConsoleTextIsLiteralAndRetainsItsPrefix)
+{
+  setLogLevel(LogLevel::Off);
+  const std::string text = "100% %s {} {broken} {{braces}}";
+  dtmsg << text << std::endl;
+  dtdbg << text << '\n';
+  const auto warningLine = __LINE__ + 1;
+  dtwarn << text << std::endl;
+  const auto errorLine = __LINE__ + 1;
+  dterr << text << std::endl;
+  EXPECT_EQ(
+      (std::vector<LogLevel>{
+          LogLevel::Info, LogLevel::Debug, LogLevel::Warn, LogLevel::Error}),
+      levels);
+  EXPECT_EQ(
+      (std::vector<std::string>{
+          "Msg " + text,
+          "Dbg " + text,
+          "Warning [test_Logging.cpp:" + std::to_string(warningLine) + "] "
+              + text,
+          "Error [test_Logging.cpp:" + std::to_string(errorLine) + "] "
+              + text}),
+      messages);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, PrefixOnlyStatementsDoNotEmitRecords)
+{
+  testing::internal::CaptureStdout();
+  dtmsg;
+  dtmsg << std::flush;
+  dtmsg << "text\n";
+  const auto output = testing::internal::GetCapturedStdout();
+  EXPECT_EQ((std::vector<std::string>{"Msg text"}), messages);
+  EXPECT_EQ("\033[1;32mMsg\033[0m \033[1;32mMsg\033[0m ", output);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, WrappedSinksRestoreTheirIdentityAndDefaultState)
+{
+  resetLogSink();
+  std::shared_ptr<LogSink> previousOuter;
+  auto outer = detail::wrapLogSink([&](std::shared_ptr<LogSink> previous) {
+    previousOuter = std::move(previous);
+    return [](LogLevel, const std::string&) {
+    };
+  });
+  std::shared_ptr<LogSink> previousInner;
+  auto inner = detail::wrapLogSink([&](std::shared_ptr<LogSink> previous) {
+    previousInner = std::move(previous);
+    return [](LogLevel, const std::string&) {
+    };
+  });
+  detail::restoreLogSinkIf(outer, previousOuter);
+  EXPECT_TRUE(detail::hasCustomLogSink());
+  detail::restoreLogSinkIf(inner, previousInner);
+  EXPECT_FALSE(detail::hasCustomLogSink());
+  detail::restoreLogSinkIf(nullptr, outer);
+  EXPECT_FALSE(detail::hasCustomLogSink());
+  std::weak_ptr<LogSink> retired = outer;
+  previousInner.reset();
+  outer.reset();
+  EXPECT_TRUE(retired.expired());
+  detail::wrapLogSink([](std::shared_ptr<LogSink>) { return LogSink{}; });
+  EXPECT_FALSE(detail::hasCustomLogSink());
+}
+
+//==============================================================================
+TEST_F(LoggingTest, RetiredSinksUnwindAndReleaseTheirPredecessors)
+{
+  for (const bool abandon : {false, true}) {
+    auto token = std::make_shared<int>(0);
+    std::weak_ptr<int> released = token;
+    setLogSink([token](LogLevel, const std::string&) {});
+    token.reset();
+    std::vector<std::shared_ptr<LogSink>> wrappers;
+    std::vector<std::shared_ptr<LogSink>> predecessors;
+    for (int i = 0; i < 3; ++i) {
+      wrappers.push_back(
+          detail::wrapLogSink([&](std::shared_ptr<LogSink> previous) {
+            predecessors.push_back(previous);
+            return [previous](LogLevel level, const std::string& text) {
+              (*previous)(level, text);
+            };
+          }));
+    }
+    detail::restoreLogSinkIf(wrappers[0], predecessors[0]);
+    detail::restoreLogSinkIf(wrappers[1], predecessors[1]);
+    if (abandon)
+      resetLogSink();
+    else {
+      detail::restoreLogSinkIf(wrappers[2], predecessors[2]);
+      EXPECT_TRUE(detail::hasCustomLogSink());
+      detail::restoreLogSinkIf(predecessors[0], nullptr);
+      EXPECT_FALSE(detail::hasCustomLogSink());
+      resetLogSink();
+    }
+    wrappers.clear();
+    predecessors.clear();
+    EXPECT_TRUE(released.expired());
+    EXPECT_FALSE(detail::hasCustomLogSink());
+  }
+}
+
+//==============================================================================
+TEST_F(LoggingTest, DefaultConsoleDoesNotWaitForTheSinkMutex)
+{
+  std::thread worker;
+  std::promise<void> done;
+  auto finished = done.get_future();
+  testing::internal::CaptureStdout();
+  setLogSink([&](LogLevel, const std::string&) {
+    resetLogSink();
+    worker = std::thread([&] {
+      dtmsg << "default from another thread";
+      done.set_value();
+    });
+    EXPECT_EQ(
+        std::future_status::ready, finished.wait_for(std::chrono::seconds(2)));
+  });
+  info("hold the logging mutex");
+  worker.join();
+  const auto output = testing::internal::GetCapturedStdout();
+  EXPECT_EQ("\033[1;32mMsg\033[0m default from another thread", output);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, ConsoleFlushesPartialLinesAndSeparatesCompleteLines)
+{
+  dtmsg << "partial" << std::flush;
+  dtmsg << "first\n\nsecond\n";
+  dtmsg << "continued ";
+  dtmsg << "text\n";
+  EXPECT_EQ(
+      (std::vector<std::string>{
+          "Msg partial",
+          "Msg first",
+          "",
+          "second",
+          "Msg continued ",
+          "Msg text"}),
+      messages);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, ConsoleSeparatesPartialLinesAcrossLevelsAndRecoversBadbit)
+{
+  auto& stream = dtwarn;
+  stream << "partial";
+  dtdbg << "next\n";
+  stream.setstate(std::ios::badbit);
+  dtwarn << "recovered\n";
+  ASSERT_EQ(3u, messages.size());
+  EXPECT_NE(std::string::npos, messages[0].find("] partial"));
+  EXPECT_EQ("Dbg next", messages[1]);
+  EXPECT_NE(std::string::npos, messages[2].find("] recovered"));
+  EXPECT_EQ(
+      (std::vector<LogLevel>{LogLevel::Warn, LogLevel::Debug, LogLevel::Warn}),
+      levels);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, ConsoleSeparatesPartialLinesProducedBySinkCallbacks)
+{
+  testing::internal::CaptureStdout();
+  setLogSink([&](LogLevel, const std::string& text) {
+    messages.push_back(text);
+    if (text == "Msg partial")
+      dtmsg << "nested";
+  });
+  dtmsg << "partial";
+  dtmsg << "next\n";
+  const auto output = testing::internal::GetCapturedStdout();
+  EXPECT_EQ((std::vector<std::string>{"Msg partial", "Msg next"}), messages);
+  EXPECT_EQ("\033[1;32mMsg\033[0m nested", output);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, RecursiveConsoleLinesBypassTheSink)
+{
+  testing::internal::CaptureStdout();
+  setLogSink([&](LogLevel, const std::string& text) {
+    messages.push_back(text);
+    // Bound a regression so it fails without overflowing the stack.
+    if (messages.size() < 5)
+      dtmsg << "nested\n";
+  });
+  dtmsg << "outer\n";
+  const auto output = testing::internal::GetCapturedStdout();
+  EXPECT_EQ((std::vector<std::string>{"Msg outer"}), messages);
+  EXPECT_EQ("\033[1;32mMsg\033[0m nested\n", output);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, SinkChangesLeavePartialLinesForTheNextFlush)
+{
+  dtmsg << "pending";
+  std::vector<std::string> replacement;
+  setLogSink(
+      [&](LogLevel, const std::string& text) { replacement.push_back(text); });
+  EXPECT_TRUE(messages.empty());
+  dtmsg << "next\n";
+  EXPECT_EQ((std::vector<std::string>{"Msg pending", "Msg next"}), replacement);
+  dtmsg << "default pending";
+  resetLogSink();
+  testing::internal::CaptureStdout();
+  dtmsg << "default next\n";
+  const auto output = testing::internal::GetCapturedStdout();
+  EXPECT_EQ(
+      "\033[1;32mMsg\033[0m default pending"
+      "\033[1;32mMsg\033[0m default next\n",
+      output);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, ConsoleCanLogDuringThreadExitFlush)
+{
+  testing::internal::CaptureStdout();
+  setLogSink([&](LogLevel level, const std::string& text) {
+    levels.push_back(level);
+    messages.push_back(text);
+    if (text.find("partial") != std::string::npos)
+      dtmsg << "nested during cleanup";
+  });
+  std::thread worker([] { dterr << "partial"; });
+  worker.join();
+  const auto output = testing::internal::GetCapturedStdout();
+  ASSERT_EQ(1u, messages.size());
+  EXPECT_NE(std::string::npos, messages.front().find("] partial"));
+  EXPECT_EQ("\033[1;32mMsg\033[0m nested during cleanup", output);
+  EXPECT_EQ((std::vector<LogLevel>{LogLevel::Error}), levels);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, ConsoleThreadExitContainsSinkExceptions)
+{
+  setLogSink([](LogLevel, const std::string&) { throw std::bad_alloc(); });
+  std::thread worker([] { dtmsg << "partial"; });
+  worker.join();
+}
+
+//==============================================================================
+TEST_F(LoggingTest, DefaultConsoleIsImmediateUnfilteredAndKeepsLegacyColors)
+{
+  resetLogSink();
+  setLogLevel(LogLevel::Off);
+  std::ostringstream out;
+  std::ostringstream err;
+  auto* oldOut = std::cout.rdbuf(out.rdbuf());
+  auto* oldErr = std::cerr.rdbuf(err.rdbuf());
+  dtmsg << "partial";
+  EXPECT_EQ("\033[1;32mMsg\033[0m partial", out.str());
+  dtdbg << "debug\n";
+  const auto warningLine = __LINE__ + 1;
+  dtwarn << "warning";
+  const auto errorLine = __LINE__ + 1;
+  dterr << "error\n";
+  std::cout.rdbuf(oldOut);
+  std::cerr.rdbuf(oldErr);
+  EXPECT_EQ(
+      "\033[1;32mMsg\033[0m partial\033[1;36mDbg\033[0m debug\n", out.str());
+  EXPECT_EQ(
+      "\033[1;33mWarning [test_Logging.cpp:" + std::to_string(warningLine)
+          + "]\033[0m warning\033[1;31mError [test_Logging.cpp:"
+          + std::to_string(errorLine) + "]\033[0m error\n",
+      err.str());
+}
+
+//==============================================================================
+TEST_F(LoggingTest, ConsoleLinesFromExecutorWorkersAreNotInterleaved)
+{
+  detail::DeterministicExecutor executor;
+  executor.setWorkerCount(3);
+  executor.parallelFor(
+      128, 4, [](std::size_t i) { dtmsg << "worker " << i << " {} 100%\n"; });
+  ASSERT_EQ(128u, messages.size());
+  std::set<std::string> expected;
+  for (int i = 0; i < 128; ++i)
+    expected.insert("Msg worker " + std::to_string(i) + " {} 100%");
+  EXPECT_EQ(expected, std::set<std::string>(messages.begin(), messages.end()));
 }
 
 //==============================================================================
@@ -568,6 +1213,24 @@ TEST(LoggingLifetime, StaticDestruction)
       },
       ::testing::ExitedWithCode(0),
       "late sink: logging at static destruction 42");
+}
+
+//==============================================================================
+TEST(LoggingLifetime, ConsoleAfterThreadLocalDestruction)
+{
+  GTEST_FLAG_SET(death_test_style, "threadsafe");
+  EXPECT_EXIT(
+      {
+        logAtShutdown.consoleEnabled = true;
+        setLogLevel(LogLevel::Trace);
+        setLogSink([](LogLevel, const std::string& text) {
+          std::cerr << "unexpected sink: " << text << '\n';
+        });
+        dtmsg << "initialize thread-local streams\n";
+        std::exit(0);
+      },
+      ::testing::ExitedWithCode(0),
+      "\\[0m console logging at static destruction 100%");
 }
 
 //==============================================================================
@@ -1048,13 +1711,17 @@ TEST_F(CallbackLoggingTest, FallbackFormattingStateDoesNotPersist)
 {
   std::vector<LogRecord> records;
   dart::common::setLogCallback(&capture, &records);
-  dart::common::warn("hex {:x}", 255);
+  dart::common::warn("fixed {:.2f}", 1.25);
+  dart::common::warn("general {}", 1.23456);
+  dart::common::warn("unsupported {:x}", 255);
   dart::common::warn("dec {}", 255);
   dart::common::setLogCallback(nullptr);
 
-  ASSERT_EQ(records.size(), 2u);
-  EXPECT_EQ(records[0].second, "hex ff");
-  EXPECT_EQ(records[1].second, "dec 255");
+  ASSERT_EQ(records.size(), 4u);
+  EXPECT_EQ(records[0].second, "fixed 1.25");
+  EXPECT_EQ(records[1].second, "general 1.23456");
+  EXPECT_EQ(0u, records[2].second.find("[log format error:"));
+  EXPECT_EQ(records[3].second, "dec 255");
 }
 
 //==============================================================================
@@ -1128,4 +1795,264 @@ TEST_F(LoggingDeathTest, NestedSinkCallbackCanExitItsThread)
       ::testing::ExitedWithCode(0),
       "");
 }
+
+//==============================================================================
+TEST_F(LoggingDeathTest, ConsoleSinkCanExitThreadAtEveryFlushBoundary)
+{
+  GTEST_FLAG_SET(death_test_style, "threadsafe");
+  for (const auto* boundary : {"newline", "flush", "next", "cleanup"}) {
+    SCOPED_TRACE(boundary);
+    EXPECT_EXIT(
+        {
+          std::atomic<int> calls{0};
+          setLogSink([&](LogLevel, const std::string&) {
+            ++calls;
+            pthread_exit(nullptr);
+          });
+          std::thread([&] {
+            if (std::strcmp(boundary, "newline") == 0)
+              dtwarn << "exit from newline\n";
+            else if (std::strcmp(boundary, "flush") == 0)
+              dtwarn << "exit from explicit flush" << std::flush;
+            else if (std::strcmp(boundary, "next") == 0) {
+              dtwarn << "exit when the next statement flushes this line";
+              dtwarn << "unreachable";
+            } else
+              dtwarn << "exit from thread cleanup";
+          }).join();
+          resetLogSink();
+          std::_Exit(calls == 1 ? 0 : 1);
+        },
+        ::testing::ExitedWithCode(0),
+        "");
+  }
+}
 #endif
+
+//==============================================================================
+TEST_F(CallbackLoggingTest, ConsoleProvidersRemainValidWithCustomSink)
+{
+  sharedOut().str("");
+  sharedErr().str("");
+  setConsoleStreams(&sharedOutStream, &sharedErrStream);
+  std::vector<std::string> records;
+  setLogSink([&](LogLevel level, const std::string& message) {
+    records.push_back(message);
+    detail::defaultLogSink(level, message);
+  });
+  dtmsg << "literal {} %s" << std::flush;
+  dtwarn << "warning" << std::endl;
+  ASSERT_EQ(2u, records.size());
+  EXPECT_EQ("Msg literal {} %s", records[0]);
+  EXPECT_EQ("\033[1;32mMsg\033[0m literal {} %s", sharedOut().str());
+  EXPECT_NE(std::string::npos, sharedErr().str().find("warning\n"));
+  resetLogSink();
+  dtmsg << "arbitrary provider" << std::endl;
+  EXPECT_NE(std::string::npos, sharedOut().str().find("arbitrary provider\n"));
+}
+
+//==============================================================================
+TEST_F(CallbackLoggingTest, ObserverRestorationDoesNotReviveRetiredOwners)
+{
+  std::vector<LogRecord> records;
+  setLogCallback(&capture, &records);
+  int first = 0;
+  int second = 0;
+  auto a = std::make_shared<LogSink>(
+      [&](LogLevel, const std::string&) { ++first; });
+  auto b = std::make_shared<LogSink>(
+      [&](LogLevel, const std::string&) { ++second; });
+  auto* outer = detail::registerLogObserver(a);
+  warn("outer");
+  auto* inner = detail::registerLogObserver(b);
+  warn("inner");
+  detail::unregisterLogObserver(outer);
+  std::weak_ptr<LogSink> retired = a;
+  a.reset();
+  EXPECT_TRUE(retired.expired());
+  warn("inner after outer retired");
+  detail::unregisterLogObserver(inner);
+  warn("after both retired");
+  EXPECT_EQ(1, first);
+  EXPECT_EQ(2, second);
+  EXPECT_EQ(4u, records.size());
+}
+
+//==============================================================================
+TEST_F(CallbackLoggingTest, NestedObserversRestoreWithoutRetainingSinks)
+{
+  setLogCallback([](LogLevel, const char*, std::size_t, void*) {});
+  int first = 0;
+  int second = 0;
+  auto a = std::make_shared<LogSink>(
+      [&](LogLevel, const std::string&) { ++first; });
+  auto b = std::make_shared<LogSink>(
+      [&](LogLevel, const std::string&) { ++second; });
+  auto* outer = detail::registerLogObserver(a);
+  auto* inner = detail::registerLogObserver(b);
+  warn("inner");
+  detail::unregisterLogObserver(inner);
+  warn("outer restored");
+  detail::unregisterLogObserver(outer);
+  EXPECT_EQ(1, first);
+  EXPECT_EQ(1, second);
+}
+
+//==============================================================================
+TEST_F(CallbackLoggingTest, ObserverFailureDoesNotUndoCallbackConsumption)
+{
+  std::vector<LogRecord> records;
+  setLogCallback(&capture, &records);
+  int fallback = 0;
+  setLogSink([&](LogLevel, const std::string&) { ++fallback; });
+  auto observer = std::make_shared<LogSink>([](LogLevel, const std::string&) {
+    throw std::runtime_error("observer");
+  });
+  auto* token = detail::registerLogObserver(observer);
+  warn("consumed");
+  detail::unregisterLogObserver(token);
+  EXPECT_EQ(1u, records.size());
+  EXPECT_EQ(0, fallback);
+}
+
+//==============================================================================
+TEST_F(CallbackLoggingTest, DeliveryPreservesErrnoAcrossCallbacksAndObservers)
+{
+  const auto oldLevel = getLogLevel();
+  setLogLevel(LogLevel::Trace);
+  struct CallbackState
+  {
+    int calls = 0;
+    int observedErrno = 0;
+    bool fail = false;
+  } callback;
+  setLogCallback(
+      [](LogLevel, const char*, std::size_t, void* data) {
+        auto& state = *static_cast<CallbackState*>(data);
+        ++state.calls;
+        state.observedErrno = errno;
+        errno = ERANGE;
+        if (state.fail)
+          throw std::runtime_error("callback");
+      },
+      &callback);
+  for (const bool callbackFails : {false, true}) {
+    callback.fail = callbackFails;
+    for (const bool observerFails : {false, true}) {
+      int observed = 0;
+      int observerErrno = 0;
+      int fallback = 0;
+      int fallbackErrno = 0;
+      bool allDeliveriesPreserveErrno = true;
+      auto observer
+          = std::make_shared<LogSink>([&](LogLevel, const std::string&) {
+              ++observed;
+              observerErrno = errno;
+              errno = EINVAL;
+              if (observerFails)
+                throw std::runtime_error("observer");
+            });
+      auto* token = detail::registerLogObserver(observer);
+      for (const char* format : {"record", "{"}) {
+        const std::string expected = std::strcmp(format, "{") == 0
+                                         ? "[log format error: unmatched '{'] {"
+                                         : "record";
+        setLogSink([&](LogLevel, const std::string& message) {
+          allDeliveriesPreserveErrno &= errno == EDOM;
+          if (message == expected) {
+            ++fallback;
+            fallbackErrno = errno;
+          }
+          errno = E2BIG;
+        });
+        callback.calls = 0;
+        observed = 0;
+        fallback = 0;
+        allDeliveriesPreserveErrno = true;
+        errno = EDOM;
+        warn(format);
+        const int returnedErrno = errno;
+        EXPECT_EQ(EDOM, returnedErrno);
+        EXPECT_EQ(1, callback.calls);
+        EXPECT_EQ(EDOM, callback.observedErrno);
+        EXPECT_EQ(callbackFails ? 0 : 1, observed);
+        EXPECT_EQ(callbackFails ? 1 : 0, fallback);
+        EXPECT_TRUE(allDeliveriesPreserveErrno);
+        if (callbackFails) {
+          EXPECT_EQ(EDOM, fallbackErrno);
+        } else {
+          EXPECT_EQ(EDOM, observerErrno);
+        }
+      }
+      detail::unregisterLogObserver(token);
+    }
+  }
+  setLogLevel(oldLevel);
+}
+
+//==============================================================================
+TEST_F(LoggingDeathTest, CallbackExceptionDiagnosticPreservesErrno)
+{
+  GTEST_FLAG_SET(death_test_style, "threadsafe");
+  EXPECT_EXIT(
+      {
+        int diagnostics = 0;
+        int records = 0;
+        bool preserved = true;
+        setLogLevel(LogLevel::Trace);
+        setLogSink([&](LogLevel, const std::string& message) {
+          preserved &= errno == EDOM;
+          diagnostics
+              += message.find("A log callback threw") != std::string::npos;
+          records += message == "record";
+          errno = E2BIG;
+        });
+        setLogCallback(
+            [](LogLevel, const char*, std::size_t, void* data) {
+              *static_cast<bool*>(data) &= errno == EDOM;
+              errno = ERANGE;
+              throw std::runtime_error("callback");
+            },
+            &preserved);
+        errno = EDOM;
+        warn("record");
+        const int returnedErrno = errno;
+        std::_Exit(
+            preserved && returnedErrno == EDOM && diagnostics == 1
+                    && records == 1
+                ? 0
+                : 1);
+      },
+      ::testing::ExitedWithCode(0),
+      "");
+}
+
+#if defined(__GLIBCXX__) && !defined(_WIN32)
+//==============================================================================
+TEST_F(LoggingDeathTest, ObserverCanExitItsThread)
+{
+  EXPECT_EXIT(
+      {
+        setLogCallback([](LogLevel, const char*, std::size_t, void*) {});
+        auto observer = std::make_shared<LogSink>(
+            [](LogLevel, const std::string&) { pthread_exit(nullptr); });
+        auto* token = detail::registerLogObserver(observer);
+        std::thread([] { warn("exit through observation {}", 42); }).join();
+        detail::unregisterLogObserver(token);
+        setLogCallback(nullptr);
+        std::_Exit(0);
+      },
+      ::testing::ExitedWithCode(0),
+      "");
+}
+#endif
+
+//==============================================================================
+TEST_F(LoggingTest, FormattedRecursionDoesNotInheritConsolePrefix)
+{
+  setLogSink([](LogLevel, const std::string&) { info("x"); });
+  testing::internal::CaptureStdout();
+  dtwarn << "outer console record" << std::endl;
+  const auto output = testing::internal::GetCapturedStdout();
+  EXPECT_EQ("[info] x\n", output);
+}

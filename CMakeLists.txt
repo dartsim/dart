@@ -285,7 +285,7 @@ dart_option(
 )
 dart_option(
   DART_USE_SYSTEM_FMT
-  "Use system-installed fmt instead of building it from source (set OFF only when system fmt is unavailable or broken)"
+  "Deprecated no-op - DART no longer uses fmt (retained through DART 7.x)"
   ON
 )
 dart_option(DART_USE_SYSTEM_ODE "Use system ODE" ON)

@@ -480,7 +480,6 @@ def test_io_requires_all_parser_dependencies(tmp_path, missing):
 @pytest.mark.parametrize(
     "package,minimum,target,required",
     [
-        ("fmt", "8.1.1", "fmt::fmt", False),
         ("Eigen3", "3.4.0", "Eigen3::Eigen", True),
         ("fcl", "0.7.0", "fcl", True),
         ("octomap", "1.9.7", "octomap", False),
@@ -512,7 +511,7 @@ def test_config_floors(tmp_path, package, minimum, target, required, version_kin
     accepted = version_kind in ("minimum", "newer")
     result = configure(
         tmp_path,
-        f"set(DART_USE_SYSTEM_FMT ON)\nset(DART_USE_SYSTEM_ODE ON)\n"
+        "set(DART_USE_SYSTEM_ODE ON)\n"
         f"include(DARTFind{package})\n"
         f"if({package}_FOUND OR {package.upper()}_FOUND)\n"
         + ("" if accepted else 'message(FATAL_ERROR "Accepted unsupported version")\n')
@@ -948,43 +947,6 @@ def test_parent_ode_target_version(tmp_path, version, use_version_metadata):
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-@pytest.mark.parametrize("version", ["7.1.3", "8.1.1", None])
-@pytest.mark.parametrize(
-    "version_source", ["metadata", "core.h", "base.h", "build-interface"]
-)
-def test_parent_fmt_target_version(tmp_path, version, version_source):
-    include = tmp_path / "fmt-parent" / "include"
-    header = (
-        include
-        / "fmt"
-        / ("base.h" if version_source == "build-interface" else version_source)
-    )
-    header.parent.mkdir(parents=True)
-    if version and version_source != "metadata":
-        major, minor, patch = map(int, version.split("."))
-        header.write_text(
-            f"#define FMT_VERSION {major * 10000 + minor * 100 + patch}\n"
-        )
-    include_path = (
-        f"$<BUILD_INTERFACE:{include.as_posix()}>"
-        if version_source == "build-interface"
-        else include.as_posix()
-    )
-    content = (
-        "set(DART_USE_SYSTEM_FMT OFF)\n"
-        "add_library(fmt::fmt INTERFACE IMPORTED)\n"
-        f'set_target_properties(fmt::fmt PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "{include_path}")\n'
-    )
-    if version and version_source == "metadata":
-        content += f"set(fmt_VERSION {version})\n"
-    result = configure(tmp_path, content + "include(DARTFindfmt)\n")
-    if version == "8.1.1":
-        assert result.returncode == 0, result.stdout + result.stderr
-    else:
-        assert result.returncode != 0, result.stdout + result.stderr
-        assert "fmt >= 8.1.1" in result.stdout + result.stderr
-
-
 @pytest.mark.parametrize("package", ["tinyxml2", "urdfdom", "ODE"])
 def test_rejected_config_resets_mixed_case_flags(tmp_path, package):
     config_package(tmp_path, package, "0.1.0")
@@ -1267,6 +1229,51 @@ def test_installed_legacy_components_propagate_sdformat_failure(
         ),
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("force_legacy", [False, True])
+def test_logging_float_fixture_builds_without_availability_suppression(
+    tmp_path, force_legacy
+):
+    # Compile the real implementation and a C++14 consumer on either path.
+    # Native Apple deployment/symbol checks run in the system-toolchain CI step.
+    assert (
+        "_LIBCPP_DISABLE_AVAILABILITY" not in (ROOT / "dart/CMakeLists.txt").read_text()
+    )
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.28)\n"
+        "project(LoggingFloat LANGUAGES CXX)\n"
+        "find_package(Threads REQUIRED)\n"
+        'file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/dart/config.hpp" "#define DART_ACTIVE_LOG_LEVEL 0\\n")\n'
+        f'add_library(logging STATIC "{ROOT.as_posix()}/dart/common/Logging.cpp" "{ROOT.as_posix()}/dart/common/Console.cpp")\n'
+        "set_target_properties(logging PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)\n"
+        f'target_include_directories(logging PUBLIC "{ROOT.as_posix()}" "${{CMAKE_CURRENT_BINARY_DIR}}")\n'
+        "target_link_libraries(logging PUBLIC Threads::Threads)\n"
+        f'add_executable(check_float "{ROOT.as_posix()}/scripts/check_logging_float.cpp")\n'
+        "set_target_properties(check_float PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)\n"
+        "target_link_libraries(check_float PRIVATE logging)\n"
+        + (
+            "target_compile_definitions(logging PRIVATE DART_LOGGING_FORCE_LEGACY_FLOAT=1)\n"
+            "target_compile_definitions(check_float PRIVATE DART_CHECK_LOGGING_FLOAT_ALLOCATION_FAILURES=1)\n"
+            if force_legacy
+            else ""
+        )
+        + "enable_testing()\nadd_test(NAME float_fixture COMMAND check_float 0)\n"
+    )
+    build = tmp_path / "build"
+    commands = [
+        [shutil.which("cmake"), "-G", "Ninja", "-S", str(source), "-B", str(build)],
+        [shutil.which("cmake"), "--build", str(build), "--parallel", "2"],
+        [shutil.which("ctest"), "--test-dir", str(build), "-V"],
+    ]
+    for command in commands:
+        result = subprocess.run(command, capture_output=True, text=True, check=False)
+        assert result.returncode == 0, result.stdout + result.stderr
+    assert re.search(
+        r"fixed_checks=[1-9][0-9]* oracle_checks=0 failures=0", result.stdout
+    )
 
 
 def test_spdlog_finder_is_a_compatibility_noop(tmp_path):

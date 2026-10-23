@@ -199,6 +199,12 @@ without touching Python. There is no default handler: with no logging
 configuration, Python's last-resort handler prints warnings and errors to
 stderr, and info messages stay quiet; set the logger's level or handlers to
 silence or route DART output.
+The GUI App separately observes callback-consumed records at the native sink
+threshold and queues its panel notifications until the GUI owner drains them.
+It neither installs another Python bridge nor invokes Python from producers.
+Closing a capture discards pending panel notifications without changing the
+automatic Python bridge. The superseded manual enable/disable API is removed;
+configure the Python logger and use `flush_logs()` for explicit delivery.
 
 `dartpy._testing` holds hooks for dartpy's own tests (worker-thread logging,
 destructor-time logging, throwing a named C++ exception). It is not part of

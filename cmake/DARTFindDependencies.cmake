@@ -12,25 +12,6 @@ endif()
 # Threads
 dart_find_package(Threads)
 
-# fmt
-# Keep the installed fmt finder unchanged; only DART builds opt into fetching.
-# Snapshot the finder's fetch predicate: the target exists once it has run.
-set(_dart_fmt_fetched FALSE)
-if(
-  DEFINED DART_USE_SYSTEM_FMT
-  AND NOT DART_USE_SYSTEM_FMT
-  AND NOT TARGET fmt::fmt
-)
-  include(FetchContent)
-  set(_dart_fmt_fetched TRUE)
-endif()
-dart_find_package(fmt)
-if(_dart_fmt_fetched)
-  dart_check_fetchcontent(fmt DART_USE_SYSTEM_FMT)
-endif()
-unset(_dart_fmt_fetched)
-dart_check_required_package(fmt "libfmt")
-
 # Eigen
 dart_find_package(Eigen3)
 dart_check_required_package(EIGEN3 "eigen3")

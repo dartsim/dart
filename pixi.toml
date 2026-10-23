@@ -32,7 +32,6 @@ bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<6"
 fcl = ">=0.7.0,<0.8"
-fmt = ">=11.1.4,<12"
 libcurl = ">=7.85.0,<9"
 libode = ">=0.16.5,<0.17"
 libsdformat = ">=16.1.0,<17"
@@ -964,7 +963,7 @@ gz-compat-ionic = { cmd = "bash tools/gazebo/compat/lane.sh ionic" }
 #=============================================
 # Features: unpatched Gazebo compatibility lanes
 #=============================================
-# Harmonic and Jetty pin newer urdfdom/fmt than the default feature, so
+# Harmonic and Jetty pin newer urdfdom than the default feature, so
 # their environments skip the default feature and take DART's build
 # dependencies from `gz-compat-base` instead.
 
@@ -982,7 +981,6 @@ console_bridge = "*"
 cxx-compiler = "*"
 eigen = ">=3.4.0,<6"
 fcl = ">=0.7.0,<0.8"
-fmt = "*"
 git = ">=1"
 libode = ">=0.16.2"
 ninja = ">=1.13.2,<2"

@@ -65,8 +65,8 @@ tree; source-consuming dependencies such as the Filament SDK keep enforcing
 their own SDK and license requirements. Existing
 populated source directories in the build tree are accepted. The stable
 FetchContent names are `googletest`, `benchmark`, `tracy`, `nanobind`,
-`dart_imgui`, `dart_filament_sdk`, `fmt`, `ode`, and `bullet`. The umbrella
-does not select system nanobind, ImGui, Filament, or fmt; set those switches
+`dart_imgui`, `dart_filament_sdk`, `ode`, and `bullet`. The umbrella
+does not select system nanobind, ImGui, or Filament; set those switches
 separately when needed. Pixi configure tasks use the umbrella;
 `pixi run -e profile config-tracy` selects the profile environment's Tracy.
 To fetch Tracy instead, override the umbrella with `DART_USE_SYSTEM_TRACY=OFF`.
