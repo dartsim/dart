@@ -45,7 +45,7 @@ Getting started
 Updates
 -------
 
-* 2026-10-19: DART version 6.20.2 released. See the
+* 2026-10-24: DART version 6.20.3 released. See the
   `CHANGELOG <https://github.com/dartsim/dart/blob/release-6.20/CHANGELOG.md>`_.
 * Track planned releases in
   `GitHub Milestones <https://github.com/dartsim/dart/milestones>`_.

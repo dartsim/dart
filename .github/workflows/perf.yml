@@ -850,7 +850,7 @@ jobs:
 
   release-measure:
     name: Measure release performance
-    # Any ref measures (a dry run off main); only the main writer publishes.
+    # Any ref measures; only main and numeric release-6.x branches publish.
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.tier == 'release' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -936,7 +936,8 @@ jobs:
     # Each writer must finish; fetch/regenerate/push retries reconcile concurrent records.
     if: >-
       ${{ !cancelled() && needs.release-measure.result == 'success' &&
-          github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' &&
+          (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-6.')) &&
+          github.event_name == 'workflow_dispatch' &&
           inputs.tier == 'release' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -949,12 +950,13 @@ jobs:
       - name: Refuse self-hosted publication
         run: |
           test "$RUNNER_ENVIRONMENT" = github-hosted
+          [[ "$GITHUB_REF" == refs/heads/main || "$GITHUB_REF" =~ ^refs/heads/release-6[.][0-9]+$ ]]
           echo "PERF_OUTPUT=$RUNNER_TEMP/perf" >> "$GITHUB_ENV"
 
-      - name: Checkout main publisher
+      - name: Checkout the release publisher
         uses: actions/checkout@v7
         with:
-          ref: main
+          ref: ${{ github.sha }}
           fetch-depth: 0  # tags, release branches and ancestry for release_scope and the ledger
           persist-credentials: false
 
