@@ -835,10 +835,10 @@ TEST_P(MeshOwnershipTest, ShapeReleasesTheSceneExactlyWhenItOwnsIt)
   {
     const auto shape
         = ownership == MeshOwnership::Custom
-              ? std::make_shared<dynamics::MeshShape>(
-                  Eigen::Vector3d::Ones(), std::move(customScene))
-              : std::make_shared<dynamics::MeshShape>(
-                  Eigen::Vector3d::Ones(), scene, "", nullptr, ownership);
+              ? std::shared_ptr<dynamics::MeshShape>(new dynamics::MeshShape(
+                  Eigen::Vector3d::Ones(), std::move(customScene)))
+              : std::shared_ptr<dynamics::MeshShape>(new dynamics::MeshShape(
+                  Eigen::Vector3d::Ones(), scene, "", nullptr, ownership));
     EXPECT_EQ(shape->getMesh(), scene);
     ASSERT_NE(shape->getTriMesh(), nullptr);
     EXPECT_GT(shape->getTriMesh()->getTriangles().size(), 0u);
