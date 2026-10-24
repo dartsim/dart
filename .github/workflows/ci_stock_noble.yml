@@ -1,0 +1,151 @@
+# Tier 1 of the support tiers (docs/onboarding/build-system.md): build and test
+# the core and dart-io, headless, the way a distribution packager does on a
+# stock Ubuntu 24.04 image: the archive's packages plus OSRF's sdformat, with
+# nothing from pixi and nothing fetched by CMake. The other Linux lanes take
+# their libraries from pixi, so only this one notices when the distribution's
+# own versions stop working.
+#
+# To reproduce it, run the steps below in
+# `docker run --rm -it -v "$PWD":/src -w /src ubuntu:24.04 bash`.
+
+name: CI Stock Ubuntu 24.04 (apt)
+
+on:
+  # nightly.yml calls this every night, and a pull request that changes this
+  # file runs it; dispatch it to check a branch on demand.
+  pull_request:
+    branches:
+      - "**"
+    paths:
+      - ".github/workflows/ci_stock_noble.yml"
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Protected branches (main, release-*) should finish every post-merge run.
+  # GitHub's default concurrency queue keeps only one pending run, so use a
+  # run-specific group on release refs while keeping PR/topic refs cancellable.
+  group: >-
+    ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-'))
+        && format('ci-stock-noble-{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
+        || format('ci-stock-noble-{0}-{1}', github.workflow, github.ref) }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' && !(github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-')) }}
+
+jobs:
+  stock-noble:
+    name: Core and dart-io from apt
+    # Pin the versioned hosted label, not `ubuntu-latest`, which the dartsim
+    # self-hosted runners also carry (see ci_freebsd.yml): a container job needs
+    # the Docker of a GitHub-hosted runner.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    container: ubuntu:24.04
+    defaults:
+      run:
+        shell: bash
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      # A full build caches about 40 MB.
+      CCACHE_DIR: /ccache
+      CCACHE_MAXSIZE: 150M
+    steps:
+      - name: Install the toolchain and dependencies from apt
+        run: |
+          echo 'Acquire::Retries "3";' > /etc/apt/apt.conf.d/80-retries
+          apt-get update
+          packages=(
+            build-essential
+            ca-certificates
+            ccache
+            cmake
+            curl
+            git
+            libassimp-dev
+            libbenchmark-dev
+            libbullet-dev
+            libccd-dev
+            libcurl4-openssl-dev
+            libeigen3-dev
+            libfcl-dev
+            libgtest-dev
+            liboctomap-dev
+            libode-dev
+            libssl-dev
+            libtinyxml2-dev
+            liburdfdom-dev
+            liburdfdom-headers-dev
+            ninja-build
+            pkg-config
+          )
+          apt-get install -y --no-install-recommends "${packages[@]}"
+          dpkg-query -W "${packages[@]}"
+
+      # The archive has no sdformat. 14 is the oldest major DART accepts.
+      - name: Install sdformat from the OSRF repository
+        run: |
+          curl -fsSL --retry 3 https://packages.osrfoundation.org/gazebo.gpg \
+            -o /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] https://packages.osrfoundation.org/gazebo/ubuntu-stable noble main" \
+            > /etc/apt/sources.list.d/gazebo-stable.list
+          apt-get update
+          apt-get install -y --no-install-recommends libsdformat14-dev
+          dpkg-query -W libsdformat14-dev
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Restore compiler cache
+        uses: actions/cache/restore@v6
+        with:
+          path: /ccache
+          key: ccache-stock-noble-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: ccache-stock-noble-
+
+      # DART_USE_SYSTEM_DEPENDENCIES takes GoogleTest and Benchmark from apt.
+      # DART_REQUIRE_OPTIONAL_DEPENDENCIES fails the configure instead of
+      # dropping SDF, ODE or Bullet, and a disconnected configure fails if
+      # anything would be fetched (CMake calls that switch unused while nothing
+      # is, hence --no-warn-unused-cli).
+      - name: Configure
+        run: |
+          cmake -G Ninja -S . -B build --no-warn-unused-cli \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DDART_USE_SYSTEM_DEPENDENCIES=ON \
+            -DDART_REQUIRE_OPTIONAL_DEPENDENCIES=ON \
+            -DDART_BUILD_GUI=OFF -DDART_BUILD_DARTPY=OFF \
+            -DDART_BUILD_UTILS_ASSETS=ON \
+            -DDART_BENCHMARK_NATIVE_ARCH=OFF \
+            -DFETCHCONTENT_FULLY_DISCONNECTED=ON
+
+      # The benchmarks build against the distribution's Benchmark 1.8.3, the
+      # supported floor.
+      - name: Build
+        id: build
+        run: |
+          ccache --zero-stats
+          cmake --build build --target all tests tests/benchmark/all -j 4
+
+      - name: Test
+        run: |
+          # test_Distance is an expected external failure. Ubuntu's FCL 0.7.0 is
+          # built with assertions on, and libccd's GJK distance of two touching
+          # ellipsoids aborts in doSimplex2 ("A is not in region 1"). DART fixes
+          # only the FCL it builds itself: see
+          # docker/wheels/patches/fcl-0.7.0-gjk-zero-direction.patch and the FCL
+          # note in docs/readthedocs/dart/developer_guide/build.rst.
+          ctest --test-dir build --output-on-failure --no-tests=error -j 4 \
+            -E '^test_Distance$'
+
+      - name: Compiler cache stats
+        if: always()
+        run: ccache --show-stats || true
+
+      - name: Save compiler cache
+        if: always() && github.ref == 'refs/heads/main' && steps.build.outcome != 'skipped'
+        uses: actions/cache/save@v6
+        with:
+          path: /ccache
+          key: ccache-stock-noble-${{ github.run_id }}-${{ github.run_attempt }}

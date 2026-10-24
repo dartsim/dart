@@ -152,6 +152,36 @@ def test_linux_matrix_covers_baseline_and_forward_compilers():
     assert "matrix.system_nanobind" in build["run"]
 
 
+def test_stock_noble_lane_builds_core_and_io_from_distribution_packages():
+    job = workflow_job("ci_stock_noble.yml", "stock-noble")
+    assert job["runs-on"] == "ubuntu-24.04"
+    assert job["container"] == "ubuntu:24.04"
+    # Tier 1 is "nothing from pixi": a pixi step would hide a distribution gap.
+    assert "pixi" not in str(job).lower()
+    runs = {
+        step["name"]: step.get("run", "") for step in job["steps"] if "name" in step
+    }
+    # sdformat is the one package that is not in the archive; 14 is the oldest
+    # major DART accepts.
+    osrf = runs["Install sdformat from the OSRF repository"]
+    assert "packages.osrfoundation.org" in osrf
+    assert "libsdformat14-dev" in osrf
+    configure = runs["Configure"]
+    for option in (
+        "DART_USE_SYSTEM_DEPENDENCIES=ON",
+        "DART_REQUIRE_OPTIONAL_DEPENDENCIES=ON",
+        "DART_BUILD_GUI=OFF",
+        "DART_BUILD_DARTPY=OFF",
+        "FETCHCONTENT_FULLY_DISCONNECTED=ON",
+    ):
+        assert f"-D{option}" in configure
+    # Ubuntu's FCL aborts in test_Distance; no other test may be excluded.
+    assert "-E '^test_Distance$'" in runs["Test"]
+    nightly = workflow_job("nightly.yml", "stock-noble")
+    assert nightly["uses"] == "./.github/workflows/ci_stock_noble.yml"
+    assert "stock-noble" in workflow_job("nightly.yml", "report")["needs"]
+
+
 def test_windows_matrix_preserves_required_checks_and_selects_vs2022():
     job = workflow_job("ci_windows.yml", "build")
     rows = {row["name"]: row for row in job["strategy"]["matrix"]["include"]}
