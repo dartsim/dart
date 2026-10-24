@@ -2,6 +2,20 @@
 
 ## DART 6
 
+### [DART 6.20.3 (Unreleased)](https://github.com/dartsim/dart/milestone/108)
+
+* Collision
+
+  * Add opt-in double-precision system Bullet selection with
+    `DART_BULLET_FLOAT64=ON` to keep centimeter-scale shapes in contact with
+    heightmaps. The default keeps the existing Bullet ABI; changing precision
+    requires rebuilding consumers of DART's Bullet headers, conversion
+    functions, or native object accessors. A process must use one Bullet
+    precision throughout. Float heightmaps now work with double-precision
+    Bullet 3.17 or newer, and multi-sphere shapes smaller than Bullet's default
+    margin get correct contacts.
+    [#3868](https://github.com/dartsim/dart/pull/3868)
+
 ### [DART 6.20.2 (2026-10-19)](https://github.com/dartsim/dart/milestone/107?closed=1)
 
 DART 6.20.2 is a patch release on the DART 6 line. It fixes point masses added

@@ -56,6 +56,7 @@
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/HeightmapShape.hpp"
 #include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Shape.hpp"
@@ -3328,6 +3329,96 @@ TEST_F(Collision, BulletBinaryCollideFiltersProximityContacts)
   EXPECT_TRUE(group->collide(option, nullptr));
   EXPECT_TRUE(group1->collide(group2.get(), option));
   EXPECT_TRUE(group1->collide(group2.get(), option, nullptr));
+}
+
+//==============================================================================
+// btMultiSphereShape subtracts its collision margin from every radius to form
+// the core that GJK works on, so Bullet's 0.04 default margin used to turn the
+// core of smaller spheres inside out and tilt or misplace their contacts.
+TEST_F(Collision, BulletSmallMultiSphereContactsBox)
+{
+  auto detector = BulletCollisionDetector::create();
+
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1)));
+  boxFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, -0.5));
+
+  const double radius = 0.005;
+  const double depth = 0.0005;
+  auto spheresFrame = SimpleFrame::createShared(Frame::World());
+  spheresFrame->setShape(std::make_shared<MultiSphereConvexHullShape>(
+      MultiSphereConvexHullShape::Spheres{
+          {radius, Eigen::Vector3d(0.0, 0.0, -radius)},
+          {radius, Eigen::Vector3d(0.0, 0.0, radius)}}));
+  spheresFrame->setTranslation(Eigen::Vector3d(0.1, 0.2, 2.0 * radius - depth));
+
+  auto group
+      = detector->createCollisionGroup(boxFrame.get(), spheresFrame.get());
+
+  CollisionOption option;
+  CollisionResult result;
+  ASSERT_TRUE(group->collide(option, &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+  for (const auto& contact : result.getContacts()) {
+    EXPECT_NEAR(std::abs(contact.normal.z()), 1.0, 1e-3);
+    EXPECT_NEAR(contact.penetrationDepth, depth, 1e-4);
+  }
+}
+
+//==============================================================================
+// Single-precision Bullet's fixed GJK tolerances drop or tilt the contacts of
+// centimeter-scale shapes, so 2 cm boxes sank into or fell through a heightmap
+// with 5.4 cm cells. See https://github.com/gazebosim/gz-physics/issues/1117
+TEST_F(Collision, BulletSmallBoxesRestOnHeightmap)
+{
+  #if !defined(BT_USE_DOUBLE_PRECISION) || BT_BULLET_VERSION < 317
+  GTEST_SKIP() << "Heightmaps of small shapes need double-precision Bullet "
+                  "3.17 or newer";
+  #endif
+
+  auto world = World::create();
+  world->setTimeStep(0.001);
+  world->getConstraintSolver()->setCollisionDetector(
+      BulletCollisionDetector::create());
+
+  // A flat 7 m heightmap at z = 1, built as gz-physics builds one.
+  const std::size_t samples = 129;
+  const float cell = 7.0f / samples;
+  auto heightmap = std::make_shared<HeightmapShapef>();
+  heightmap->setHeightField(
+      samples, samples, std::vector<float>(samples * samples, 1.0f));
+  heightmap->setScale(Eigen::Vector3f(cell, cell, 1.0f));
+  auto ground = Skeleton::create("ground");
+  ground->createJointAndBodyNodePair<WeldJoint>()
+      .second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(heightmap);
+  world->addSkeleton(ground);
+
+  const double size = 0.02;
+  const double mass = 0.1;
+  std::vector<BodyNode*> boxes;
+  for (const auto& [x, y] : std::vector<std::pair<double, double>>{
+           {0, 0}, {3, 0}, {0, -3}, {1.5, 0}, {0.3, 0.3}, {2.5, -1.7}}) {
+    auto skeleton = Skeleton::create();
+    auto [joint, body] = skeleton->createJointAndBodyNodePair<FreeJoint>();
+    body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+        std::make_shared<BoxShape>(Eigen::Vector3d::Constant(size)));
+    body->setInertia(dynamics::Inertia(
+        mass,
+        Eigen::Vector3d::Zero(),
+        Eigen::Matrix3d::Identity() * mass * size * size / 6.0));
+    joint->setTransform(Eigen::Isometry3d(Eigen::Translation3d(x, y, 1.1)));
+    world->addSkeleton(skeleton);
+    boxes.push_back(body);
+  }
+
+  for (int i = 0; i < 1000; ++i)
+    world->step();
+
+  for (const auto* box : boxes) {
+    EXPECT_NEAR(
+        box->getWorldTransform().translation().z(), 1.0 + size / 2, 1e-3)
+        << box->getSkeleton()->getName();
+  }
 }
 #endif
 

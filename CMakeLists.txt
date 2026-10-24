@@ -219,6 +219,11 @@ dart_option(
 )
 dart_option(DART_USE_SYSTEM_ODE "Use system ODE" ON)
 dart_option(DART_USE_SYSTEM_BULLET "Use system Bullet" ON)
+# Preserve the native Bullet ABI of existing DART 6.20 consumers by default.
+dart_option(DART_BULLET_FLOAT64
+  "Link system Bullet's double-precision (-float64) libraries when installed"
+  OFF
+)
 dart_option(DART_USE_SYSTEM_IMGUI "Use system ImGui" OFF)
 dart_option(
   DART_IMGUI_DOCKING
