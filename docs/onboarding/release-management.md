@@ -85,7 +85,9 @@ tasks. Keep each required context single-owner when editing workflows.
 
 Before tagging, also record the release performance comparison on the exact
 candidate SHA:
-`gh workflow run perf.yml --ref main -f tier=release -f head=<candidate-sha>`.
+`gh workflow run perf.yml --ref release-6.x -f tier=release -f head=<candidate-sha>`.
+Use the matching release branch's harness and Pixi environment; use `--ref main`
+for a candidate packaged on `main` while that harness supports both revisions.
 It takes the version from the candidate's `package.xml`, compares the candidate
 with the previous `v6` tag on the rows both can run (`-f base=v6.x.y` selects
 another baseline), and publishes `performance/releases/v6.x.y.json`, `.md` and

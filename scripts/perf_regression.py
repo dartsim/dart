@@ -2227,11 +2227,12 @@ def publication_guard(tier: str) -> None:
             else ("schedule", "workflow_dispatch")
         )
     )
-    if (
-        os.environ.get("GITHUB_EVENT_NAME") not in events
-        or os.environ.get("GITHUB_REF") != "refs/heads/main"
-    ):
-        raise ValueError("publication is restricted to trusted main events")
+    ref = os.environ.get("GITHUB_REF", "")
+    trusted_ref = ref == "refs/heads/main" or (
+        tier == "release" and re.fullmatch(r"refs/heads/release-6\.[0-9]+", ref)
+    )
+    if os.environ.get("GITHUB_EVENT_NAME") not in events or not trusted_ref:
+        raise ValueError("publication is restricted to trusted branch events")
 
 
 def smoke_build_failure(directory: Path, head: str, status: int) -> dict | None:

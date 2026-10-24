@@ -69,14 +69,16 @@ nightly-only job: it never reports on PRs, so it would block every merge.
   nightly `perf` group. Every `contact_benchmark` detector row must report its
   final contact pair count; a missing count fails the nightly.
 - The release tier is dispatched with
-  `gh workflow run perf.yml --ref main -f tier=release -f head=<candidate-sha>`.
+  `gh workflow run perf.yml --ref release-6.x -f tier=release -f head=<candidate-sha>`.
+  Select the matching release branch; use `--ref main` for a candidate packaged
+  on `main` while its harness supports both revisions.
   Candidates must belong to the first-parent history of `main` or a
   `release-6.x` branch. The tag is `v<package.xml version>` at the candidate;
   a supplied tag must match. With no `head`, `-f tag=v6.x.y` selects an existing
   tag's commit. An existing tag must name the selected candidate.
   The base is the newest earlier `v6` tag merged into the candidate's parent;
-  `-f base=v6.x.y` selects another eligible baseline. Both arms use `main`'s
-  harness and Pixi environment. Comparisons involving a 6.19.x tag run the
+  `-f base=v6.x.y` selects another eligible baseline. Both arms use the dispatch
+  revision's harness and Pixi environment. Comparisons involving a 6.19.x tag run the
   portable `gzb/ode` and `robot/dart` rows. A policy FAIL is published and the
   writer stays green; an ERROR publishes nothing. Only `main` candidates include
   a change ledger; `release-6.x` candidates carry the tag comparison only.
@@ -207,20 +209,22 @@ Merge, nightly and release measurements also run in read-only jobs (`record-meas
 `nightly-measure` and `release-measure`) with `persist-credentials: false` and upload evidence
 artifacts. Merge measurement has `pull-requests: read` for rationale lookup;
 its `GH_TOKEN` exists only on that lookup step. The separate writers (`record`,
-`nightly` and `release`) download the evidence and run main's publisher without building
+`nightly` and `release`) download the evidence and run the trusted publisher without building
 DART or running benchmark binaries. All have `contents: write`; only the merge
 writer has `pull-requests: write`, with `GH_TOKEN` scoped to its sticky failure
-comment step. Its main publisher checkout uses `persist-credentials: false`;
+comment step. Publisher checkouts use `persist-credentials: false`;
 the dedicated `gh-pages` checkout retains credentials for the git publication
 loop. The merge writer publishes and comments before enforcing the saved
 verdict. Merge evidence is retained per measurement attempt; writer reruns use
 that attempt's artifact name from the measurement job's outputs.
 Merge publication requires a push or dispatch on `main`; nightly publication
 requires a schedule or dispatch on `main`.
-Release publication requires a dispatch on `main`; its writer has only
-`contents: write` and no `GH_TOKEN`. A CI-change PR or off-main nightly or
-release dispatch can measure but writes nothing; merge measurement runs only
-on `main`. Hosted writers refuse any runner whose environment is not
+Release publication requires a dispatch on `main` or a `release-6.<numeric minor>`
+branch; its publisher uses the exact workflow revision (`github.sha`), with only
+`contents: write` and no `GH_TOKEN`. Merge and nightly publishers use `main`.
+A CI-change PR, off-main nightly dispatch or release dispatch from another ref
+can measure but writes nothing; merge measurement runs only on `main`.
+Hosted writers refuse any runner whose environment is not
 `github-hosted`. Backfill publication refuses to run inside GitHub Actions.
 It uses the maintainer's own git credentials after validating a local runner,
 one fingerprint, `main` commits and a harness commit on `main`.
@@ -249,7 +253,8 @@ For the repeated-SHA check, use
 Manual dispatches can name an ancestor of `main` that provides the selected
 tier's harness; the merge base, when supplied, must be that commit's first
 parent. For an existing release tag, use
-`gh workflow run perf.yml --ref main -f tier=release -f tag=v6.x.y`.
+`gh workflow run perf.yml --ref release-6.x -f tier=release -f tag=v6.x.y`
+with the matching release branch (or `--ref main` for a release packaged there).
 Historical comparisons use [`perf-backfill`](profiling.md#revision-comparisons).
 
 Measurements stage every arm under one fixed path with a minimal environment,

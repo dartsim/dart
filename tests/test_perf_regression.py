@@ -546,6 +546,7 @@ def test_publication_permissions_keep_all_measurement_read_only():
         definition = workflow["jobs"][job]
         assert definition["permissions"]["contents"] == "write"
         assert "refs/heads/main" in definition["if"]
+        assert ("refs/heads/release-6." in definition["if"]) == (job == "release")
         assert "pull_request" not in definition["if"]
         assert (
             definition["steps"][0]["run"].splitlines()[0]
@@ -612,7 +613,7 @@ def test_merge_writer_uses_only_main_publisher_and_saved_evidence():
     )
 
 
-def test_release_writer_uses_only_main_publisher_and_saved_evidence():
+def test_release_writer_uses_trusted_workflow_publisher_and_saved_evidence():
     workflow = _perf_workflow()
     assert workflow["on"]["workflow_dispatch"]["inputs"]["tier"]["options"] == [
         "merge",
@@ -626,14 +627,16 @@ def test_release_writer_uses_only_main_publisher_and_saved_evidence():
     assert writer["needs"] == "release-measure"
     assert "needs.release-measure.result == 'success'" in writer["if"]
     assert "github.ref == 'refs/heads/main'" in writer["if"]
+    assert "startsWith(github.ref, 'refs/heads/release-6.')" in writer["if"]
     assert "github.event_name == 'workflow_dispatch'" in writer["if"]
     assert "inputs.tier == 'release'" in writer["if"]
     assert writer["permissions"] == {"contents": "write"}
     assert "concurrency" not in writer
-    checkout = _perf_step("release", "Checkout main publisher")
-    assert checkout["with"]["ref"] == "main"
+    checkout = _perf_step("release", "Checkout the release publisher")
+    assert checkout["with"]["ref"] == "${{ github.sha }}"
     assert checkout["with"]["fetch-depth"] == "0"
     assert checkout["with"]["persist-credentials"] == "false"
+    assert writer["steps"][0]["name"] == "Refuse self-hosted publication"
     upload = _perf_step("release-measure", "Upload release evidence")
     download = _perf_step(
         "release", "Download release measurements (including earlier attempts)"
@@ -5561,6 +5564,17 @@ def test_publication_schema_normalizes_tier_and_advisory_wall(
         ("schedule", "main", "github-hosted", "merge", False),
         ("push", "main", "github-hosted", "nightly", False),
         ("workflow_dispatch", "main", "github-hosted", "release", True),
+        ("workflow_dispatch", "release-6.20", "github-hosted", "release", True),
+        ("workflow_dispatch", "release-6.21", "github-hosted", "release", True),
+        ("workflow_dispatch", "release-6.20", "github-hosted", "merge", False),
+        ("workflow_dispatch", "release-6.20", "github-hosted", "nightly", False),
+        ("push", "release-6.20", "github-hosted", "merge", False),
+        ("schedule", "release-6.20", "github-hosted", "nightly", False),
+        ("push", "release-6.20", "github-hosted", "release", False),
+        ("schedule", "release-6.20", "github-hosted", "release", False),
+        ("pull_request", "release-6.20", "github-hosted", "release", False),
+        ("workflow_call", "release-6.20", "github-hosted", "release", False),
+        ("workflow_dispatch", "release-6.20", "self-hosted", "release", False),
         ("workflow_dispatch", "topic", "github-hosted", "release", False),
         ("push", "main", "github-hosted", "release", False),
         ("schedule", "main", "github-hosted", "release", False),
@@ -5580,6 +5594,41 @@ def test_publication_context_refuses_untrusted_writes(
     else:
         with pytest.raises(ValueError):
             module.publication_guard(tier)
+
+
+@pytest.mark.parametrize(
+    "ref,allowed",
+    [
+        ("refs/heads/main", True),
+        ("refs/heads/release-6.20", True),
+        ("refs/heads/release-6.21", True),
+        ("refs/heads/release-6.", False),
+        ("refs/heads/release-6.x", False),
+        ("refs/heads/release-6.20.3", False),
+        ("refs/heads/release-6.20-topic", False),
+        ("refs/heads/release-6.20/topic", False),
+        ("refs/heads/release/6.20", False),
+        ("refs/heads/topic", False),
+        ("refs/tags/release-6.20", False),
+        ("refs/tags/v6.20.3", False),
+        ("refs/pull/123/merge", False),
+    ],
+)
+def test_release_publication_checks_exact_branch_before_checkout(
+    monkeypatch, tmp_path, ref, allowed
+):
+    module = _load_runner()
+    _trusted_publication(monkeypatch, "workflow_dispatch")
+    monkeypatch.setenv("GITHUB_REF", ref)
+    monkeypatch.setenv("GITHUB_ENV", str(tmp_path / "env"))
+    guard = _perf_step("release", "Refuse self-hosted publication")["run"]
+    result = subprocess.run(["bash", "-e", "-c", guard], capture_output=True)
+    assert (result.returncode == 0) is allowed
+    if allowed:
+        module.publication_guard("release")
+    else:
+        with pytest.raises(ValueError, match="trusted branch events"):
+            module.publication_guard("release")
 
 
 @pytest.mark.parametrize(
