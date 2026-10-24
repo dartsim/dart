@@ -17,9 +17,13 @@
 # variant it links, and an installed DART passes it back through
 # DART_BULLET_REQUIRE_FLOAT64 (TRUE, FALSE, or empty when unknown) together
 # with DART_BULLET_REQUIRE_VERSION. DART_BULLET_REQUIRE_PRECISION independently
-# requires the recorded scalar ABI. DART_BULLET_BUILT_PRECISION is double or
-# single when an existing Bullet target links Bullet libraries that this
-# project builds, which the precision probe cannot link.
+# requires the recorded scalar ABI. DART_BULLET_SEARCH_DIRS names the include
+# and library directories of a fetched Bullet that DART installed, which an
+# installed DART uses whole, before the consumer's search paths or a Bullet
+# that the consumer found first, or not at all.
+# DART_BULLET_BUILT_PRECISION is double or single when an existing Bullet
+# target links Bullet libraries that this project builds, which the precision
+# probe cannot link.
 include("${CMAKE_CURRENT_LIST_DIR}/DARTFindPackageVersion.cmake")
 
 set(DART_BULLET_BUILT_PRECISION "")
@@ -302,9 +306,87 @@ if(NOT DART_USE_SYSTEM_BULLET)
   endif()
 endif()
 
-if(DART_USE_SYSTEM_BULLET OR NOT BULLET_FOUND)
+# An installed DART links the fetched Bullet that it installed beside itself,
+# even when its consumer found another Bullet first. Use it only when its
+# headers and both Release or both Debug libraries are all there, so that no
+# other Bullet fills a gap; otherwise find Bullet as before. DARTConfig.cmake
+# includes the components, and so this file, inside a function: these normal
+# variables leave the consumer's own FindBullet results unchanged.
+set(_dart_bullet_sdk FALSE)
+if(DART_BULLET_SEARCH_DIRS)
+  list(GET DART_BULLET_SEARCH_DIRS 0 _dart_bullet_dir)
+  get_filename_component(_dart_bullet_dir "${_dart_bullet_dir}" ABSOLUTE)
+  if(EXISTS "${_dart_bullet_dir}/btBulletCollisionCommon.h")
+    set(_dart_bullet_INCLUDE_DIR "${_dart_bullet_dir}")
+  endif()
+  list(GET DART_BULLET_SEARCH_DIRS 1 _dart_bullet_dir)
+  foreach(_dart_bullet_name COLLISION:BulletCollision MATH:LinearMath)
+    string(REPLACE ":" ";" _dart_bullet_name "${_dart_bullet_name}")
+    list(GET _dart_bullet_name 0 _dart_bullet_var)
+    list(GET _dart_bullet_name 1 _dart_bullet_name)
+    find_library(
+      _dart_bullet_${_dart_bullet_var}_LIBRARY
+      NAMES ${_dart_bullet_name}
+      PATHS "${_dart_bullet_dir}"
+      NO_DEFAULT_PATH
+      NO_CACHE
+    )
+    # Bullet's Debug postfix, or DART's, which replaces Bullet's when the
+    # project is reconfigured.
+    find_library(
+      _dart_bullet_${_dart_bullet_var}_LIBRARY_DEBUG
+      NAMES ${_dart_bullet_name}_Debug ${_dart_bullet_name}d
+      PATHS "${_dart_bullet_dir}"
+      NO_DEFAULT_PATH
+      NO_CACHE
+    )
+  endforeach()
+  # Like DART's own imported targets, a Debug-only installation serves every
+  # configuration.
+  if(
+    NOT (_dart_bullet_COLLISION_LIBRARY AND _dart_bullet_MATH_LIBRARY)
+    AND _dart_bullet_COLLISION_LIBRARY_DEBUG
+    AND _dart_bullet_MATH_LIBRARY_DEBUG
+  )
+    foreach(_dart_bullet_var COLLISION MATH)
+      set(
+        _dart_bullet_${_dart_bullet_var}_LIBRARY
+        "${_dart_bullet_${_dart_bullet_var}_LIBRARY_DEBUG}"
+      )
+      set(_dart_bullet_${_dart_bullet_var}_LIBRARY_DEBUG "")
+    endforeach()
+  endif()
+  if(
+    _dart_bullet_INCLUDE_DIR
+    AND _dart_bullet_COLLISION_LIBRARY
+    AND _dart_bullet_MATH_LIBRARY
+  )
+    set(_dart_bullet_sdk TRUE)
+  endif()
+  # Normal variables hide FindBullet's cache entries, Debug ones included.
+  foreach(
+    _dart_bullet_var
+    INCLUDE_DIR
+    COLLISION_LIBRARY
+    COLLISION_LIBRARY_DEBUG
+    MATH_LIBRARY
+    MATH_LIBRARY_DEBUG
+  )
+    if(_dart_bullet_sdk)
+      set(BULLET_${_dart_bullet_var} "${_dart_bullet_${_dart_bullet_var}}")
+    endif()
+    unset(_dart_bullet_${_dart_bullet_var})
+  endforeach()
+  unset(_dart_bullet_dir)
+  unset(_dart_bullet_name)
+  unset(_dart_bullet_var)
+endif()
+
+if(_dart_bullet_sdk OR DART_USE_SYSTEM_BULLET OR NOT BULLET_FOUND)
   # CMake's FindBullet requires all four libraries, but DART only needs two.
-  find_package(Bullet MODULE QUIET)
+  if(NOT _dart_bullet_sdk)
+    find_package(Bullet MODULE QUIET)
+  endif()
   set(BULLET_FOUND FALSE)
   set(Bullet_FOUND FALSE)
   if(BULLET_INCLUDE_DIR AND BULLET_COLLISION_LIBRARY AND BULLET_MATH_LIBRARY)
@@ -332,6 +414,7 @@ if(DART_USE_SYSTEM_BULLET OR NOT BULLET_FOUND)
     unset(_bullet_lib_var)
   endif()
 endif()
+unset(_dart_bullet_sdk)
 
 macro(_dart_bullet_check_version includes)
   set(BULLET_VERSION "")
