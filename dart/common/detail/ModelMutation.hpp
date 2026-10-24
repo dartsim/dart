@@ -38,7 +38,8 @@
 namespace dart {
 namespace simulation {
 class World;
-}
+class WorldDeactivationState;
+} // namespace simulation
 namespace dynamics {
 class BodyNode;
 class Frame;
@@ -53,6 +54,17 @@ class Aspect;
 class Composite;
 class VersionCounter;
 namespace detail {
+
+// Carry the caller's busy context through native pool callbacks without
+// registry lookups, and restore a worker's outer context even when a callback
+// throws.
+simulation::WorldDeactivationState* getWorldStepContext();
+struct ScopedWorldStepContext
+{
+  explicit ScopedWorldStepContext(simulation::WorldDeactivationState* context);
+  ~ScopedWorldStepContext();
+  simulation::WorldDeactivationState* mPrevious;
+};
 
 // Ownership lives outside model objects to preserve their public layouts.
 // Typed overloads let the common callers skip dynamic_cast.

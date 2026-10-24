@@ -116,6 +116,8 @@ void FCLCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 {
   auto casted = static_cast<FCLCollisionObject*>(object);
   auto fclObject = casted->getFCLCollisionObject();
+  if (fclObject->getNodeType() == ::fcl::BV_UNKNOWN)
+    return;
 
   if (isUnboundedObject(casted)) {
     mUnboundedObjects.push_back(fclObject);
@@ -143,6 +145,8 @@ void FCLCollisionGroup::addCollisionObjectsToEngine(
   for (auto collObj : collObjects) {
     auto casted = static_cast<FCLCollisionObject*>(collObj);
     auto fclObject = casted->getFCLCollisionObject();
+    if (fclObject->getNodeType() == ::fcl::BV_UNKNOWN)
+      continue;
 
     if (isUnboundedObject(casted)) {
       mUnboundedObjects.push_back(fclObject);

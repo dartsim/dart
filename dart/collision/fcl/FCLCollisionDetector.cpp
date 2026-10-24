@@ -88,6 +88,19 @@ namespace collision {
 
 namespace {
 
+// FCL cannot traverse a BVH without triangles. Keep an inert geometry until
+// a topology refresh supplies faces; collision groups omit BV_UNKNOWN objects.
+class EmptyCollisionGeometry final : public fcl::CollisionGeometry
+{
+public:
+  void computeLocalAABB() override
+  {
+    aabb_center.setZero();
+    aabb_radius = 0.0;
+    aabb_local = ::fcl::AABB<double>(aabb_center, aabb_center);
+  }
+};
+
 const std::string& collisionObjectKey(const FCLCollisionObject* object)
 {
   static const std::string empty;
@@ -1261,8 +1274,11 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     const_cast<SoftMeshShape*>(softMeshShape)->refreshData();
     auto aiMesh = softMeshShape->getAssimpMesh();
 
-    geom = createSoftMesh<fcl::OBBRSS>(
-        aiMesh, shouldUseTriangleContiguousSoftMesh(*softMeshShape, *aiMesh));
+    if (aiMesh->mNumFaces == 0u)
+      geom = new EmptyCollisionGeometry;
+    else
+      geom = createSoftMesh<fcl::OBBRSS>(
+          aiMesh, shouldUseTriangleContiguousSoftMesh(*softMeshShape, *aiMesh));
   }
 #if HAVE_OCTOMAP
   else if (VoxelGridShape::getStaticType() == shapeType) {

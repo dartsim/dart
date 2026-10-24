@@ -74,6 +74,8 @@
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/TranslationalJoint2D.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
 #include "dart/math/Geometry.hpp"
@@ -1503,6 +1505,180 @@ TEST(World, LazyStepCallbacksKeepBusyGuardOnSimulationWorkers)
       EXPECT_EQ(target->getNumBodyNodes(), 2u);
     }
   }
+}
+
+//==============================================================================
+TEST(World, LazyStepCallbacksKeepBusyGuardOnConstraintWorkers)
+{
+  class EditingSolver : public constraint::BoxedLcpConstraintSolver
+  {
+  public:
+    SkeletonPtr target;
+    const std::thread::id caller = std::this_thread::get_id();
+    std::atomic<std::size_t> workerCallbacks{0u};
+    std::atomic<bool> attempted{false};
+
+    void solveConstrainedGroup(constraint::ConstrainedGroup& group) override
+    {
+      if (std::this_thread::get_id() != caller) {
+        ++workerCallbacks;
+        if (!attempted.exchange(true))
+          expectStepRejectsChildCreation(target, target->getBodyNode(0));
+      }
+      BoxedLcpConstraintSolver::solveConstrainedGroup(group);
+    }
+  };
+
+  for (const bool deactivation : {false, true}) {
+    SCOPED_TRACE(deactivation);
+    auto world = World::create();
+    auto solver = std::make_unique<EditingSolver>();
+    auto* editing = solver.get();
+    world->setConstraintSolver(std::move(solver));
+    world->setNumSimulationThreads(4u);
+    auto options = world->getDeactivationOptions();
+    options.mEnabled = deactivation;
+    world->setDeactivationOptions(options);
+    for (std::size_t i = 0; i < 128u; ++i) {
+      const Eigen::Vector3d position(3.0 * i, 0, 0);
+      auto ground = createBox(Eigen::Vector3d::Ones(), position);
+      ground->setMobile(false);
+      world->addSkeleton(ground);
+      auto box = createBox(
+          Eigen::Vector3d::Ones(), position + Eigen::Vector3d(0, 0, 0.9));
+      world->addSkeleton(box);
+    }
+    editing->target = Skeleton::create();
+    editing->target->createJointAndBodyNodePair<FreeJoint>();
+    world->addSkeleton(editing->target);
+    ASSERT_FALSE(world->isCompiled());
+    EXPECT_NO_THROW(world->step());
+    EXPECT_GT(editing->workerCallbacks.load(), 0u);
+    EXPECT_TRUE(editing->attempted.load());
+    EXPECT_EQ(editing->target->getNumBodyNodes(), 1u);
+    EXPECT_FALSE(world->isCompiled());
+    EXPECT_NO_THROW(editing->target->createJointAndBodyNodePair<WeldJoint>(
+        editing->target->getBodyNode(0)));
+  }
+}
+
+//==============================================================================
+namespace {
+
+void checkSoftFaceEditsRefreshCollisionGeometry(bool initiallyEmpty)
+{
+  std::vector<std::shared_ptr<collision::CollisionDetector>> detectors{
+      collision::FCLCollisionDetector::create(),
+      collision::DARTCollisionDetector::create()};
+#if HAVE_BULLET
+  detectors.push_back(collision::BulletCollisionDetector::create());
+#endif
+  for (const auto& detector : detectors) {
+    SCOPED_TRACE(detector->getType());
+    for (const int softBodyCount : {1, 2}) {
+      SCOPED_TRACE(softBodyCount);
+      auto world = World::create();
+      world->setCollisionDetector(detector);
+      auto skeleton = Skeleton::create();
+      SoftBodyNode::UniqueProperties properties;
+      for (const Eigen::Vector3d& point :
+           {Eigen::Vector3d(0, 0, 0),
+            Eigen::Vector3d(1, 0, 0),
+            Eigen::Vector3d(0, 1, 0),
+            Eigen::Vector3d(1, 1, 0)})
+        properties.addPointMass(PointMass::Properties(point, 0.25));
+      if (!initiallyEmpty)
+        properties.addFace(Eigen::Vector3i(0, 1, 2));
+      SoftBodyNode* target = nullptr;
+      for (int i = 0; i < softBodyCount; ++i) {
+        WeldJoint::Properties joint;
+        joint.mT_ParentBodyToJoint.translation() = Eigen::Vector3d(4 * i, 0, 0);
+        auto* soft = skeleton
+                         ->createJointAndBodyNodePair<WeldJoint, SoftBodyNode>(
+                             nullptr,
+                             joint,
+                             SoftBodyNode::Properties(
+                                 BodyNode::Properties(), properties))
+                         .second;
+        if (i == 0)
+          target = soft;
+      }
+      world->addSkeleton(skeleton);
+      auto probe = Skeleton::create();
+      auto* body = probe->createJointAndBodyNodePair<FreeJoint>().second;
+      body->createShapeNodeWith<CollisionAspect>(
+          std::make_shared<SphereShape>(0.1));
+      probe->getJoint(0)->setTransformFromParentBodyNode(
+          Eigen::Translation3d(0.99, 0.99, 0.05)
+          * Eigen::Isometry3d::Identity());
+      world->addSkeleton(probe);
+      ASSERT_FALSE(world->isCompiled());
+      ASSERT_FALSE(world->checkCollision());
+      if (initiallyEmpty) {
+        EXPECT_NO_THROW(world->step());
+        EXPECT_EQ(world->getLastCollisionResult().getNumContacts(), 0u);
+        properties.addFace(Eigen::Vector3i(0, 1, 2));
+        target->setProperties(
+            SoftBodyNode::Properties(BodyNode::Properties(), properties));
+        ASSERT_FALSE(world->checkCollision());
+      }
+      auto shape = target->getShapeNode(0)->getShape();
+      const auto version = shape->getVersion();
+      properties.mFaces[0] = Eigen::Vector3i(1, 3, 2);
+      target->setProperties(
+          SoftBodyNode::Properties(BodyNode::Properties(), properties));
+      ASSERT_TRUE(world->checkCollision());
+      EXPECT_GT(shape->getVersion(), version);
+      properties.mFaces[0] = Eigen::Vector3i(0, 1, 2);
+      target->setProperties(
+          SoftBodyNode::Properties(BodyNode::Properties(), properties));
+      ASSERT_FALSE(world->checkCollision());
+      target->addFace(Eigen::Vector3i(1, 3, 2));
+      ASSERT_EQ(target->getNumPointMasses(), 4u);
+      ASSERT_GT(shape->getVersion(), version);
+      EXPECT_TRUE(world->checkCollision());
+      target->setProperties(
+          SoftBodyNode::Properties(BodyNode::Properties(), properties));
+      EXPECT_FALSE(world->checkCollision());
+      properties.mFaces.clear();
+      target->setProperties(
+          SoftBodyNode::Properties(BodyNode::Properties(), properties));
+      ASSERT_EQ(target->getNumPointMasses(), 4u);
+      ASSERT_EQ(target->getNumFaces(), 0u);
+      collision::CollisionResult result;
+      EXPECT_FALSE(
+          world->checkCollision(collision::CollisionOption(), &result));
+      EXPECT_EQ(result.getNumContacts(), 0u);
+      EXPECT_NO_THROW(world->step());
+      EXPECT_EQ(world->getLastCollisionResult().getNumContacts(), 0u);
+      target->removeAllPointMasses();
+      ASSERT_EQ(target->getNumPointMasses(), 0u);
+      EXPECT_FALSE(
+          world->checkCollision(collision::CollisionOption(), &result));
+      EXPECT_EQ(result.getNumContacts(), 0u);
+      EXPECT_NO_THROW(world->step());
+      EXPECT_EQ(world->getLastCollisionResult().getNumContacts(), 0u);
+      properties.addFace(Eigen::Vector3i(1, 3, 2));
+      target->setProperties(
+          SoftBodyNode::Properties(BodyNode::Properties(), properties));
+      EXPECT_TRUE(world->checkCollision());
+      EXPECT_FALSE(world->isCompiled());
+    }
+  }
+}
+
+} // namespace
+
+//==============================================================================
+TEST(World, SoftFaceEditsRefreshCollisionGeometry)
+{
+  checkSoftFaceEditsRefreshCollisionGeometry(false);
+}
+
+//==============================================================================
+TEST(World, InitiallyEmptySoftMeshesHaveNoContacts)
+{
+  checkSoftFaceEditsRefreshCollisionGeometry(true);
 }
 
 //==============================================================================
