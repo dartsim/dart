@@ -69,7 +69,7 @@ KNOWN_SOURCES = {
     "tsl::robin_map": None,
     "Eigen": None,
     "Atlas v3 sample model and retained Atlas textures": (
-        "data/sdf/atlas/atlas_v3.urdf"
+        "data/sdf/atlas/atlas_v3_no_head.urdf"
     ),
     "WAM sample model (herb_description BSD files)": "data/urdf/wam/wam.urdf",
 }
