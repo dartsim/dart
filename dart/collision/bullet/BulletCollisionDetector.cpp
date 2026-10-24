@@ -719,7 +719,11 @@ BulletCollisionDetector::createBulletCollisionShape(
         std::move(bulletCollisionShape));
   } else if (const auto softMeshShape = shape->as<SoftMeshShape>()) {
     const_cast<SoftMeshShape*>(softMeshShape)->refreshData();
+    // Keep the Assimp mesh's float vertices until DART 8 so contacts don't
+    // change; getTriMesh() has double-precision vertices.
+    DART_SUPPRESS_DEPRECATED_BEGIN
     const auto mesh = softMeshShape->getAssimpMesh();
+    DART_SUPPRESS_DEPRECATED_END
 
     auto bulletCollisionShape = createBulletCollisionShapeFromAssimpMesh(mesh);
 

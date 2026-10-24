@@ -141,7 +141,14 @@ void FCLCollisionObject::updateEngineData()
   if (shape->getType() == dynamics::SoftMeshShape::getStaticType()) {
     DART_ASSERT(dynamic_cast<const SoftMeshShape*>(shape));
     auto softMeshShape = static_cast<const SoftMeshShape*>(shape);
-    if (softMeshShape->getAssimpMesh()->mNumFaces == 0u)
+
+    // Keep the Assimp mesh's float vertices until DART 8 so contacts don't
+    // change; getTriMesh() has double-precision vertices.
+    DART_SUPPRESS_DEPRECATED_BEGIN
+    auto* mesh = const_cast<aiMesh*>(softMeshShape->getAssimpMesh());
+    DART_SUPPRESS_DEPRECATED_END
+    DART_ASSERT(mesh);
+    if (mesh->mNumFaces == 0u)
       return;
 
     auto collGeom = const_cast<dart::collision::fcl::CollisionGeometry*>(
@@ -153,9 +160,6 @@ void FCLCollisionObject::updateEngineData()
 
     const auto* softBodyNode = softMeshShape->getSoftBodyNode();
     DART_ASSERT(softBodyNode);
-
-    auto* mesh = const_cast<aiMesh*>(softMeshShape->getAssimpMesh());
-    DART_ASSERT(mesh);
 
     const auto& pointMasses = softBodyNode->getPointMasses();
     DART_ASSERT(mesh->mNumVertices == pointMasses.size());

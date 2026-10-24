@@ -1272,7 +1272,11 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 
     auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
     const_cast<SoftMeshShape*>(softMeshShape)->refreshData();
+    // Keep the Assimp mesh's float vertices until DART 8 so contacts don't
+    // change; getTriMesh() has double-precision vertices.
+    DART_SUPPRESS_DEPRECATED_BEGIN
     auto aiMesh = softMeshShape->getAssimpMesh();
+    DART_SUPPRESS_DEPRECATED_END
 
     if (aiMesh->mNumFaces == 0u)
       geom = new EmptyCollisionGeometry;

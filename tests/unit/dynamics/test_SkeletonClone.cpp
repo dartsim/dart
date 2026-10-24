@@ -99,6 +99,7 @@ TEST_P(SoftBodyCopy, SkinMeshTracksResizedPointMasses)
     copiedSoft->setProperties(resizedProperties);
     ASSERT_EQ(
         copiedSoft->getNumPointMasses(), resizedProperties.mPointProps.size());
+    DART_SUPPRESS_DEPRECATED_BEGIN
     ASSERT_NE(mesh->getAssimpMesh(), nullptr);
     // Check allocation before update() would write past a stale vertex buffer.
     ASSERT_EQ(
@@ -107,6 +108,7 @@ TEST_P(SoftBodyCopy, SkinMeshTracksResizedPointMasses)
         Eigen::Vector3d(0.01, 0.02, 0.03));
     mesh->update();
     const auto& vertex = mesh->getAssimpMesh()->mVertices[0];
+    DART_SUPPRESS_DEPRECATED_END
     EXPECT_TRUE(
         Eigen::Vector3d(vertex.x, vertex.y, vertex.z)
             .isApprox(copiedSoft->getPointMass(0)->getLocalPosition(), 1e-6));
@@ -215,8 +217,10 @@ TEST(SkeletonClone, SoftMeshRetainsDestinationOwnerAndShapeProperties)
   clonedSoft->setProperties(SoftBodyNodeHelper::makeEllipsoidProperties(
       Eigen::Vector3d(0.2, 0.2, 0.2), 6, 6, 0.5));
   EXPECT_EQ(clonedSoft->getNumPointMasses(), 32u);
+  DART_SUPPRESS_DEPRECATED_BEGIN
   ASSERT_NE(clonedMesh->getAssimpMesh(), nullptr);
   EXPECT_EQ(clonedMesh->getAssimpMesh()->mNumVertices, 32u);
+  DART_SUPPRESS_DEPRECATED_END
   dart::simulation::World world;
   world.addSkeleton(clone);
   for (std::size_t step = 0; step < 5; ++step)

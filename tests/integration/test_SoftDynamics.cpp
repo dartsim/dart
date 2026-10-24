@@ -1852,7 +1852,9 @@ TEST_F(
     expectedMax = expectedMax.cwiseMax(vertex);
   }
 
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const aiMesh* mesh = shape->getAssimpMesh();
+  DART_SUPPRESS_DEPRECATED_END
   ASSERT_TRUE(mesh != nullptr);
   ASSERT_EQ(mesh->mNumVertices, expectedVertices.size());
   for (std::size_t i = 0u; i < expectedVertices.size(); ++i) {
@@ -1863,6 +1865,23 @@ TEST_F(
   }
   EXPECT_TRUE(shape->getBoundingBox().getMin().isApprox(expectedMin, 1.0e-12));
   EXPECT_TRUE(shape->getBoundingBox().getMax().isApprox(expectedMax, 1.0e-12));
+
+  // getTriMesh() reports the same geometry at double precision.
+  const auto triMesh = shape->getTriMesh();
+  ASSERT_TRUE(triMesh != nullptr);
+  ASSERT_EQ(triMesh->getVertices().size(), expectedVertices.size());
+  for (std::size_t i = 0u; i < expectedVertices.size(); ++i) {
+    EXPECT_TRUE(
+        triMesh->getVertices()[i].isApprox(expectedVertices[i], 1.0e-12));
+  }
+  ASSERT_EQ(triMesh->getTriangles().size(), softBody->getNumFaces());
+  ASSERT_GT(softBody->getNumFaces(), 0u);
+  for (std::size_t i = 0u; i < softBody->getNumFaces(); ++i) {
+    EXPECT_TRUE(
+        (triMesh->getTriangles()[i].cast<int>() == softBody->getFace(i)));
+  }
+  EXPECT_TRUE(emptyShape->getTriMesh()->isEmpty());
+  EXPECT_FALSE(emptyShape->getTriMesh()->hasTriangles());
 
   // SoftMeshShape retains a defensive fallback for temporarily mismatched
   // aspect storage. Preserve the last coherent PointMass transforms while
@@ -1875,7 +1894,9 @@ TEST_F(
   softBody->getNotifier()->clearTransformNotice();
   shape->refreshData();
 
+  DART_SUPPRESS_DEPRECATED_BEGIN
   mesh = shape->getAssimpMesh();
+  DART_SUPPRESS_DEPRECATED_END
   ASSERT_TRUE(mesh != nullptr);
   for (std::size_t i = 0u; i < expectedVertices.size(); ++i) {
     EXPECT_TRUE(
