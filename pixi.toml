@@ -1057,10 +1057,13 @@ eigen = "==3.4.0"
 [feature.assimp6.dependencies]
 assimp = ">=6.0.4,<7"
 
+# Tracy is not a conda dependency here. conda-forge's 0.14.1 client is built
+# without TRACY_ENABLE (an empty libTracyClient), and its 0.14.1 viewer needs
+# GLFW 3.5, which the filament feature's GLFW 3.4 pin excludes, and off Windows
+# a pre-release libcapstone. config-tracy fetches the client; run the viewer
+# outside Pixi (docs/onboarding/profiling.md).
 [feature.profile.dependencies]
 pyperf = ">=2.10.0,<3"
-tracy-profiler-client = ">=0.11.1,<0.12"
-tracy-profiler-gui = ">=0.11.1,<0.12"
 
 [feature.profile.tasks]
 config-tracy = { cmd = """
@@ -1078,10 +1081,10 @@ config-tracy = { cmd = """
         -DDART_PROFILE_BUILTIN=ON \
         -DDART_PROFILE_TRACY=ON \
         -DDART_USE_SYSTEM_DEPENDENCIES=ON \
+        -DDART_USE_SYSTEM_TRACY=OFF \
         -DDART_USE_SYSTEM_IMGUI=OFF \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
-tracy = { cmd = "tracy-profiler" }
 # Profile-pinned copies of config-py/build-py-dev: pixi resolves each
 # depends-on entry to the environment it would select unqualified (default
 # here), so perf-dartpy-loop needs its own chain to build into
@@ -1114,7 +1117,6 @@ perf-dartpy-loop = { cmd = "python tools/perf/dartpy_loop_bench.py", depends-on 
 ], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python" } }
 
 [feature.profile.target.win-64.tasks]
-tracy = { cmd = "tracy-profiler.exe" }
 config-py-profile = { cmd = """
     cmake \
         -S . \

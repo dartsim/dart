@@ -68,12 +68,15 @@ populated source directories in the build tree are accepted. The stable
 FetchContent names are `googletest`, `benchmark`, `tracy`, `nanobind`,
 `dart_imgui`, `dart_filament_sdk`, `ode`, and `bullet`. The umbrella
 does not select system nanobind, ImGui, or Filament; set those switches
-separately when needed. Pixi configure tasks use the umbrella;
-`pixi run -e profile config-tracy` selects the profile environment's Tracy.
-To fetch Tracy instead, override the umbrella with `DART_USE_SYSTEM_TRACY=OFF`.
-System Tracy must be 0.11.1 or newer when it reports a version (CMake
-variables, or the selected `Tracy::TracyClient` target's `common/TracyVersion.hpp`);
-upstream installs no version file, so a versionless package is accepted.
+separately when needed. Pixi configure tasks use the umbrella, except
+`pixi run -e profile config-tracy`, which sets `DART_USE_SYSTEM_TRACY=OFF`:
+conda-forge's Tracy 0.14.1 client is built without `TRACY_ENABLE`, so its
+library is empty. A fetched Tracy is the 0.14.1 tag archive, downloaded
+over HTTPS and checked against a pinned SHA-256 hash, with `TRACY_ENABLE=ON`
+(Tracy 0.14 turned it off by default). System Tracy must be 0.14.1 or a later
+0.14 release: that is the first release whose installed package reports its
+version, and upstream's version file accepts no other minor series. It must
+also be built with `TRACY_ENABLE=ON`, or configure stops and says so.
 
 ## Test Tooling
 

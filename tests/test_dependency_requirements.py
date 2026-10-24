@@ -185,6 +185,11 @@ TRACY_FIXTURE = (
     + 'if(NOT TARGET Tracy::TracyClient)\nmessage(FATAL_ERROR "no TracyClient")\nendif()\n'
 )
 
+TRACY_FETCH_FIXTURE = TRACY_FIXTURE.replace(
+    "set(DART_USE_SYSTEM_TRACY ON)",
+    "set(DART_USE_SYSTEM_TRACY OFF)\ninclude(DARTMacros)",
+)
+
 
 def cmake_version():
     out = subprocess.run([CMAKE, "--version"], capture_output=True, text=True).stdout
@@ -261,77 +266,117 @@ def test_fetchcontent_dependency_provider_fulfillment(tmp_path, state):
             assert "Cannot fetch second" in output
 
 
+TRACY_ENABLED = (
+    "set_target_properties(Tracy::TracyClient PROPERTIES "
+    'INTERFACE_COMPILE_DEFINITIONS "TRACY_ENABLE;TRACY_IMPORTS")\n'
+)
+
+
 @pytest.mark.parametrize(
     "version,accepted",
     [
-        ("0.10.0", False),
-        ("0.11.0", False),
-        ("0.11.1", True),
-        ("0.12.0", True),
-        (None, True),
+        (None, False),
+        ("0.11.1", False),
+        ("0.13.1", False),
+        ("0.14.0", False),
+        ("0.14.1", True),
+        ("0.14.2", True),
     ],
 )
 def test_system_tracy_minimum_version(tmp_path, version, accepted):
-    # Installed Tracy packages ship TracyConfig.cmake without a version file.
-    config_package(tmp_path, "Tracy", version, "Tracy::TracyClient")
+    # Tracy 0.14.1 is the first release whose package has a version file.
+    config_package(
+        tmp_path, "Tracy", version, "Tracy::TracyClient", extra=TRACY_ENABLED
+    )
     result = configure(tmp_path, TRACY_FIXTURE)
     output = result.stdout + result.stderr
     assert (result.returncode == 0) == accepted, output
     if not accepted:
-        assert "Tracy >= 0.11.1" in output
-
-
-TRACY_ENUM = "namespace tracy {{ namespace Version {{ enum {{ {parts} }}; }} }}\n"
+        assert "0.14.1" in output
 
 
 @pytest.mark.parametrize(
-    "header,accepted",
+    "definitions,accepted",
     [
-        ("Major = 0, Minor = 10, Patch = 0", False),
-        ("Major = 0, Minor = 11, Patch = 0", False),
-        ("Major = 0, Minor = 11, Patch = 1", True),
-        ("Major = 0,\n Minor = 12,\n Patch = 0", True),
-        ("Major = 0, Minor = 11", False),
-        (None, True),
+        ("TRACY_ENABLE;TRACY_IMPORTS", True),
+        ("TRACY_IMPORTS", False),
+        (None, False),
     ],
 )
-def test_system_tracy_target_header_version(tmp_path, header, accepted):
-    include = tmp_path / "prefix/include/tracy"
-    (include / "common").mkdir(parents=True)
-    if header is not None:
-        (include / "common/TracyVersion.hpp").write_text(
-            TRACY_ENUM.format(parts=header)
-        )
-    config_package(
-        tmp_path,
-        "Tracy",
-        None,
-        "Tracy::TracyClient",
-        extra=(
+def test_system_tracy_requires_tracy_enable(tmp_path, definitions, accepted):
+    # Tracy 0.14 builds an empty client library unless TRACY_ENABLE is set.
+    extra = ""
+    if definitions is not None:
+        extra = (
             "set_target_properties(Tracy::TracyClient PROPERTIES "
-            f'INTERFACE_INCLUDE_DIRECTORIES "$<BUILD_INTERFACE:{include.as_posix()}>")\n'
-        ),
-    )
+            f'INTERFACE_COMPILE_DEFINITIONS "{definitions}")\n'
+        )
+    config_package(tmp_path, "Tracy", "0.14.1", "Tracy::TracyClient", extra=extra)
     result = configure(tmp_path, TRACY_FIXTURE)
     output = result.stdout + result.stderr
-    # A header with a missing component is malformed, not versionless.
     assert (result.returncode == 0) == accepted, output
     if not accepted:
-        assert "Tracy" in output and "0.11.1" in output
+        assert "TRACY_ENABLE" in output and "DART_USE_SYSTEM_TRACY=OFF" in output
 
 
-def test_system_tracy_ignores_host_header_decoy(tmp_path):
-    decoy = tmp_path / "host/common"
-    decoy.mkdir(parents=True)
-    (decoy / "TracyVersion.hpp").write_text(
-        TRACY_ENUM.format(parts="Major = 0, Minor = 1, Patch = 0")
+def fake_tracy_source(tmp_path):
+    source = tmp_path / "tracy-src"
+    source.mkdir()
+    (source / "client.cpp").write_text("int tracyClient() { return 0; }\n")
+    (source / "CMakeLists.txt").write_text(
+        # Tracy 0.14 turns TRACY_ENABLE off by default.
+        'option(TRACY_ENABLE "Enable profiling" OFF)\n'
+        'if(NOT TRACY_ENABLE)\n  message(FATAL_ERROR "TRACY_ENABLE is OFF")\nendif()\n'
+        "add_library(TracyClient STATIC client.cpp)\n"
+        "add_library(Tracy::TracyClient ALIAS TracyClient)\n"
     )
-    config_package(tmp_path, "Tracy", None, "Tracy::TracyClient")
+    return source
+
+
+@pytest.mark.parametrize("seeded", [True, False])
+@pytest.mark.parametrize("requested", [None, "OFF"])
+def test_fetched_tracy_is_enabled_and_checked_offline(tmp_path, seeded, requested):
+    source = fake_tracy_source(tmp_path) if seeded else tmp_path / "tracy-src"
+    args = [
+        f"-DFETCHCONTENT_SOURCE_DIR_TRACY={source.as_posix()}" if seeded else "",
+        "-DFETCHCONTENT_FULLY_DISCONNECTED=ON",
+    ]
+    if requested is not None:
+        args.append(f"-DTRACY_ENABLE={requested}")
     result = configure(
         tmp_path,
-        f'set(CMAKE_INCLUDE_PATH "{(tmp_path / "host").as_posix()}")\n' + TRACY_FIXTURE,
+        TRACY_FETCH_FIXTURE,
+        cmake_args=[arg for arg in args if arg],
+        language="CXX",
+    )
+    output = result.stdout + result.stderr
+    if seeded:
+        assert result.returncode == 0, output
+    else:
+        assert result.returncode != 0
+        assert "Cannot fetch tracy" in output and "DART_USE_SYSTEM_TRACY=ON" in output
+
+
+def test_fetched_tracy_leaves_an_embedding_project_alone(tmp_path):
+    source = fake_tracy_source(tmp_path)
+    dart = tmp_path / "source" / "dart"
+    dart.mkdir(parents=True)
+    (dart / "CMakeLists.txt").write_text(TRACY_FETCH_FIXTURE)
+    result = configure(
+        tmp_path,
+        'set(TRACY_ENABLE OFF CACHE BOOL "The parent project\'s setting")\n'
+        "set(TRACY_ENABLE OFF)\n"
+        "add_subdirectory(dart)\n"
+        'if(TRACY_ENABLE)\n  message(FATAL_ERROR "TRACY_ENABLE changed")\nendif()\n',
+        cmake_args=[
+            f"-DFETCHCONTENT_SOURCE_DIR_TRACY={source.as_posix()}",
+            "-DFETCHCONTENT_FULLY_DISCONNECTED=ON",
+        ],
+        language="CXX",
     )
     assert result.returncode == 0, result.stdout + result.stderr
+    cache = (tmp_path / "build" / "CMakeCache.txt").read_text()
+    assert "TRACY_ENABLE:BOOL=OFF" in cache
 
 
 @pytest.mark.parametrize("build_version", ["3.4.0", "5.0.1"])

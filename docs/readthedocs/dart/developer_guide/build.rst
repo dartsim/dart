@@ -153,7 +153,7 @@ Optional components remain optional.
      - 3.1.x
      - dartpy (bundled by default)
    * - Tracy
-     - 0.11.1
+     - 0.14.1
      - Optional profiling backend
 
 The installed CMake package enforces the same Eigen major for DART and its
