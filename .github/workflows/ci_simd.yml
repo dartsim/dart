@@ -2,6 +2,8 @@
 # compile-time (dart/simd/config.hpp), so each instruction-set level needs its
 # own build to be exercised; default CI only covers the scalar backend on x86
 # (and NEON via the macOS arm64 jobs).
+# PRs and pushes run it only for SIMD and DART collision sources; nightly runs
+# every level after build-system and dependency changes too.
 
 name: CI SIMD Multi-Arch
 
@@ -13,36 +15,20 @@ on:
       - "main"
       - "release-*"
     paths:
-      - "CMakeLists.txt"
-      - "cmake/**"
-      - "pixi.lock"
-      - "pixi.toml"
-      - "dart/CMakeLists.txt"
       - "dart/simd/**"
       - "dart/collision/dart/**"
-      - "tests/CMakeLists.txt"
-      - "tests/unit/CMakeLists.txt"
       - "tests/unit/simd/**"
       - "tests/unit/collision/test_DARTCollisionDetector.cpp"
-      - "tests/benchmark/CMakeLists.txt"
       - "tests/benchmark/simd/**"
       - ".github/workflows/ci_simd.yml"
   pull_request:
     branches:
       - "**"
     paths:
-      - "CMakeLists.txt"
-      - "cmake/**"
-      - "pixi.lock"
-      - "pixi.toml"
-      - "dart/CMakeLists.txt"
       - "dart/simd/**"
       - "dart/collision/dart/**"
-      - "tests/CMakeLists.txt"
-      - "tests/unit/CMakeLists.txt"
       - "tests/unit/simd/**"
       - "tests/unit/collision/test_DARTCollisionDetector.cpp"
-      - "tests/benchmark/CMakeLists.txt"
       - "tests/benchmark/simd/**"
       - ".github/workflows/ci_simd.yml"
   workflow_dispatch:

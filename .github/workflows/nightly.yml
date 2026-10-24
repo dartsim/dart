@@ -51,6 +51,13 @@ jobs:
     permissions:
       actions: write
       contents: read
+    with:
+      nightly: true
+
+  filament:
+    uses: ./.github/workflows/ci_filament.yml
+    with:
+      nightly: true
 
   freebsd:
     uses: ./.github/workflows/ci_freebsd.yml
@@ -149,6 +156,7 @@ jobs:
       - linux
       - macos
       - windows
+      - filament
       - freebsd
       - toolchain
       - collision-fetch

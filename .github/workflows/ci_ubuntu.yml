@@ -78,6 +78,25 @@ jobs:
       - name: Test the performance regression harness
         run: pixi run test-perf-regression
 
+  build-requirements:
+    # CI Windows runs these CMake probes nightly, where they take 15-30 minutes
+    # per job.
+    name: Build requirements
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.11.2
+        with:
+          cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+
+      - name: Check build requirements
+        run: pixi run test-build-requirements
+
   fetched-test-tooling:
     name: Fetched test tooling
     runs-on: ubuntu-24.04

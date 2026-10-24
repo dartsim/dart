@@ -58,15 +58,16 @@ The CI workflows that a failing PR check belongs to (full workflow index:
 | `ci_ubuntu.yml`     | AI checks, lint, build, test, coverage | Ubuntu     |
 | `ci_macos.yml`      | Lint, build, test                      | macOS      |
 | `ci_windows.yml`    | Lint, build, test                      | Windows    |
-| `ci_filament.yml`   | Filament GUI functional lane (`<runner>-Filament-functional`; not yet required) | Ubuntu, Windows, macOS |
+| `ci_filament.yml`   | Filament GUI functional lane (`<runner>-Filament-functional`; not yet required) | Ubuntu, macOS; Windows nightly |
 | `ci_freebsd.yml`    | Build + test (VM)                      | FreeBSD    |
 | `ci_simd.yml`       | SIMD x86 instruction-level matrix      | Ubuntu x86_64 |
 | `ci_toolchain.yml`  | Alternate toolchain build + test       | Ubuntu     |
 | `ci_gz_physics.yml` | Gazebo integration                     | Ubuntu     |
 | `api_doc.yml`       | Doxygen API docs build                 | Ubuntu     |
 
-FreeBSD, toolchain, CodeQL, wheels, Linux ASan/coverage/Eigen alignment, and
-macOS Debug run only in `nightly.yml`; their failures arrive as
+FreeBSD, toolchain, CodeQL, wheels, Linux ASan/coverage/Eigen alignment, macOS
+install, the Windows VS 2022 leg and build-requirement checks, and the Filament
+Windows leg run only in `nightly.yml`; their failures arrive as
 `nightly-failure` issues, not PR checks.
 
 Default test gates exclude device-dependent CTests labeled `gui-device` and

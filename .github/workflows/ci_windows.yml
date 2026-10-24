@@ -14,8 +14,17 @@ on:
     branches:
       - "**"
   workflow_dispatch:
-  # Nightly (nightly.yml) runs this workflow on main every night.
+    inputs:
+      nightly:
+        description: "Also run the nightly-only jobs"
+        type: boolean
+        default: false
+  # Nightly (nightly.yml) calls this with `nightly: true` every night.
   workflow_call:
+    inputs:
+      nightly:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -39,10 +48,10 @@ jobs:
     # Keep the modern check names used by branch protection.
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
-    permissions:
+    permissions: &build-permissions
       actions: write # The last step prunes superseded compiler caches.
       contents: read
-    env:
+    env: &build-env
       CMAKE_GENERATOR: Ninja
       CMAKE_BUILD_TYPE: Release
       CC: cl
@@ -90,13 +99,7 @@ jobs:
             part: python
             task: test-py # builds dartpy and runs pytest
             vsversion: ""
-          - name: windows-2022-Release-cpp
-            runner: windows-2022
-            part: cpp
-            task: test
-            # VS 2022 selects the v143 toolset family on this runner.
-            vsversion: "2022"
-    steps:
+    steps: &build-steps
       - name: Checkout
         uses: actions/checkout@v7
 
@@ -216,7 +219,9 @@ jobs:
             -DDART_BUILD_GUI=ON
 
       - name: Check build requirements
-        if: matrix.part == 'cpp'
+        # Nightly only: these CMake probes take 15-30 minutes per job here;
+        # CI Linux runs them on every PR.
+        if: matrix.part == 'cpp' && inputs.nightly
         run: pixi run test-build-requirements
 
       - name: Check Lint
@@ -283,3 +288,23 @@ jobs:
       # configures a separate install build tree after test-all has already
       # passed, which duplicates work and can keep the protected-branch runner
       # busy for hours.
+
+  # The VS 2022 (v143) baseline runs nightly, like the Linux compiler floors in
+  # ci_toolchain.yml. It shares the build job's settings and steps.
+  build-vs2022:
+    if: inputs.nightly
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    permissions: *build-permissions
+    env: *build-env
+    timeout-minutes: 360
+    strategy:
+      matrix:
+        include:
+          - name: windows-2022-Release-cpp
+            runner: windows-2022
+            part: cpp
+            task: test
+            # VS 2022 selects the v143 toolset family on this runner.
+            vsversion: "2022"
+    steps: *build-steps
