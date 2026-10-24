@@ -35,6 +35,14 @@ def test_urdfdom_requirement_metadata():
     )
 
 
+def test_openssl_requirement_metadata():
+    pixi = tomllib.loads((ROOT / "pixi.toml").read_text())
+    versions = SpecifierSet(pixi["dependencies"]["openssl"])
+    assert "3.0.12" not in versions
+    assert "3.0.13" in versions
+    assert "4.0.0" not in versions
+
+
 def test_package_metadata_support_boundaries():
     project = tomllib.loads((ROOT / "pyproject.toml").read_text())
     metadata = project["project"]

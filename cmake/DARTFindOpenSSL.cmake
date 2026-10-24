@@ -6,4 +6,4 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(OpenSSL 1.1.1 QUIET COMPONENTS Crypto)
+find_package(OpenSSL 3.0.13 QUIET COMPONENTS Crypto)

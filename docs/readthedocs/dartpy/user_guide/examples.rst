@@ -166,7 +166,7 @@ Versioned humanoid models
 The optional ``utils-assets`` component provides
 ``dart.utils.ModelResourceRetriever`` for Atlas v5 and Unitree G1. Pixi source
 builds enable it. Native builds require ``-DDART_BUILD_UTILS_ASSETS=ON``,
-libcurl 7.85 or newer, and OpenSSL Crypto 1.1.1 or newer; published wheels may
+libcurl 7.85 or newer, and OpenSSL Crypto 3.0.13 or newer; published wheels may
 omit this optional component.
 
 From a DART checkout, download the pinned catalog once and open a model demo:

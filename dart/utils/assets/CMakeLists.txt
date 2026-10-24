@@ -5,7 +5,7 @@ if(NOT CURL_FOUND OR NOT TARGET CURL::libcurl)
   message(FATAL_ERROR "dart-utils-assets requires libcurl >= 7.85.0")
 endif()
 if(NOT OPENSSL_FOUND OR NOT TARGET OpenSSL::Crypto)
-  message(FATAL_ERROR "dart-utils-assets requires OpenSSL >= 1.1.1 (Crypto)")
+  message(FATAL_ERROR "dart-utils-assets requires OpenSSL >= 3.0.13 (Crypto)")
 endif()
 
 set(hdrs ModelResourceRetriever.hpp)

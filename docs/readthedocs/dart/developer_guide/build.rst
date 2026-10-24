@@ -122,6 +122,9 @@ Optional components remain optional.
    * - urdfdom
      - 4.0.0
      - URDF parser
+   * - OpenSSL (Crypto)
+     - 3.0.13
+     - Model retriever (``DART_BUILD_UTILS_ASSETS``)
    * - Filament
      - 1.77.3 (pinned SDK)
      - GUI rendering
