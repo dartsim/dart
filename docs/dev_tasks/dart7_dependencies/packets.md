@@ -301,9 +301,11 @@ pattern. A mechanical PR can default their copy operations the same way.
 - **Scope:** `ModelResourceRetriever` stays in C++ (`utils-assets`) with its
   dartpy binding as the Pythonic surface; no separate Python fetcher, and
   `dart.data` builds on the binding. libcurl and OpenSSL stay; DEP-2 exports
-  them only for static builds. Wheels enable `utils-assets`: the Linux image
-  builds current libcurl and OpenSSL 3 from hash-pinned archives (DEP-8(f)),
-  macOS and Windows wheels bundle conda-forge's; measure the wheel-size cost.
+  them only for static builds. Linux wheels enable `utils-assets`: the image
+  builds current libcurl and OpenSSL 3 from hash-pinned archives (DEP-8(f)).
+  macOS/Windows retrievers are deferred pending an approved size/trust decision
+  or a minimal curl build; their locked closures add roughly 18.2/16.5 MB.
+  Measure the wheel-size cost and enforce the platform budgets.
   Standalone builds that enable it fetch libcurl and OpenSSL under DD-10.
 - **Gates:** base, py, wheel (the binding loads, `model://` resolves a pinned
   bundle, size recorded), pkg, gz.

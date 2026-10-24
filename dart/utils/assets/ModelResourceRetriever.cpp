@@ -36,6 +36,7 @@
 #include "dart/common/IncludeWindows.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
+#include "dart/utils/assets/detail/CaBundle.hpp"
 
 #include <curl/curl.h>
 #include <openssl/evp.h>
@@ -371,6 +372,12 @@ void downloadFile(const fs::path& root, const File& file)
     if (curl_easy_setopt(handle.get(), option, value) != CURLE_OK)
       throw std::runtime_error("Failed configuring HTTPS transfer");
   };
+  const auto setProxyOption = [&](CURLoption option, auto value) {
+    const auto result = curl_easy_setopt(handle.get(), option, value);
+    // A libcurl built without proxy support cannot use these options.
+    if (result != CURLE_OK && result != CURLE_UNKNOWN_OPTION)
+      throw std::runtime_error("Failed configuring HTTPS proxy");
+  };
   setOption(CURLOPT_URL, file.url.c_str());
   setOption(CURLOPT_PROTOCOLS_STR, "https");
   setOption(CURLOPT_REDIR_PROTOCOLS_STR, "https");
@@ -378,6 +385,8 @@ void downloadFile(const fs::path& root, const File& file)
   setOption(CURLOPT_MAXREDIRS, 5L);
   setOption(CURLOPT_SSL_VERIFYPEER, 1L);
   setOption(CURLOPT_SSL_VERIFYHOST, 2L);
+  setProxyOption(CURLOPT_PROXY_SSL_VERIFYPEER, 1L);
+  setProxyOption(CURLOPT_PROXY_SSL_VERIFYHOST, 2L);
   setOption(CURLOPT_FAILONERROR, 1L);
   setOption(CURLOPT_NOSIGNAL, 1L);
   setOption(CURLOPT_CONNECTTIMEOUT, 5L);
@@ -388,11 +397,41 @@ void downloadFile(const fs::path& root, const File& file)
   setOption(CURLOPT_ERRORBUFFER, error.data());
   setOption(CURLOPT_WRITEFUNCTION, &writeDownload);
   setOption(CURLOPT_WRITEDATA, &transfer);
-  const char* trustRoot = std::getenv("CURL_CA_BUNDLE");
-  if (!trustRoot || !*trustRoot)
-    trustRoot = std::getenv("SSL_CERT_FILE");
-  if (trustRoot && *trustRoot)
-    setOption(CURLOPT_CAINFO, trustRoot);
+  const char* curlBundle = std::getenv("CURL_CA_BUNDLE");
+  const char* sslFile = std::getenv("SSL_CERT_FILE");
+  char* defaultBundle = nullptr;
+  curl_easy_getinfo(handle.get(), CURLINFO_CAINFO, &defaultBundle);
+  const auto trustedDefault = detail::defaultCaBundle(defaultBundle);
+  const auto trustRoot = detail::findCaBundle(
+      curlBundle,
+      sslFile,
+      trustedDefault,
+#ifdef _WIN32
+      {});
+#else
+      detail::caBundleCandidates);
+#endif
+  const bool hasTrustOverride
+      = (curlBundle && *curlBundle) || (sslFile && *sslFile);
+  const bool useFallback
+      = !hasTrustOverride
+        && (!trustedDefault || !*trustedDefault || trustRoot != trustedDefault);
+  if (!trustRoot.empty() && (hasTrustOverride || useFallback)) {
+    setOption(CURLOPT_CAINFO, trustRoot.c_str());
+    setProxyOption(CURLOPT_PROXY_CAINFO, trustRoot.c_str());
+  }
+#if defined(_WIN32) || defined(__APPLE__)
+  if (useFallback) {
+    // Schannel uses native trust by default; OpenSSL needs backend support.
+    setOption(CURLOPT_SSL_OPTIONS, static_cast<long>(CURLSSLOPT_NATIVE_CA));
+    setProxyOption(
+        CURLOPT_PROXY_SSL_OPTIONS, static_cast<long>(CURLSSLOPT_NATIVE_CA));
+    if (trustRoot.empty()) {
+      setOption(CURLOPT_CAINFO, static_cast<const char*>(nullptr));
+      setProxyOption(CURLOPT_PROXY_CAINFO, static_cast<const char*>(nullptr));
+    }
+  }
+#endif
 
   const auto result = curl_easy_perform(handle.get());
   transfer.output.close();
@@ -534,6 +573,10 @@ ModelResourceRetriever::ModelResourceRetriever(
     const std::string& cacheDirectory, bool offline)
   : mImpl(std::make_unique<Impl>(cacheDirectory, offline))
 {
+#ifdef DART_APPLE_WHEEL_TLS
+  if (!detail::initializeWheelCrypto())
+    throw std::runtime_error("OpenSSL initialization failed");
+#endif
   addManifest("dart://sample/robot_models/atlas-v5.xml");
   addManifest("dart://sample/robot_models/unitree-g1.xml");
 }
