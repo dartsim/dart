@@ -92,7 +92,7 @@ void reportRayHits(
     RaycastResult& result);
 
 std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
-    float sizeX, float sizeY, float sizeZ);
+    btScalar sizeX, btScalar sizeY, btScalar sizeZ);
 
 std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromTriMesh(
     const Eigen::Vector3d& scale,
@@ -921,7 +921,7 @@ void reportRayHits(
 
 //==============================================================================
 std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
-    float sizeX, float sizeY, float sizeZ)
+    btScalar sizeX, btScalar sizeY, btScalar sizeZ)
 {
   float v[59][3]
       = {{0, 0, 0},

@@ -36,6 +36,7 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/ConvexMeshShape.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -291,6 +292,32 @@ TEST(ConvexMeshShapeCollision, FclFallsBackWithoutVertices)
 }
 
 #if HAVE_BULLET
+TEST(BulletCollisionDetector, EllipsoidMeshPreservesScalarPrecision)
+{
+  auto detector = std::make_shared<TestBulletDetector>();
+  const Eigen::Vector3d radii(1.00000001, 2.00000003, 3.00000005);
+  dart::dynamics::SimpleFrame frame;
+  frame.setShape(std::make_shared<dart::dynamics::EllipsoidShape>(2.0 * radii));
+
+  auto collObj = detector->claimCollisionObject(&frame);
+  ASSERT_NE(collObj, nullptr);
+  auto* shape = static_cast<BulletCollisionObject*>(collObj.get())
+                    ->getBulletCollisionObject()
+                    ->getCollisionShape();
+  ASSERT_NE(shape, nullptr);
+  ASSERT_EQ(shape->getShapeType(), GIMPACT_SHAPE_PROXYTYPE);
+
+  btVector3 minimum;
+  btVector3 maximum;
+  static_cast<btGImpactMeshShape*>(shape)
+      ->getMeshInterface()
+      ->calculateAabbBruteForce(minimum, maximum);
+  for (int axis = 0; axis < 3; ++axis) {
+    EXPECT_EQ(minimum[axis], -static_cast<btScalar>(radii[axis]));
+    EXPECT_EQ(maximum[axis], static_cast<btScalar>(radii[axis]));
+  }
+}
+
 TEST(ConvexMeshShapeCollision, BulletUsesConvexHullShape)
 {
   auto detector = std::make_shared<TestBulletDetector>();
