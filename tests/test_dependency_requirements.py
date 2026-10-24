@@ -2255,6 +2255,66 @@ def test_module_floors(
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def fake_curl(tmp_path, lookup, version):
+    # Config mode finds a CURL package; module mode reads curl/curlver.h at the
+    # cache entries that stand in for find_path and find_library.
+    if lookup == "config":
+        config_package(tmp_path, "CURL", version, "CURL::libcurl")
+        # Let only the requested minimum decide, not a same-major rule.
+        (tmp_path / "prefix/lib/cmake/CURL/CURLConfigVersion.cmake").write_text(
+            f'set(PACKAGE_VERSION "{version}")\n'
+            "if(NOT PACKAGE_VERSION VERSION_LESS PACKAGE_FIND_VERSION)\n"
+            "  set(PACKAGE_VERSION_COMPATIBLE TRUE)\n"
+            "endif()\n"
+        )
+        return ()
+    include = tmp_path / "include"
+    (include / "curl").mkdir(parents=True)
+    (include / "curl" / "curlver.h").write_text(
+        f'#define LIBCURL_VERSION "{version}"\n'
+    )
+    library = tmp_path / "library"
+    library.touch()
+    return (
+        f"-DCURL_INCLUDE_DIR={include.as_posix()}",
+        f"-DCURL_LIBRARY={library.as_posix()}",
+    )
+
+
+@pytest.mark.parametrize("lookup", ["config", "module"])
+@pytest.mark.parametrize("version,accepted", [("8.4.0", False), ("8.5.0", True)])
+def test_curl_floor(tmp_path, lookup, version, accepted):
+    # 8.5.0 is Ubuntu 24.04's libcurl.
+    result = configure(
+        tmp_path,
+        "include(DARTFindCURL)\n"
+        "if(CURL_FOUND)\n"
+        + ("" if accepted else 'message(FATAL_ERROR "Accepted unsupported version")\n')
+        + "else()\n"
+        + ('message(FATAL_ERROR "Rejected supported version")\n' if accepted else "")
+        + "endif()\n",
+        cmake_args=fake_curl(tmp_path, lookup, version),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("lookup", ["config", "module"])
+def test_assets_reject_old_curl_with_minimum_version_message(tmp_path, lookup):
+    result = configure(
+        tmp_path,
+        "include(DARTMacros)\n"
+        # CMake 3.28's FindOpenSSL calls pkg_check_modules, which configure()
+        # leaves undefined by disabling PkgConfig.
+        "set(CMAKE_DISABLE_FIND_PACKAGE_OpenSSL TRUE)\n"
+        f'include("{(ROOT / "dart/utils/assets/CMakeLists.txt").as_posix()}")\n',
+        cmake_args=fake_curl(tmp_path, lookup, "8.4.0"),
+    )
+    assert result.returncode != 0
+    assert (
+        "dart-utils-assets requires libcurl >= 8.5.0" in result.stdout + result.stderr
+    )
+
+
 @pytest.mark.parametrize("preset", ["cache", "normal"])
 @pytest.mark.parametrize("msvc", [False, True])
 @pytest.mark.parametrize(

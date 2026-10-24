@@ -78,8 +78,8 @@ pixi run agent-capture -- --factory python.examples.sdf_pose.main:make_world \
 
 The optional `utils-assets` component supplies `ModelResourceRetriever` in C++
 and dartpy. Normal Pixi builds enable it; native CMake builds opt in with
-`-DDART_BUILD_UTILS_ASSETS=ON` and require libcurl 7.85 or newer and OpenSSL
-Crypto 3.0.13 or newer (the Ubuntu 24.04 LTS version) at build time. Shared
+`-DDART_BUILD_UTILS_ASSETS=ON` and require libcurl 8.5 or newer and OpenSSL
+Crypto 3.0.13 or newer (the Ubuntu 24.04 LTS versions) at build time. Shared
 installs link them privately, so consumers do not need their development
 packages, only their runtime libraries; static installs also require the
 development packages from consumers.

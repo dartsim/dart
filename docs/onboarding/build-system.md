@@ -272,11 +272,11 @@ targets forward to `dart-io`; applications linked to their former shared
 libraries must rebuild.
 
 `DART_BUILD_UTILS_ASSETS=ON` adds the optional online model retriever to
-`dart-io` and requires `DART_BUILD_IO=ON`, libcurl and OpenSSL Crypto 3.0.13 or
-newer (the Ubuntu 24.04 LTS version). Its `utils-assets` component and
-`dart-utils-assets` target forward to `dart-io`.
-Shared installs link libcurl and OpenSSL privately; only static installs make
-consumers find them.
+`dart-io` and requires `DART_BUILD_IO=ON`, libcurl 8.5.0 or newer and OpenSSL
+Crypto 3.0.13 or newer (the Ubuntu 24.04 LTS versions). Its `utils-assets`
+component and `dart-utils-assets` target forward to `dart-io`. Shared installs
+link libcurl and OpenSSL privately; only static installs make consumers find
+them.
 
 ## GUI
 

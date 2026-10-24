@@ -122,9 +122,12 @@ Optional components remain optional.
    * - urdfdom
      - 4.0.0
      - URDF parser
+   * - libcurl
+     - 8.5.0
+     - Online robot model retriever (``DART_BUILD_UTILS_ASSETS``)
    * - OpenSSL (Crypto)
      - 3.0.13
-     - Model retriever (``DART_BUILD_UTILS_ASSETS``)
+     - Online robot model retriever (``DART_BUILD_UTILS_ASSETS``)
    * - Filament
      - 1.77.3 (pinned SDK)
      - GUI rendering
