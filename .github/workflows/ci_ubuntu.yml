@@ -75,6 +75,9 @@ jobs:
       - name: Test AI infrastructure
         run: pixi run test-ai-infra
 
+      - name: Test wheel tooling
+        run: pixi run test-wheel-tooling
+
       - name: Test the performance regression harness
         run: pixi run test-perf-regression
 

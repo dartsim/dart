@@ -498,8 +498,73 @@ CMake options (`CMAKE_PREFIX_PATH`, `DART_USE_SYSTEM_IMGUI` and host linker
 flags) through `CMAKE_ARGS`; the fixed wheel configuration lives in
 `pyproject.toml`.
 
+Only Linux release wheels enable `DART_BUILD_UTILS_ASSETS=ON` and expose
+`dartpy.utils.ModelResourceRetriever`. Linux builds shared libcurl 8.23.0 and
+OpenSSL 3.5.9 from SHA-256-checked release archives. OpenSSL 3.5 is the
+[LTS line supported through April 2030](https://openssl-library.org/source/).
+Shared libraries follow the image's existing dependencies and let auditwheel
+bundle and relocate libcurl, libssl and libcrypto. curl enables HTTP/HTTPS
+(HTTPS requires the HTTP implementation), with other transfer protocols and
+optional compression, SSH, IDN, PSL and HTTP/2 dependencies disabled; the
+retriever restricts transfers and redirects to HTTPS. Linux strips the three
+TLS libraries before repair and disables unused OpenSSL protocols, algorithms
+and subsystems, while retaining OCSP and the modern TLS client algorithms.
+Linux OpenSSL's config and modules directories are dedicated to dartpy to
+avoid another installation's configuration.
+The wheel's `dist-info/licenses/` also includes upstream notices for curl
+and OpenSSL from `python/dartpy/licenses/`; the eight deferred-platform notices
+remain in the repository without shipping in wheels.
+macOS and Windows wheels keep this component disabled. Their locked
+conda-forge curl closure would add **18,163,786 compressed bytes** on macOS
+arm64 (14 libraries) and **16,546,729 bytes** on Windows x64 (6 libraries),
+using raw deflate level 6. ICU data alone accounts for 13,057,387 and
+12,798,716 bytes respectively. Against main's 14,083,197-byte macOS and
+12,597,754-byte Windows wheels, the projected totals are about 32.25 MB
+(+129%) and 29.14 MB (+131%). Linux's measured increase is 2,649,828 bytes,
+from 18,653,674 to 21,303,502 bytes. The macOS/Windows cost is about eight
+times the roughly 2 MB estimate used for the original decision. The open
+maintainer choice is to accept that closure or build a minimal curl from the
+pinned source archive before enabling those platforms. The repair tooling and
+notices remain ready, but their current wheels require neither the retriever
+nor its TLS smoke. No platform uses a Python runtime CA dependency.
+
+`scripts/verify_wheel.py` prints every bundled library's compressed/unpacked
+size and rejects wheels above these compressed-byte budgets:
+
+| Platform | Recorded wheel size (bytes) | Maximum (bytes) |
+| --- | ---: | ---: |
+| Linux x86_64 | 21,303,502 | 23,000,000 |
+| Linux aarch64 | Not yet measured locally | 23,000,000 |
+| macOS arm64 (retriever off) | 14,083,197 | 16,000,000 |
+| Windows x64 (retriever off) | 12,597,754 | 14,500,000 |
+
+The macOS/Windows baselines are main's
+[nightly run 40095159727](https://github.com/dartsim/dart/actions/runs/40095159727),
+not newly built artifacts from this change. That run's Linux aarch64 wheel
+without the retriever was 17,151,246 bytes; its final retriever cost is still
+unmeasured. It shares the 23 MB Linux limit until a native aarch64 build
+provides a measured budget, leaving roughly 3 MB of estimated headroom.
+Budget changes require reviewing the inventory,
+license coverage and dependency cost. See [TLS trust lookup](io-parsing.md#tls-trust)
+for the Apple guard against build-environment CA/configuration paths,
+including its effect on macOS scikit-build source installs.
+The wheel's Python install component does not include DART's sample model
+manifests. Register a local manifest with `addManifest(file_uri)`, or point
+`DART_DATA_PATH` to the `data/` directory of a DART checkout to use those samples.
+Without it, missing-sample warnings from the constructor are expected. A Linux
+wheel can retrieve models from a user-registered local manifest and its
+`model://` URI without `DART_DATA_PATH`.
+
 Wheels require Python 3.12 and use the nanobind binder for CPython's stable
 ABI (`DART_DARTPY_STABLE_ABI=ON`); source builds require CMake 3.28 or newer.
+Linux scikit-build source installs (`pip install .`) also enable the retriever
+and require libcurl >= 8.5 and OpenSSL Crypto >= 3.0.13 development packages;
+macOS/Windows source installs need them when explicitly enabling utils-assets.
+Stock packages meet these floors on Ubuntu 24.04 or newer; Debian 12 (libcurl
+7.88.1) and Ubuntu 22.04 (libcurl 7.81, OpenSSL 3.0.2) are too old. To build
+without the
+retriever or those development packages, use
+`CMAKE_ARGS=-DDART_BUILD_UTILS_ASSETS=OFF pip install .`.
 Every build is tagged `cp312-abi3`, and one wheel per platform serves Python 3.12 and every
 later version. The release matrix builds four wheels: Linux x86_64 and
 aarch64, macOS arm64, and Windows x64. Each row checks the wheel with
@@ -507,8 +572,9 @@ aarch64, macOS arm64, and Windows x64. Each row checks the wheel with
 both in its containers, and macOS and Windows run
 `pixi run -e py313-wheel wheel-test-abi3`. Stable-ABI calls cost up to about 5%
 more instructions on NumPy-heavy setters. `scripts/verify_wheel.py` rejects a
-wheel that is not `cp312-abi3`, lacks the package files or the Filament
-license, or ships files outside the package.
+wheel that is not `cp312-abi3`, exceeds its size budget, lacks package files,
+`LICENSE`, `NOTICE`, the Filament license or required curl/OpenSSL notices, or
+ships files outside the package.
 
 Linux release wheels use `python3 scripts/wheel_linux.py cp312` on native
 x86_64 or aarch64 hosts with Docker.
@@ -516,9 +582,21 @@ The driver builds `docker/wheels/Dockerfile.manylinux_2_28`, which fetches each
 source-built native dependency as a release or tag archive checked with
 `sha256sum` (update the hash with the version). It compiles those dependencies and dartpy
 with the manylinux toolchain, requires `auditwheel repair --plat manylinux_2_28_<arch>`, and runs the wheel smoke
-test in a fresh manylinux 2.28 base container. Outputs are in `dist/`.
+test in a fresh manylinux 2.28 base container. The TLS smoke temporarily hides
+curl's pinned default bundle and places the test CA in the Debian/Ubuntu search
+location alongside the real system roots, with `CURL_CA_BUNDLE` and
+`SSL_CERT_FILE` unset. It also rejects the test server with only the real system
+roots at that fallback location. It then hides every
+searched bundle and requires a trust-anchor failure. A separate guard process
+restores displaced files even if the smoke is killed by its timeout. Outputs
+are in `dist/`.
 The source checkout is mounted read-only; temporary container builds avoid
 reusing host CMake caches.
+For a curl or OpenSSL security update, bump the version and SHA-256 in
+`Dockerfile.manylinux_2_28`, refresh notices if their license texts changed,
+refresh the Pixi lockfile for source builds and future macOS/Windows wheels,
+run the wheel gates, and release patch wheels; installed wheels cannot update
+their bundled TLS libraries independently.
 Wheel configurations request Python's `Development.Module` component rather
 than its embedding library, which manylinux deliberately omits.
 
@@ -541,11 +619,36 @@ Use the candidate branch for the workflow definition and the exact candidate
 SHA for the checkout. Inspect both architectures' repaired tags and fresh
 container smoke tests before release.
 
-The repaired-wheel smoke test requires all four parser APIs and constructs a
+Also run the cross-distribution TLS release gate on a native Docker host:
+
+```bash
+python3 scripts/test_wheel_tls_distros.py dist/dartpy-*-cp312-abi3-manylinux_2_28_$(uname -m).whl
+```
+
+Pass one wheel matching the host architecture. This uses disposable
+`ubuntu:24.04` and `debian:12` images with Python 3.12, tests untrusted and
+wrong-host certificates, verifies an explicit CA, and exercises system CA
+fallback with real roots plus the test CA, rejection with real roots alone,
+and fail-closed behavior with every CA file absent, without environment overrides. The fallback test changes system trust files temporarily; it requires
+a root Linux container with `/.dockerenv` or `/run/.containerenv`.
+
+The repaired-wheel smoke test requires all four parser APIs and, on Linux,
+the model retriever, and constructs a
 `dartpy.gui` interactive frame and a viewer with a world node without opening a
 display. It also parses an inline URDF model, so missing IO or GUI support fails
-acceptance. Linux release wheels run this check in the fresh manylinux
-container without a display.
+acceptance. On Linux it also downloads a manifest-pinned model from a local HTTPS
+server with `CURL_CA_BUNDLE` set to the test CA, rejects that server without
+the CA, and rejects its CA-trusted certificate when requested as `127.0.0.1`
+instead of `localhost`. Both rejections must report TLS verification errors
+before any HTTP request. This uses only Python's standard library and the
+committed TLS test fixture; no external server or runtime CA package is
+required. Linux release wheels run these checks in fresh manylinux containers
+on Python 3.12 and 3.13
+without a display. macOS and Windows run the package/parser/GUI smoke and
+strict ABI audit outside the Pixi library paths. Before enabling their
+retrievers, CI must additionally show rejected untrusted TLS, successful
+trusted downloads, system trust without a build-environment default, and the
+repaired TLS library inventory within an approved size budget.
 
 On Python 3.12, the smoke test pins NumPy 1.26.4 and round-trips vector and
 matrix arrays through dartpy. The Python 3.13 abi3 smoke test uses current NumPy.
