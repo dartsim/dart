@@ -5,3 +5,4 @@ Section: Build
     0.14 release built with `TRACY_ENABLE=ON`. The Pixi profile environment
     fetches Tracy and no longer provides a viewer or the `tracy` task: install
     a Tracy 0.14 viewer separately.
+    [#3939](https://github.com/dartsim/dart/pull/3939)
