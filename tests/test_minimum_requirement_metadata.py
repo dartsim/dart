@@ -35,6 +35,14 @@ def test_urdfdom_requirement_metadata():
     )
 
 
+def test_libcurl_requirement_metadata():
+    versions = SpecifierSet(
+        tomllib.loads((ROOT / "pixi.toml").read_text())["dependencies"]["libcurl"]
+    )
+    assert "8.4.0" not in versions
+    assert "8.5.0" in versions
+
+
 def test_package_metadata_support_boundaries():
     project = tomllib.loads((ROOT / "pyproject.toml").read_text())
     metadata = project["project"]
