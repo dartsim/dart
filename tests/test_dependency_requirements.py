@@ -541,6 +541,16 @@ def test_io_rejects_tinyxml2_9_with_minimum_version_message(tmp_path, lookup):
     assert "dart-io requires tinyxml2 >= 10.0.0" in result.stdout + result.stderr
 
 
+# CMake 3.28's FindOpenSSL calls pkg_check_modules() even when configure()
+# disables FindPkgConfig; a no-op keeps host pkg-config packages out.
+NO_PKG_CONFIG = (
+    "if(NOT COMMAND pkg_check_modules)\n"
+    "  macro(pkg_check_modules)\n"
+    "  endmacro()\n"
+    "endif()\n"
+)
+
+
 def fake_openssl(tmp_path, version):
     """Lay out the files CMake's FindOpenSSL probes and return its root option."""
     root = tmp_path / "openssl"
@@ -575,7 +585,7 @@ def fake_openssl(tmp_path, version):
 def test_openssl_floor(tmp_path, version, accepted):
     result = configure(
         tmp_path,
-        "include(DARTFindOpenSSL)\n"
+        NO_PKG_CONFIG + "include(DARTFindOpenSSL)\n"
         "if(OPENSSL_FOUND AND TARGET OpenSSL::Crypto)\n"
         + ("" if accepted else 'message(FATAL_ERROR "Accepted unsupported version")\n')
         + "else()\n"
@@ -599,7 +609,7 @@ def test_assets_reject_old_openssl_with_minimum_version_message(tmp_path, versio
     )
     result = configure(
         tmp_path,
-        "include(DARTMacros)\n"
+        NO_PKG_CONFIG + "include(DARTMacros)\n"
         f'include("{(ROOT / "dart/utils/assets/CMakeLists.txt").as_posix()}")\n',
         cmake_args=fake_openssl(tmp_path, version),
     )
