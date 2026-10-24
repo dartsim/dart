@@ -5,3 +5,4 @@ Section: Build
     system GLFW is missing or older than 3.4, such as Ubuntu 24.04's 3.3.10.
     Set `DART_USE_SYSTEM_GLFW=ON` or `DART_USE_SYSTEM_DEPENDENCIES=ON` to keep
     using an installed GLFW 3.4. macOS keeps using the installed GLFW.
+    [#3942](https://github.com/dartsim/dart/pull/3942)
