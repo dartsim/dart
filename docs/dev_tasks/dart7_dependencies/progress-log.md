@@ -103,3 +103,38 @@
   - The tinyxml2 fetch prototype showed fetch-first cannot work for a
     library that DART's required dependencies already load; the maintainer
     was asked how DD-10 applies.
+- **2026-10-21 to 2026-10-23**
+  - The maintainer marked the plan's PRs ready and merged them in the
+    recorded order; by 2026-10-23 every PR through #3901 had merged.
+  - DEP-4(b) published and merged as #3900 (ODE) and #3901 (Bullet).
+- **2026-10-24**
+  - Wave 6: #3921 (DEP-33(e)), #3922 (libcurl 8.5.0), #3923 (OpenSSL
+    3.0.13), #3924 (DEP-13(d)) and #3925 (DEP-11 PR3) published after two
+    clean Codex reviews each, and merged. The OpenSSL tests needed a fix for
+    CMake 3.28 that a bot review found.
+  - The nightly ODE and Bullet fetch lane failed because an installed DART
+    did not find the Bullet it fetched; #3929 fixed it after three review
+    rounds. DEP-19's Linux wheels published and merged as #3931.
+  - Checkpoint with the maintainer: land the in-flight work, then the
+    queued decisions one at a time, then the backports, then the remaining
+    packets, with DEP-21 after M1d.
+  - Wave 7 (Claude workers, Codex reviews): the Tier 1 apt lane, DEP-11
+    PR4, DEP-13(c), DEP-22's CMake cap and Tracy, DEP-20(b) and DEP-24
+    published as drafts #3937 to #3942 and #3943. Its two spikes found DEP-21's four targets
+    clean on every Linux toolchain, a `DART_STRING_TYPE` initialization hazard
+    between dialects to fix first, and a Clang `-Werror` failure from #3924,
+    fixed in #3936.
+  - DEP-24's research found gz-physics uses `Eigen::Vector6d` and
+    `Eigen::Matrix6d`, so Q3's Eigen-alias deprecation skips them (dated note
+    in [decisions.md](decisions.md)).
+  - The maintainer asked that finished drafts leave draft once they pass
+    the PR Lifecycle gate (DD-35); every open draft got an `@codex review`,
+    and the maintainer merged #3936 to #3942 the same evening. #3939's merge
+    settled the Tracy viewer question. The maintainer then answered the two
+    queued questions: fetch-first follows the loaders (DD-36), and macOS and
+    Windows wheels build a minimal libcurl and OpenSSL (DD-37). DEP-11 PR4
+    published as #3943 after nine review rounds, which narrowed the test to
+    top-level builds and skipped the SIMD backend fragments.
+  - Routing: Muse is out of quota until 2026-10-26, so Claude workers in
+    isolated worktrees wrote wave 7 (including packets the table assigns to
+    Codex or Muse) and Codex reviewed every packet.
