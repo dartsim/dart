@@ -35,8 +35,6 @@
 
 #include <dart/dynamics/CompositeNode.hpp>
 
-#include <dart/math/Geometry.hpp>
-
 #include <dart/common/SpecializedForAspect.hpp>
 
 #include <Eigen/Geometry>
