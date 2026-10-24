@@ -6,4 +6,4 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(CURL 7.85.0 QUIET)
+find_package(CURL 8.5.0 QUIET)
