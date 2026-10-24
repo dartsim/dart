@@ -27,6 +27,9 @@ from dartpy.gui import InteractiveFrame
 from dartpy.math import Random
 from dartpy.utils import DartLoader, MjcfParser, SdfParser, SkelParser
 
+if sys.platform == "linux":
+    from dartpy.utils import ModelResourceRetriever
+
 print("Native smoke: package layout", flush=True)
 # A package with a private extension; public types keep their public module.
 assert dart.__file__.endswith("__init__.py"), dart.__file__
@@ -181,6 +184,8 @@ def _smoke_environment() -> dict[str, str]:
         "CONDA_PROMPT_MODIFIER",
         "PYTHONPATH",
         "PYTHONHOME",
+        "CURL_CA_BUNDLE",
+        "SSL_CERT_FILE",
         "SDF_PATH",
         "LD_LIBRARY_PATH",
         "DYLD_LIBRARY_PATH",
@@ -203,7 +208,7 @@ def _smoke_environment() -> dict[str, str]:
     return env
 
 
-def test_wheel(wheel_path: Path) -> None:
+def test_wheel(wheel_path: Path, *, test_ca_fallback: bool = False) -> None:
     wheel_path = wheel_path.resolve()
     if not wheel_path.exists():
         raise FileNotFoundError(f"Wheel file not found: {wheel_path}")
@@ -244,6 +249,15 @@ def test_wheel(wheel_path: Path) -> None:
             timeout=120,
             env=_smoke_environment(),
         )
+        if sys.platform == "linux":
+            tls_smoke = Path(__file__).with_name("test_wheel_tls.py")
+            run_command(
+                [str(python_path), "-I", "-u", str(tls_smoke)]
+                + (["--test-ca-fallback"] if test_ca_fallback else []),
+                stage="local HTTPS smoke",
+                timeout=180,
+                env=_smoke_environment(),
+            )
 
 
 def _expand_wheels(patterns: list[str]) -> list[Path]:
@@ -261,6 +275,11 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("wheel", nargs="*", help="Wheel path or glob pattern")
     parser.add_argument("--all", action="store_true", help="Test all dist wheels")
+    parser.add_argument(
+        "--test-ca-fallback",
+        action="store_true",
+        help="Temporarily change system trust files (disposable root Linux containers only)",
+    )
     args = parser.parse_args(argv[1:])
 
     if args.all:
@@ -276,7 +295,10 @@ def main(argv: list[str]) -> int:
 
     for wheel_path in wheels:
         print(f"Testing wheel: {wheel_path}", flush=True)
-        test_wheel(wheel_path)
+        if args.test_ca_fallback:
+            test_wheel(wheel_path, test_ca_fallback=True)
+        else:
+            test_wheel(wheel_path)
 
     print(f"All {len(wheels)} wheel(s) tested successfully.")
     return 0

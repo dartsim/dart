@@ -35,7 +35,8 @@ def test_wheel_smoke_numpy_floor_and_current(monkeypatch, tmp_path, version):
     )
     assert ("numpy==1.26.4" in install) == (version[:2] == (3, 12))
     assert str(wheel) in install
-    assert calls[-1][0][-1] == module.SMOKE_TEST
+    smoke, _ = next(call for call in calls if call[1]["stage"] == "native smoke")
+    assert smoke[-1] == module.SMOKE_TEST
 
 
 def test_smoke_environment_drops_conda_libraries_and_graphics_overrides(
@@ -50,7 +51,14 @@ def test_smoke_environment_drops_conda_libraries_and_graphics_overrides(
     monkeypatch.setenv(
         "PATH", os.pathsep.join(map(str, (prefix / "bin", system_bin, sibling_bin)))
     )
-    for name in ("DISPLAY", "LD_LIBRARY_PATH", "PYTHONPATH", "VK_DRIVER_FILES"):
+    for name in (
+        "DISPLAY",
+        "LD_LIBRARY_PATH",
+        "PYTHONPATH",
+        "VK_DRIVER_FILES",
+        "CURL_CA_BUNDLE",
+        "SSL_CERT_FILE",
+    ):
         monkeypatch.setenv(name, "must-not-leak")
 
     env = module._smoke_environment()
@@ -61,6 +69,8 @@ def test_smoke_environment_drops_conda_libraries_and_graphics_overrides(
         "LD_LIBRARY_PATH",
         "PYTHONPATH",
         "VK_DRIVER_FILES",
+        "CURL_CA_BUNDLE",
+        "SSL_CERT_FILE",
     ):
         assert name not in env
         assert os.environ[name] == (

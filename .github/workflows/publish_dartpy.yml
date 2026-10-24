@@ -188,10 +188,12 @@ jobs:
         run: pixi run -e ${{ matrix.pixi_env }} wheel-repair
 
       - name: Verify wheel
+        # Reports repaired libraries and enforces the platform wheel size budget.
         if: ${{ steps.wheel_gate.outputs.enabled == 'true' && matrix.os != 'linux' }}
         run: pixi run -e ${{ matrix.pixi_env }} wheel-verify
 
       - name: Test wheel
+        # macOS/Windows keep the retriever off pending its dependency-size decision.
         if: ${{ steps.wheel_gate.outputs.enabled == 'true' && matrix.os != 'linux' }}
         run: pixi run -e ${{ matrix.pixi_env }} wheel-test
 
@@ -205,7 +207,7 @@ jobs:
           pixi run -e py313-wheel wheel-test-abi3
 
       - uses: actions/upload-artifact@v7
-        if: ${{ steps.wheel_gate.outputs.enabled == 'true' }}
+        if: ${{ !cancelled() && steps.wheel_gate.outputs.enabled == 'true' }}
         with:
           path: ./dist/*.whl
           name: ${{ matrix.os }}-${{ matrix.build }}

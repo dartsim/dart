@@ -4,6 +4,10 @@ Follow the existing style in nearby files.
 
 - Use two-space indentation in C++.
 - Use project naming conventions already present in the touched module.
+- Name C++ function parameters without a leading underscore (`resetCommand`,
+  not `_resetCommand`), even where nearby code still uses one. Rename the
+  parameters of a function you already change, in its declaration and
+  definition, but do not rename untouched code for this alone.
 - Keep includes minimal and ordered consistently with neighboring files.
 - Prefer small, behavior-preserving commits for mechanical changes.
 - Windows CI and the Linux Release and assertions jobs
