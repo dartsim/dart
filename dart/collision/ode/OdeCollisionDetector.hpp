@@ -35,7 +35,16 @@
 
 #include <dart/collision/CollisionDetector.hpp>
 
+// ODE's headers mix enumeration types in arithmetic, which C++20 deprecates;
+// silence that for ODE that DART fetches, whose headers are not system headers.
+#if defined(__GNUC__)
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
+#endif
 #include <ode/ode.h>
+#if defined(__GNUC__)
+  #pragma GCC diagnostic pop
+#endif
 
 #include <deque>
 #include <utility>

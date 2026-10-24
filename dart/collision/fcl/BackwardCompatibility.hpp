@@ -60,6 +60,17 @@
 #include <cassert>
 // clang-format on
 
+// FCL built with octomap includes it, and octomap 1.10.0 and older include
+// <ciso646>, which libstdc++ 15 flags with a #warning under C++20. Silence
+// #warning directives in these third-party headers only.
+#if defined(__clang__)
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-W#warnings"
+#elif defined(__GNUC__)
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wcpp"
+#endif
+
 #include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
 #include <fcl/config.h>
 #include <fcl/geometry/bvh/BVH_model.h>
@@ -74,6 +85,12 @@
 #if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
   #include <fcl/geometry/octree/octree.h>
 #endif // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+
+#if defined(__clang__)
+  #pragma clang diagnostic pop
+#elif defined(__GNUC__)
+  #pragma GCC diagnostic pop
+#endif
 
 #include <memory>
 
