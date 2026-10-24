@@ -3190,6 +3190,263 @@ def test_bullet_installed_scalar_abi(tmp_path, precision, linkage, suffix):
             )
 
     assert f'set(DART_BULLET_REQUIRE_PRECISION "{precision}")' in component.read_text()
+    # Only a fetched Bullet that DART installs is searched in DART's prefix.
+    assert 'set(DART_BULLET_SEARCH_DIRS "")' in component.read_text()
+
+
+@pytest.mark.parametrize("debug", [False, True])
+@pytest.mark.parametrize("earlier", [False, True])
+def test_bullet_installed_fetched_sdk_precedes_consumer_bullet(
+    tmp_path, earlier, debug
+):
+    """An installed DART links the fetched Bullet that it installed beside itself."""
+    source = bullet_fallback_source(tmp_path)
+    if debug:
+        # Like upstream Bullet, a Debug build installs only _Debug libraries.
+        top = source / "CMakeLists.txt"
+        top.write_text(
+            top.read_text().replace(
+                "add_subdirectory(src)",
+                'set(CMAKE_DEBUG_POSTFIX "_Debug" CACHE STRING "")\nadd_subdirectory(src)',
+            )
+        )
+    src = source / "src"
+    # Scalar-dependent Collision and LinearMath symbols for the consumer's probe.
+    (src / "LinearMath/btConvexHullComputer.h").write_text(
+        '#pragma once\n#include "btScalar.h"\n'
+        "struct btConvexHullComputer { btScalar compute(const float*, int, int, btScalar, btScalar); };\n"
+    )
+    with (src / "btBulletCollisionCommon.h").open("a") as header:
+        header.write(
+            "#ifdef __cplusplus\n"
+            "struct btVector3 { btVector3(btScalar, btScalar, btScalar) {} };\n"
+            "struct btStaticPlaneShape { btStaticPlaneShape(const btVector3&, btScalar); };\n"
+            "#endif\n"
+        )
+    with (src / "BulletCollision.cpp").open("a") as collision:
+        collision.write(
+            '#include "btBulletCollisionCommon.h"\n'
+            "btStaticPlaneShape::btStaticPlaneShape(const btVector3&, btScalar) {}\n"
+        )
+    with (src / "LinearMath.cpp").open("a") as math:
+        math.write(
+            '#include "LinearMath/btConvexHullComputer.h"\n'
+            "btScalar btConvexHullComputer::compute(const float*, int, int, btScalar, btScalar) { return 0; }\n"
+        )
+    # Pixi, conda-forge and distribution prefixes hold unsuffixed
+    # single-precision Bullet, which a consumer's search paths can list first.
+    decoy = build_bullet_abi_fixture(tmp_path / "decoy", "single")
+    # CMake's FindBullet also requires the dynamics and soft-body libraries.
+    collision = (decoy / "link-files.txt").read_text().splitlines()[0]
+    for name in ("BulletDynamics", "BulletSoftBody"):
+        shutil.copy(
+            decoy / "lib" / collision,
+            decoy / "lib" / collision.replace("BulletCollision", name),
+        )
+    project = tmp_path / "dart"
+    project.mkdir()
+    (project / "core.cpp").write_text(
+        BULLET_CONSUMER.replace("int main()", "int dart_fixture()")
+    )
+    (project / "backend.cmake").write_text(
+        (ROOT / "dart/collision/bullet/CMakeLists.txt")
+        .read_text()
+        .split("# Search all header and source files")[0]
+    )
+    (project / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.22.1)\nproject(dart LANGUAGES C CXX)\n"
+        "set(CMAKE_CXX_STANDARD 17)\nset(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)\n"
+        f'set(CMAKE_MODULE_PATH "{(ROOT / "cmake").as_posix()}")\n'
+        f'set(FETCHCONTENT_SOURCE_DIR_BULLET "{source.as_posix()}")\n'
+        "set(CONFIG_INSTALL_DIR share/dart/cmake)\n"
+        + bullet_fallback_content()
+        + "include(backend.cmake)\nadd_library(dart SHARED core.cpp)\n"
+        'target_link_libraries(dart PUBLIC "$<BUILD_INTERFACE:Bullet>" "$<INSTALL_INTERFACE:$<1:Bullet>>")\n'
+        "if(BT_USE_DOUBLE_PRECISION)\ntarget_compile_definitions(dart PUBLIC BT_USE_DOUBLE_PRECISION)\nendif()\n"
+        f'set(PROJECT_NAME_UPPERCASE DART)\nset(DART_SOURCE_DIR "{ROOT.as_posix()}")\n'
+        "include(Components)\ninitialize_component_helpers(dart)\n"
+        "add_component(dart dart)\nadd_component_targets(dart dart dart)\n"
+        "add_component_dependency_packages(dart dart Bullet)\ninstall_component_exports(dart)\n"
+        f'install(FILES "{(ROOT / "cmake/DARTFindPackageVersion.cmake").as_posix()}"\n'
+        "  DESTINATION share/dart/cmake)\n"
+        # The production config file, which includes the components in a function.
+        "set(DART_USE_SYSTEM_IMGUI ON)\nset(DART_MAJOR_VERSION 7)\n"
+        "include(CMakePackageConfigHelpers)\n"
+        f'configure_package_config_file("{(ROOT / "cmake/DARTConfig.cmake.in").as_posix()}"\n'
+        '  "${CMAKE_BINARY_DIR}/DARTConfig.cmake" INSTALL_DESTINATION share/dart/cmake\n'
+        "  PATH_VARS INCLUDE_INSTALL_DIR)\n"
+        'install(FILES "${CMAKE_BINARY_DIR}/DARTConfig.cmake" DESTINATION share/dart/cmake)\n'
+    )
+    cmake = shutil.which("cmake")
+    build = tmp_path / "dart-build"
+    cmake_fixture_run(
+        cmake,
+        "-G",
+        "Ninja",
+        "-S",
+        project,
+        "-B",
+        build,
+        f"-DCMAKE_INSTALL_PREFIX={(tmp_path / 'configured').as_posix()}",
+        *(["-DCMAKE_BUILD_TYPE=Debug"] if debug else []),
+    )
+    cmake_fixture_run(cmake, "--build", build)
+    # The recorded directories follow the components into a relocated prefix.
+    stage = tmp_path / "install"
+    cmake_fixture_run(cmake, "--install", build, "--prefix", stage)
+    config = stage / "share/dart/cmake"
+    consumer = tmp_path / "consumer"
+    consumer.mkdir()
+    (consumer / "main.cpp").write_text(BULLET_CONSUMER)
+    # Like a consumer that finds DART through DART_DIR, search only the decoy,
+    # which the consumer may also find for itself before DART.
+    (consumer / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.22.1)\nproject(Consumer LANGUAGES CXX)\n"
+        "set(CMAKE_CXX_STANDARD 17)\n"
+        f'set(CMAKE_PREFIX_PATH "{decoy.as_posix()}")\n'
+        "set(CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH FALSE)\n"
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH FALSE)\n"
+        "set(CMAKE_FIND_USE_CMAKE_SYSTEM_PATH FALSE)\n"
+        + ("find_package(Bullet MODULE REQUIRED)\n" if earlier else "")
+        + "function(write_bullet_variables file)\n"
+        "get_cmake_property(names VARIABLES)\n"
+        'list(FILTER names INCLUDE REGEX "^(BULLET|Bullet)_")\n'
+        'set(text "")\n'
+        'foreach(name IN LISTS names)\nstring(APPEND text "${name}=${${name}}\\n")\nendforeach()\n'
+        'file(WRITE "${CMAKE_BINARY_DIR}/${file}" "${text}")\n'
+        "endfunction()\n"
+        "write_bullet_variables(before.txt)\n"
+        "find_package(DART REQUIRED CONFIG)\n"
+        "write_bullet_variables(after.txt)\n"
+        "get_target_property(includes Bullet INTERFACE_INCLUDE_DIRECTORIES)\n"
+        "get_target_property(libraries Bullet INTERFACE_LINK_LIBRARIES)\n"
+        'file(WRITE "${CMAKE_BINARY_DIR}/selected.txt" "${includes};${libraries}")\n'
+        "add_executable(consumer main.cpp)\ntarget_link_libraries(consumer PRIVATE dart)\n"
+    )
+    cmake_fixture_run(
+        cmake,
+        "-G",
+        "Ninja",
+        "-S",
+        consumer,
+        "-B",
+        consumer / "build",
+        f"-DDART_DIR={config.as_posix()}",
+        # A Debug-only installation serves every configuration.
+        *(["-DCMAKE_BUILD_TYPE=Release"] if debug else []),
+    )
+    # DART's finder leaves the consumer's own FindBullet results unchanged.
+    before = (consumer / "build/before.txt").read_text()
+    assert (consumer / "build/after.txt").read_text() == before
+    assert ("BULLET_FOUND=TRUE" in before and decoy.as_posix() in before) == earlier
+    selected = (consumer / "build/selected.txt").read_text().split(";")
+    assert len(selected) == 3, selected
+    assert all(Path(path).is_relative_to(stage) for path in selected), selected
+    assert all(("_Debug" in Path(path).name) == debug for path in selected[1:])
+    cmake_fixture_run(cmake, "--build", consumer / "build")
+    cmake_fixture_run(
+        consumer / "build" / ("consumer.exe" if os.name == "nt" else "consumer"),
+        env={
+            **os.environ,
+            "PATH": os.pathsep.join((str(stage / "bin"), os.environ["PATH"])),
+        },
+    )
+
+
+BULLET_DEBUG_PAIR = (
+    "optimized;BulletCollision;debug;BulletCollision{0};"
+    "optimized;LinearMath;debug;LinearMath{0}"
+)
+
+
+@pytest.mark.parametrize(
+    "headers,names,expected",
+    [
+        (True, ("BulletCollision", "LinearMath"), "BulletCollision;LinearMath"),
+        # Bullet's Debug postfix, and DART's, which replaces it on reconfiguration.
+        (
+            True,
+            (
+                "BulletCollision",
+                "LinearMath",
+                "BulletCollision_Debug",
+                "LinearMath_Debug",
+            ),
+            BULLET_DEBUG_PAIR.format("_Debug"),
+        ),
+        (
+            True,
+            ("BulletCollision", "LinearMath", "BulletCollisiond", "LinearMathd"),
+            BULLET_DEBUG_PAIR.format("d"),
+        ),
+        # A Debug-only installation serves every configuration.
+        (
+            True,
+            ("BulletCollision_Debug", "LinearMath_Debug"),
+            "BulletCollision_Debug;LinearMath_Debug",
+        ),
+        (True, ("BulletCollisiond", "LinearMathd"), "BulletCollisiond;LinearMathd"),
+        # Incomplete and mixed sets leave the search to the consumer's paths.
+        (False, ("BulletCollision", "LinearMath"), None),
+        (False, ("BulletCollision_Debug", "LinearMath_Debug"), None),
+        (True, ("LinearMath",), None),
+        (True, ("BulletCollision", "BulletCollision_Debug"), None),
+        (True, ("BulletCollision", "LinearMath_Debug"), None),
+    ],
+)
+def test_bullet_recorded_sdk_is_used_whole(tmp_path, headers, names, expected):
+    """An installed DART uses its fetched Bullet whole, or searches as usual."""
+
+    def sdk(include, lib, names):
+        if include:
+            (include / "LinearMath").mkdir(parents=True)
+            (include / "btBulletCollisionCommon.h").touch()
+            (include / "LinearMath/btScalar.h").write_text(
+                "#define BT_BULLET_VERSION 325\n"
+            )
+        lib.mkdir(parents=True)
+        for name in names:
+            (lib / f"lib{name}.a").touch()
+
+    def libraries(lib, items):
+        return ";".join(
+            (
+                item
+                if item in ("optimized", "debug")
+                else (lib / f"lib{item}.a").as_posix()
+            )
+            for item in items.split(";")
+        )
+
+    # Another Bullet, Debug libraries included, on the consumer's search paths.
+    foreign = tmp_path / "prefix"
+    sdk(
+        foreign / "include/bullet",
+        foreign / "lib",
+        ("BulletCollision", "LinearMath", "BulletCollision_Debug", "LinearMath_Debug"),
+    )
+    dart = tmp_path / "dart-prefix"
+    sdk(dart / "include" if headers else None, dart / "lib", names)
+    result = configure(
+        tmp_path,
+        'set(DART_BULLET_REQUIRE_FLOAT64 "")\nset(DART_BULLET_REQUIRE_VERSION 3.17)\n'
+        f'set(DART_BULLET_SEARCH_DIRS "{dart.as_posix()}/include;{dart.as_posix()}/lib")\n'
+        "include(DARTFindBullet)\n"
+        'file(WRITE "${CMAKE_BINARY_DIR}/selected.txt"\n'
+        '  "${BULLET_FOUND}\\n${BULLET_INCLUDE_DIRS}\\n${BULLET_LIBRARIES}")\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    if expected:
+        include = dart / "include"
+        selected = libraries(dart / "lib", expected)
+    else:
+        include = foreign / "include/bullet"
+        selected = libraries(foreign / "lib", BULLET_DEBUG_PAIR.format("_Debug"))
+    assert (tmp_path / "build/selected.txt").read_text() == "\n".join(
+        ("TRUE", include.as_posix(), selected)
+    )
+    if not expected:
+        assert dart.as_posix() not in (tmp_path / "build/CMakeCache.txt").read_text()
 
 
 def pkgconfig_fixture_executable():
