@@ -8,3 +8,4 @@ Section: API
     (use `MeshShape::getTriMesh()`), and `AssimpInputResourceAdaptor` and
     `createFileIO` (use `MeshShape`'s TriMesh-based APIs). Code that uses
     them now gets deprecation warnings.
+    [#3938](https://github.com/dartsim/dart/pull/3938)
