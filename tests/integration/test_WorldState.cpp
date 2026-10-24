@@ -53,6 +53,7 @@
 #include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Group.hpp"
 #include "dart/dynamics/Marker.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
@@ -69,6 +70,7 @@
 
 #include <gtest/gtest.h>
 
+#include <functional>
 #include <limits>
 #include <stdexcept>
 
@@ -406,6 +408,22 @@ public:
 
 private:
   common::Aspect::MakeState<ExtensionState> mState;
+};
+
+class StateCallbackAspect : public common::Aspect
+{
+public:
+  std::function<void()> callback;
+  std::unique_ptr<common::Aspect> cloneAspect() const override
+  {
+    return std::make_unique<StateCallbackAspect>();
+  }
+  const State* getAspectState() const override
+  {
+    if (callback)
+      callback();
+    return nullptr;
+  }
 };
 
 } // namespace
@@ -953,6 +971,84 @@ TEST(WorldState, RestoreAfterShapeReplacementSynchronizesCollisionGeometry)
   }
 }
 
+TEST(WorldState, RestoreSynchronizesBorrowedCollisionSources)
+{
+  for (const auto& detector : {"fcl", "bullet"}) {
+    if (!collision::CollisionDetector::getFactory()->canCreate(detector))
+      continue;
+    for (const bool compiled : {false, true})
+      for (const bool expired : {false, true}) {
+        SCOPED_TRACE(detector);
+        SCOPED_TRACE(compiled);
+        SCOPED_TRACE(expired);
+        auto world = makeContactWorld(SnapshotSolver::Nsgs, false, detector);
+        auto group = world->getConstraintSolver()->getCollisionGroup();
+        auto view = Group::create();
+        auto external = world->getSkeleton(1)->cloneSkeleton("external");
+        if (expired)
+          group->subscribeTo(external);
+        else
+          group->subscribeTo(view);
+        if (compiled)
+          world->compile();
+        world->step();
+        const auto state = world->captureState();
+        world->step();
+        world->step();
+        ASSERT_NE(world->getTime(), state.time);
+        if (expired)
+          external.reset();
+        else
+          view->addBodyNode(world->getSkeleton(1)->getBodyNode(0));
+        EXPECT_NO_THROW(world->restoreState(state));
+        expectEqual(state, world->captureState());
+        // Restoration preserves the deferred compiled-model check at step().
+        if (compiled) {
+          try {
+            world->step();
+            ADD_FAILURE() << "Changed compiled source accepted a step";
+          } catch (const std::runtime_error& error) {
+            EXPECT_EQ(std::string(error.what()).find("ModelFrozenError: "), 0u);
+          }
+        } else {
+          EXPECT_NO_THROW(world->step());
+        }
+      }
+  }
+}
+
+TEST(WorldState, RestorePreservesBackendCollisionSourceUpdateTiming)
+{
+  for (const auto& detector : {"dart", "fcl", "bullet", "ode"}) {
+    if (!collision::CollisionDetector::getFactory()->canCreate(detector))
+      continue;
+    for (const bool automatic : {false, true}) {
+      SCOPED_TRACE(detector);
+      SCOPED_TRACE(automatic);
+      auto world = makeContactWorld(SnapshotSolver::Nsgs, false, detector);
+      auto group = world->getConstraintSolver()->getCollisionGroup();
+      auto view = Group::create();
+      group->subscribeTo(view);
+      group->setAutomaticUpdate(automatic);
+      world->step();
+      const auto state = world->captureState();
+      world->step();
+      auto external = world->getSkeleton(1)->cloneSkeleton("external");
+      view->addBodyNode(external->getBodyNode(0));
+      const auto frames = group->getNumShapeFrames();
+      EXPECT_NO_THROW(world->restoreState(state));
+      expectEqual(state, world->captureState());
+      const bool refreshesBroadphase
+          = std::string(detector) == "fcl" || std::string(detector) == "bullet";
+      EXPECT_EQ(
+          group->getNumShapeFrames(),
+          frames + (automatic && refreshesBroadphase ? 1u : 0u));
+      EXPECT_NO_THROW(world->step());
+      EXPECT_EQ(group->getNumShapeFrames(), frames + (automatic ? 1u : 0u));
+    }
+  }
+}
+
 TEST(WorldState, RestoreClearsSolverOutputOfSolverOnlySkeletons)
 {
   auto world = makeSleepingWorld();
@@ -1132,4 +1228,65 @@ TEST(WorldState, InvalidRestorePreservesContactHistory)
   world->step();
   control->step();
   expectEqual(world->captureState(), control->captureState());
+}
+
+TEST(WorldState, StateCallbacksRejectReentryAndReleaseAfterExceptions)
+{
+  auto world = makeWorld();
+  const auto state = world->captureState();
+  auto output = state;
+  auto* aspect = world->getSkeleton(0)->createAspect<StateCallbackAspect>();
+  const auto revision = world->getParameterRevision();
+  const auto bodies = world->getSkeleton(0)->getNumBodyNodes();
+  unsigned calls = 0u;
+  bool inside = false;
+  aspect->callback = [&] {
+    if (inside)
+      return;
+    inside = true;
+    ++calls;
+    EXPECT_THROW(world->captureState(), std::runtime_error);
+    EXPECT_THROW(world->captureState(output), std::runtime_error);
+    EXPECT_THROW(world->restoreState(state), std::runtime_error);
+    EXPECT_THROW(world->stepMultiple(0u), std::runtime_error);
+    EXPECT_THROW(world->compile(), std::runtime_error);
+    EXPECT_THROW({ auto edit = world->edit(); }, std::runtime_error);
+    EXPECT_THROW(
+        world->getSkeleton(0)->createJointAndBodyNodePair<RevoluteJoint>(),
+        std::runtime_error);
+    const auto expectBusy = [](const auto& mutation) {
+      try {
+        mutation();
+        ADD_FAILURE() << "State callback accepted model mutation";
+      } catch (const std::runtime_error& error) {
+        EXPECT_EQ(std::string(error.what()).find("WorldBusyError: "), 0u);
+      }
+    };
+    expectBusy([&] { world->addSimpleFrame(std::make_shared<SimpleFrame>()); });
+    expectBusy([&] { world->addSkeleton(Skeleton::create()); });
+    expectBusy([&] { world->removeSkeleton(world->getSkeleton(0)); });
+    inside = false;
+  };
+  EXPECT_NO_THROW(world->captureState(output));
+  EXPECT_NO_THROW(world->restoreState(state));
+  EXPECT_GT(calls, 0u);
+  EXPECT_EQ(world->getParameterRevision(), revision);
+  EXPECT_EQ(world->getSkeleton(0)->getNumBodyNodes(), bodies);
+  expectEqual(state, output);
+  aspect->callback = [] {
+    throw std::runtime_error("state reader failure");
+  };
+  EXPECT_THROW(world->captureState(output), std::runtime_error);
+  EXPECT_THROW(world->restoreState(state), std::runtime_error);
+  expectEqual(state, output);
+  aspect->callback = {};
+  expectEqual(state, world->captureState());
+  EXPECT_NO_THROW(world->restoreState(state));
+  EXPECT_NO_THROW(world->stepMultiple(0u));
+  {
+    auto edit = world->edit();
+    EXPECT_THROW(world->captureState(), std::runtime_error);
+    EXPECT_THROW(world->restoreState(state), std::runtime_error);
+  }
+  EXPECT_NO_THROW(world->captureState(output));
 }

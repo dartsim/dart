@@ -329,7 +329,7 @@ WorldState World::captureState() const
   return output;
 }
 
-void World::captureState(WorldState& output) const
+void World::captureStateOwned(WorldState& output) const
 {
   validateDynamicStateSupport();
   if (!output.mInitialized) {
@@ -357,7 +357,7 @@ void World::captureState(WorldState& output) const
               soft->getNumPointMasses());
         }
     initialized.mInitialized = true;
-    captureState(initialized);
+    captureStateOwned(initialized);
     output = std::move(initialized);
     return;
   }
@@ -438,7 +438,7 @@ void World::captureState(WorldState& output) const
   output.time = mTime;
 }
 
-void World::restoreState(const WorldState& state)
+void World::restoreStateOwned(const WorldState& state)
 {
   validateDynamicStateSupport();
   require(state.mInitialized, "WorldState has not been captured");
@@ -462,6 +462,9 @@ void World::restoreState(const WorldState& state)
             state.softBodies[softIndex++].points.size()
                 == soft->getNumPointMasses(),
             "WorldState soft channel shapes do not match the World");
+
+  // Refresh as this World before writes; history clearing must not reject us.
+  synchronizeCollisionSources();
 
   Eigen::Index skeletonOffset = 0;
   Eigen::Index bodyIndex = 0;

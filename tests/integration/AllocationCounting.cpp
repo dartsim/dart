@@ -373,8 +373,17 @@ void operator delete[](
   #endif
 #endif
 
+#if defined(__SANITIZE_THREAD__)
+  #define DART_TEST_TSAN_ACTIVE 1
+#elif defined(__has_feature)
+  #if __has_feature(thread_sanitizer)
+    #define DART_TEST_TSAN_ACTIVE 1
+  #endif
+#endif
+
 #if defined(__linux__) && defined(__GLIBC__)                                   \
-    && !defined(DART_TEST_ASAN_ACTIVE) && !defined(DART_CODECOV)
+    && !defined(DART_TEST_ASAN_ACTIVE) && !defined(DART_TEST_TSAN_ACTIVE)      \
+    && !defined(DART_CODECOV)
   #define DART_TEST_HAS_RAW_MALLOC_INTERPOSE 1
 
 extern "C" {
@@ -450,6 +459,8 @@ namespace {
   return "skipped: coverage build";
 #elif defined(DART_TEST_ASAN_ACTIVE)
   return "skipped: AddressSanitizer build";
+#elif defined(DART_TEST_TSAN_ACTIVE)
+  return "skipped: ThreadSanitizer build";
 #elif !defined(__linux__) || !defined(__GLIBC__)
   return "skipped: raw malloc interposer requires Linux glibc";
 #else

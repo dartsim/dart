@@ -355,6 +355,15 @@ public:
   /// command after simulation step.
   void step(bool _resetCommand = true);
 
+  /// Advance count ordinary steps under one lifecycle reservation.
+  /// Each step retains step(resetCommand)'s force and command reset semantics.
+  /// Zero steps do not prepare or change the World. A count that would overflow
+  /// the frame counter throws std::overflow_error before advancing any step.
+  /// An exception stops the sequence without rolling back completed work.
+  /// Competing or re-entrant lifecycle entries throw std::runtime_error with
+  /// the WorldBusyError prefix, including for zero steps.
+  void stepMultiple(std::size_t count, bool resetCommand = true);
+
   /// Prepare one-time simulation caches and allocator reservations for the
   /// current world shape. Calling this is optional; step() does it lazily.
   void enterSimulationMode();
@@ -796,6 +805,13 @@ public:
 
 private:
   friend struct WorldTestAccess;
+
+  /// Lifecycle implementations called with this World's reservation held.
+  void compileOwned();
+  inline void stepOwned(bool resetCommand);
+  void captureStateOwned(WorldState& output) const;
+  void restoreStateOwned(const WorldState& state);
+  void synchronizeCollisionSources();
 
   void validateCompiledModel() const;
 
