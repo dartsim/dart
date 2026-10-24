@@ -249,7 +249,7 @@ if(TARGET dart-utils)
 endif()
 
 if(TARGET dart-utils-assets)
-  find_package(OpenSSL 1.1.1 REQUIRED COMPONENTS Crypto)
+  find_package(OpenSSL 3.0.13 REQUIRED COMPONENTS Crypto)
   dart_add_test("integration" test_ModelResourceRetriever)
   target_link_libraries(
     test_ModelResourceRetriever

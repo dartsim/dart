@@ -125,6 +125,9 @@ Optional components remain optional.
    * - libcurl
      - 8.5.0
      - Online robot model retriever (``DART_BUILD_UTILS_ASSETS``)
+   * - OpenSSL (Crypto)
+     - 3.0.13
+     - Online robot model retriever (``DART_BUILD_UTILS_ASSETS``)
    * - Filament
      - 1.77.3 (pinned SDK)
      - GUI rendering

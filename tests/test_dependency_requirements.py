@@ -541,6 +541,83 @@ def test_io_rejects_tinyxml2_9_with_minimum_version_message(tmp_path, lookup):
     assert "dart-io requires tinyxml2 >= 10.0.0" in result.stdout + result.stderr
 
 
+# CMake 3.28's FindOpenSSL calls pkg_check_modules() even when configure()
+# disables FindPkgConfig; a no-op keeps host pkg-config packages out.
+NO_PKG_CONFIG = (
+    "if(NOT COMMAND pkg_check_modules)\n"
+    "  macro(pkg_check_modules)\n"
+    "  endmacro()\n"
+    "endif()\n"
+)
+
+
+def fake_openssl(tmp_path, version):
+    """Lay out the files CMake's FindOpenSSL probes and return its root option."""
+    root = tmp_path / "openssl"
+    (root / "include/openssl").mkdir(parents=True)
+    (root / "lib").mkdir()
+    (root / "include/openssl/ssl.h").touch()
+    (root / "lib/libcrypto.so").touch()
+    major, minor, fix = map(int, version.split("."))
+    # 1.1.x packs the version into OPENSSL_VERSION_NUMBER as 0xMNNFFPPS; 3.x
+    # headers define OPENSSL_VERSION_STR, which FindOpenSSL reads instead.
+    (root / "include/openssl/opensslv.h").write_text(
+        f"#define OPENSSL_VERSION_NUMBER 0x{major}{minor:02x}{fix:02x}00fL\n"
+        if major == 1
+        else f'#define OPENSSL_VERSION_STR "{version}"\n'
+    )
+    return (f"-DOPENSSL_ROOT_DIR={root.as_posix()}",)
+
+
+@pytest.mark.skipif(
+    sys.platform != "linux", reason="the fake OpenSSL is a Linux shared library"
+)
+@pytest.mark.parametrize(
+    "version,accepted",
+    [
+        ("1.1.1", False),
+        ("3.0.2", False),
+        ("3.0.12", False),
+        ("3.0.13", True),
+        ("3.5.5", True),
+    ],
+)
+def test_openssl_floor(tmp_path, version, accepted):
+    result = configure(
+        tmp_path,
+        NO_PKG_CONFIG + "include(DARTFindOpenSSL)\n"
+        "if(OPENSSL_FOUND AND TARGET OpenSSL::Crypto)\n"
+        + ("" if accepted else 'message(FATAL_ERROR "Accepted unsupported version")\n')
+        + "else()\n"
+        + ('message(FATAL_ERROR "Rejected supported version")\n' if accepted else "")
+        + "endif()\n",
+        cmake_args=fake_openssl(tmp_path, version),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.skipif(
+    sys.platform != "linux", reason="the fake OpenSSL is a Linux shared library"
+)
+@pytest.mark.parametrize("version", ["1.1.1", "3.0.12"])
+def test_assets_reject_old_openssl_with_minimum_version_message(tmp_path, version):
+    modules = tmp_path / "modules"
+    modules.mkdir()
+    # libcurl is not under test; let the OpenSSL check run.
+    (modules / "DARTFindCURL.cmake").write_text(
+        "set(CURL_FOUND TRUE)\nadd_library(CURL::libcurl INTERFACE IMPORTED)\n"
+    )
+    result = configure(
+        tmp_path,
+        NO_PKG_CONFIG + "include(DARTMacros)\n"
+        f'include("{(ROOT / "dart/utils/assets/CMakeLists.txt").as_posix()}")\n',
+        cmake_args=fake_openssl(tmp_path, version),
+    )
+    assert result.returncode != 0
+    message = "dart-utils-assets requires OpenSSL >= 3.0.13 (Crypto)"
+    assert message in result.stdout + result.stderr
+
+
 @pytest.mark.parametrize(
     "package,minimum,target,required",
     [
