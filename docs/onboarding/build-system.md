@@ -47,11 +47,11 @@ new library layout.
 ## Dependency Sources
 
 `DART_USE_SYSTEM_DEPENDENCIES=ON` seeds the defaults of
-`DART_USE_SYSTEM_GOOGLETEST`, `DART_USE_SYSTEM_GOOGLEBENCHMARK`, and
-`DART_USE_SYSTEM_TRACY` to use installed packages. The umbrella defaults to
-`OFF`; other dependency switches keep their existing defaults. ODE and Bullet
-already default to system packages. Each option keeps its cached value:
-set the umbrella on the first configure of a fresh
+`DART_USE_SYSTEM_GOOGLETEST`, `DART_USE_SYSTEM_GOOGLEBENCHMARK`,
+`DART_USE_SYSTEM_TRACY`, and `DART_USE_SYSTEM_GLFW` to use installed packages.
+The umbrella defaults to `OFF`; other dependency switches keep their existing
+defaults. ODE and Bullet already default to system packages. Each option keeps
+its cached value: set the umbrella on the first configure of a fresh
 build tree, or explicitly set each per-dependency switch when reconfiguring.
 An explicit per-dependency `-D` always wins over the umbrella.
 
@@ -66,7 +66,7 @@ tree; source-consuming dependencies such as the Filament SDK keep enforcing
 their own SDK and license requirements. Existing
 populated source directories in the build tree are accepted. The stable
 FetchContent names are `googletest`, `benchmark`, `tracy`, `nanobind`,
-`dart_imgui`, `dart_filament_sdk`, `ode`, and `bullet`. The umbrella
+`dart_imgui`, `dart_filament_sdk`, `glfw`, `ode`, and `bullet`. The umbrella
 does not select system nanobind, ImGui, or Filament; set those switches
 separately when needed. Pixi configure tasks use the umbrella;
 `pixi run -e profile config-tracy` selects the profile environment's Tracy.
@@ -298,8 +298,21 @@ default) requires Filament 1.77.3, GLFW 3.4, libpng, libjpeg, and Dear ImGui
 1.92.8 or newer. `DART_USE_SYSTEM_FILAMENT=ON` (the default) uses an installed
 Filament SDK; `OFF` uses DART's pinned private SDK, which Linux builds from
 source with Clang 20 or newer and Ninja, and macOS arm64 and 64-bit Windows
-download as prebuilt archives. The bundled ImGui, the default, is the Dear
-ImGui v1.92.8 docking release, which configure fetches as a SHA256-pinned
+download as prebuilt archives. `DART_USE_SYSTEM_GLFW=ON`, which Pixi and the
+wheel builds select, uses an installed GLFW 3.4. `OFF`, the standalone default,
+fetches the SHA-256-pinned GLFW 3.4 release archive and builds it static, with
+only the X11 backend on Linux; there it needs the X11 development headers
+(`libx11-dev`, `libxrandr-dev`, `libxinerama-dev`, `libxcursor-dev`,
+`libxi-dev`, and `libxext-dev` on Ubuntu). A shared `dart-gui` keeps that
+GLFW's symbols hidden, and a static build installs GLFW's library and CMake
+package beside DART for its exported `dart-gui`. macOS always uses an
+installed GLFW (the switch defaults to `ON` there and rejects `OFF`): a GLFW
+built into DART, its dartpy module or a downstream library would register the
+same Objective-C classes as any other GLFW in the process. For offline
+configures,
+extract that archive and pass its folder with `FETCHCONTENT_SOURCE_DIR_GLFW`.
+The bundled ImGui, the default, is the Dear ImGui v1.92.8 docking release,
+which configure fetches as a SHA256-pinned
 tag archive, unpatched; its installed `dart/external/imgui/` headers use the
 docking layout. For offline configures, extract that archive and pass the
 folder that contains `imgui.h` with `FETCHCONTENT_SOURCE_DIR_DART_IMGUI`.

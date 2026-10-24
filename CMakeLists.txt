@@ -280,7 +280,7 @@ dart_option(DART_FORCE_COLORED_OUTPUT
 )
 dart_option(
   DART_USE_SYSTEM_DEPENDENCIES
-  "Default to system packages for GoogleTest, GoogleBenchmark, and Tracy"
+  "Default to system packages for GoogleTest, GoogleBenchmark, Tracy, and GLFW"
   OFF
 )
 dart_option(
@@ -302,6 +302,16 @@ if(DEFINED DART_IMGUI_DOCKING)
     "DART_IMGUI_DOCKING was removed: the bundled ImGui is the docking release"
   )
   unset(DART_IMGUI_DOCKING CACHE)
+endif()
+# On macOS a GLFW built into DART, its dartpy module or a downstream library
+# would register the same Objective-C classes as any other GLFW in the
+# process, so macOS always uses the system GLFW.
+if(APPLE)
+  dart_option(DART_USE_SYSTEM_GLFW "Use system GLFW 3.4" ON)
+else()
+  dart_option(
+    DART_USE_SYSTEM_GLFW "Use system GLFW 3.4" ${DART_USE_SYSTEM_DEPENDENCIES}
+  )
 endif()
 dart_option(
   DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" ${DART_USE_SYSTEM_DEPENDENCIES}
@@ -496,6 +506,30 @@ endif()
 # Find dependencies
 #===============================================================================
 include(DARTFindDependencies)
+
+#===============================================================================
+# Uninstall
+#===============================================================================
+
+# Add an "uninstall" target
+# https://gitlab.kitware.com/cmake/community/-/wikis/doc/cmake/recipe/AddUninstallTarget
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/uninstall_target.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/cmake/uninstall_target.cmake"
+  IMMEDIATE
+  @ONLY
+)
+add_custom_target(
+  dart-uninstall
+  "${CMAKE_COMMAND}" -P
+  "${CMAKE_CURRENT_BINARY_DIR}/cmake/uninstall_target.cmake"
+)
+# Fetched ODE owns its unguarded uninstall target; DART's remains available.
+# Define it before the subdirectories so that later dependencies that guard
+# their own uninstall target, such as GLFW in static builds, do not claim it.
+if(NOT TARGET uninstall)
+  add_custom_target(uninstall DEPENDS dart-uninstall)
+endif()
 
 #===============================================================================
 # Check for non-case-sensitive filesystems
@@ -793,28 +827,6 @@ install(
   DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH}
   PATTERN "__pycache__" EXCLUDE
 )
-
-#===============================================================================
-# Uninstall
-#===============================================================================
-
-# Add an "uninstall" target
-# https://gitlab.kitware.com/cmake/community/-/wikis/doc/cmake/recipe/AddUninstallTarget
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/uninstall_target.cmake.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/cmake/uninstall_target.cmake"
-  IMMEDIATE
-  @ONLY
-)
-add_custom_target(
-  dart-uninstall
-  "${CMAKE_COMMAND}" -P
-  "${CMAKE_CURRENT_BINARY_DIR}/cmake/uninstall_target.cmake"
-)
-# Fetched ODE owns its unguarded uninstall target; DART's remains available.
-if(NOT TARGET uninstall)
-  add_custom_target(uninstall DEPENDS dart-uninstall)
-endif()
 
 #===============================================================================
 # Code Formatting

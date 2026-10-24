@@ -379,7 +379,10 @@ if(TARGET dart-gui)
   endforeach()
   find_package(PNG REQUIRED)
   find_package(JPEG REQUIRED)
-  find_package(glfw3 REQUIRED)
+  # A fetched GLFW (DART_USE_SYSTEM_GLFW=OFF) is already a project target.
+  if(NOT TARGET glfw)
+    find_package(glfw3 REQUIRED)
+  endif()
   dart_add_test("integration" test_GuiDescriptors)
   dart_add_test("integration" test_GuiInteractions)
   dart_add_test("integration" test_GuiViewer)
@@ -408,6 +411,14 @@ if(TARGET dart-gui)
         Filament::filament
       )
       target_compile_features(test_${gui_test} PRIVATE cxx_std_20)
+      # A shared dart-gui hides the fetched GLFW, so the test's own GLFW
+      # windows cannot reach dart-gui's native-window helpers.
+      if(BUILD_SHARED_LIBS AND NOT DART_USE_SYSTEM_GLFW)
+        target_compile_definitions(
+          test_${gui_test}
+          PRIVATE DART_TEST_PRIVATE_GLFW
+        )
+      endif()
       set_tests_properties(
         test_${gui_test}
         PROPERTIES LABELS "gui;gui-device;filament;filament-headless"

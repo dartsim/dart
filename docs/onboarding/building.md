@@ -79,5 +79,6 @@ graphics dependencies, `pixi run config-core` configures the headless core in
 SDK; a Linux SDK must use libstdc++. `OFF` uses a private pinned 1.77.3 SDK:
 Linux builds it from downloaded sources with Clang 20 or newer and Ninja, and
 macOS arm64 and Windows x64 download the upstream release archive. The GUI also
-needs GLFW 3.4, libpng, libjpeg, and Dear ImGui 1.92.8 or newer (bundled by
-default).
+needs GLFW 3.4 (fetched unless `DART_USE_SYSTEM_GLFW=ON`, which Pixi and macOS
+select),
+libpng, libjpeg, and Dear ImGui 1.92.8 or newer (bundled by default).

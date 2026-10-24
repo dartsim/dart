@@ -49,9 +49,11 @@ def main(argv: list[str]) -> int:
 
     # pyproject.toml fixes the wheel configuration, including the cp312-abi3
     # stable-ABI build; CMAKE_ARGS carries only the environment-specific options.
-    # scikit-build-core shell-splits CMAKE_ARGS on every platform.
+    # scikit-build-core shell-splits CMAKE_ARGS on every platform. Wheel
+    # environments supply GLFW 3.4 (the Linux image builds it static, X11 only).
     cmake_args = [
         f"-DCMAKE_PREFIX_PATH={_cmake_prefix_path(conda_prefix)}",
+        "-DDART_USE_SYSTEM_GLFW=ON",
         f"-DDART_USE_SYSTEM_IMGUI={use_system_imgui}",
         *cmake_host_linker_flags(),
     ]

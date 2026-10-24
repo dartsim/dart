@@ -154,8 +154,9 @@ def test_system_dependency_defaults_are_seeded_once(tmp_path, umbrella, explicit
             "dart_option(\n  DART_ALLOW_SINGLE_PRECISION_LIBCCD"
         )
     ]
-    content = "include(dart_defs)\n" + options
-    switches = ("GOOGLETEST", "GOOGLEBENCHMARK", "TRACY")
+    # macOS always defaults GLFW to the system one (tested separately).
+    content = "include(dart_defs)\nset(APPLE OFF)\n" + options
+    switches = ("GOOGLETEST", "GOOGLEBENCHMARK", "TRACY", "GLFW")
     args = [] if umbrella is None else [f"-DDART_USE_SYSTEM_DEPENDENCIES={umbrella}"]
     if explicit is not None:
         args.extend(f"-DDART_USE_SYSTEM_{name}={explicit}" for name in switches)
@@ -169,6 +170,24 @@ def test_system_dependency_defaults_are_seeded_once(tmp_path, umbrella, explicit
         cache = (tmp_path / "build" / "CMakeCache.txt").read_text()
         for name in switches:
             assert f"DART_USE_SYSTEM_{name}:BOOL={expected}" in cache
+
+
+@pytest.mark.parametrize("apple,expected", [("ON", "ON"), ("OFF", "OFF")])
+def test_macos_glfw_defaults_to_the_system_one(tmp_path, apple, expected):
+    source = (ROOT / "CMakeLists.txt").read_text()
+    options = source[
+        source.index("dart_option(\n  DART_USE_SYSTEM_DEPENDENCIES") : source.index(
+            "dart_option(\n  DART_ALLOW_SINGLE_PRECISION_LIBCCD"
+        )
+    ]
+    result = configure(
+        tmp_path,
+        f"include(dart_defs)\nset(APPLE {apple})\n" + options,
+        cmake_args=["-DDART_USE_SYSTEM_DEPENDENCIES=OFF"],
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    cache = (tmp_path / "build" / "CMakeCache.txt").read_text()
+    assert f"DART_USE_SYSTEM_GLFW:BOOL={expected}" in cache
 
 
 _DEPENDENCIES = (ROOT / "cmake/DARTFindDependencies.cmake").read_text()
@@ -2546,7 +2565,7 @@ def test_filament_system_sdk_requires_pinned_material_version(
     config_package(tmp_path, "glfw3", "3.4.0", "glfw")
     result = configure(
         tmp_path,
-        "set(DART_USE_SYSTEM_FILAMENT ON)\n"
+        "set(DART_USE_SYSTEM_FILAMENT ON)\nset(DART_USE_SYSTEM_GLFW ON)\n"
         f'set(Filament_ROOT "{sdk.as_posix()}")\n'
         "include(DARTFilamentProvider)\n",
     )
@@ -2560,6 +2579,86 @@ def test_filament_system_sdk_requires_pinned_material_version(
         assert f"material version {material_version}" in flat
         assert "Filament 1.77.3" in flat
         assert "DART_USE_SYSTEM_FILAMENT=OFF" in flat
+
+
+_GUI_PROVIDER = (ROOT / "cmake/DARTFilamentProvider.cmake").read_text()
+GLFW_FIXTURE = (
+    "include(DARTMacros)\n"
+    + _GUI_PROVIDER[
+        _GUI_PROVIDER.index("if(DART_USE_SYSTEM_GLFW)") : _GUI_PROVIDER.index(
+            "find_package(PNG)"
+        )
+    ]
+)
+
+
+@pytest.mark.parametrize(
+    "version,accepted",
+    [(None, False), ("3.3.10", False), ("3.4.0", True), ("3.5.1", True)],
+)
+def test_system_glfw_requires_3_4(tmp_path, version, accepted):
+    if version is not None:
+        config_package(tmp_path, "glfw3", version, "glfw")
+    result = configure(tmp_path, "set(DART_USE_SYSTEM_GLFW ON)\n" + GLFW_FIXTURE)
+    output = result.stdout + result.stderr
+    assert (result.returncode == 0) == accepted, output
+    if not accepted:
+        flat = " ".join(output.split())
+        assert "requires GLFW 3.4" in flat
+        assert "DART_USE_SYSTEM_GLFW=OFF" in flat
+
+
+@pytest.mark.parametrize("shared", ["ON", "OFF"])
+def test_fetched_glfw_is_static_hidden_and_scoped(tmp_path, shared):
+    # A stand-in source tree reports the settings DART gives GLFW's configure.
+    seed = tmp_path / "glfw-seed"
+    seed.mkdir()
+    (seed / "CMakeLists.txt").write_text(
+        'message(STATUS "GLFW: ${GLFW_LIBRARY_TYPE} ${GLFW_BUILD_WAYLAND} '
+        "${GLFW_BUILD_DOCS} ${GLFW_BUILD_EXAMPLES} ${GLFW_BUILD_TESTS} "
+        "${GLFW_INSTALL} ${CMAKE_C_VISIBILITY_PRESET} ${CMAKE_UNITY_BUILD} "
+        '[${CMAKE_C_FLAGS}]")\n'
+    )
+    # macOS rejects the fetched GLFW (tested above).
+    result = configure(
+        tmp_path,
+        f"set(APPLE OFF)\nset(BUILD_SHARED_LIBS {shared})\n"
+        "set(DART_USE_SYSTEM_GLFW OFF)\n"
+        + GLFW_FIXTURE
+        + "if(DEFINED GLFW_INSTALL OR CMAKE_C_VISIBILITY_PRESET OR CMAKE_C_FLAGS)\n"
+        '  message(FATAL_ERROR "GLFW settings leaked")\nendif()\n',
+        cmake_args=[f"-DFETCHCONTENT_SOURCE_DIR_GLFW={seed.as_posix()}"],
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode == 0, output
+    # Only a static dart-gui exports GLFW, so only static builds install it.
+    install = "OFF" if shared == "ON" else "ON"
+    assert f"GLFW: STATIC OFF OFF OFF OFF {install} hidden OFF [ -w]" in output
+
+
+@pytest.mark.parametrize("shared", ["ON", "OFF"])
+def test_fetched_glfw_is_rejected_on_macos(tmp_path, shared):
+    result = configure(
+        tmp_path,
+        f"set(APPLE ON)\nset(BUILD_SHARED_LIBS {shared})\n"
+        "set(DART_USE_SYSTEM_GLFW OFF)\n" + GLFW_FIXTURE,
+        cmake_args=["-DFETCHCONTENT_FULLY_DISCONNECTED=ON"],
+    )
+    flat = " ".join((result.stdout + result.stderr).split())
+    assert result.returncode != 0
+    assert "DART_USE_SYSTEM_GLFW=OFF is not supported on macOS" in flat
+
+
+def test_fetched_glfw_fails_fast_offline(tmp_path):
+    result = configure(
+        tmp_path,
+        "set(APPLE OFF)\nset(DART_USE_SYSTEM_GLFW OFF)\n" + GLFW_FIXTURE,
+        cmake_args=["-DFETCHCONTENT_FULLY_DISCONNECTED=ON"],
+    )
+    flat = " ".join((result.stdout + result.stderr).split())
+    assert result.returncode != 0
+    assert "Cannot fetch glfw with FETCHCONTENT_FULLY_DISCONNECTED=ON" in flat
+    assert "DART_USE_SYSTEM_GLFW=ON" in flat
 
 
 @pytest.mark.parametrize(
