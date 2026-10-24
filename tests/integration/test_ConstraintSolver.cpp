@@ -6037,3 +6037,28 @@ TEST(ConstraintSolver, ContactQueryExceptionsResetRestingContactFiltering)
       ground->getBodyNode(0),
       box->getBodyNode(0)));
 }
+
+TEST(ConstraintSolver, CountedStepsMatchSingleWorkerSolvesAndSleep)
+{
+  for (const bool sleeping : {false, true}) {
+    SCOPED_TRACE(sleeping);
+    auto single = createManySingleFreeBodyContactWorld(130u, 1u);
+    auto counted = createManySingleFreeBodyContactWorld(130u, 4u);
+    for (const auto& world : {single, counted}) {
+      auto options = world->getDeactivationOptions();
+      options.mEnabled = sleeping;
+      options.mTimeUntilSleep = 0.003;
+      world->setDeactivationOptions(options);
+      for (std::size_t s = 1u; s < world->getNumSkeletons(); ++s)
+        world->getSkeleton(s)->setPosition(5u, 0.4999);
+    }
+    counted->compile();
+    for (unsigned step = 0u; step < 16u; ++step)
+      single->step();
+    if (sleeping) {
+      ASSERT_TRUE(single->getSkeleton(1u)->isResting());
+    }
+    counted->stepMultiple(16u);
+    expectWorldStateBitIdentical(*single, *counted);
+  }
+}

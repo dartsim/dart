@@ -45,6 +45,12 @@ if(TARGET dart-utils)
 endif()
 dart_format_add(AllocationCounting.cpp AllocationCounting.hpp)
 
+dart_add_test("integration" test_WorldStepMultiple)
+target_sources(test_WorldStepMultiple PRIVATE AllocationCounting.cpp)
+if(DART_CODECOV)
+  target_compile_definitions(test_WorldStepMultiple PRIVATE DART_CODECOV=1)
+endif()
+
 dart_add_test("integration" test_CollisionGroups)
 foreach(collision_engine dart-collision-bullet dart-collision-ode)
   if(TARGET ${collision_engine})

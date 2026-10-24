@@ -529,3 +529,31 @@ TEST(WorldStateManual, ReusableCaptureWithManualConstraintsDoesNotAllocate)
     EXPECT_EQ(raw.allocationCount(), 0u);
   }
 }
+
+TEST(WorldStateManual, RestoredManualConstraintsMatchCountedAndSingleSolves)
+{
+  for (const auto kind : kinds) {
+    SCOPED_TRACE(static_cast<int>(kind));
+    auto source = makeWorld("source");
+    auto target = makeWorld("target");
+    auto control = makeWorld("control");
+    for (const auto& world : {source, target, control})
+      addConstraint(world, kind, true);
+    source->getSkeleton(1)->setPosition(3u, 0.2);
+    source->getSkeleton(1)->setVelocity(4u, 0.15);
+    source->stepMultiple(3u, false);
+    const auto state = source->captureState();
+    target->compile();
+    target->stepMultiple(5u, false);
+    const auto revision = target->getParameterRevision();
+    target->restoreState(state);
+    control->restoreState(state);
+    EXPECT_EQ(target->getParameterRevision(), revision);
+    expectEqual(state, target->captureState());
+    target->stepMultiple(4u, false);
+    for (unsigned step = 0u; step < 4u; ++step)
+      control->step(false);
+    expectEqual(target->captureState(), control->captureState(), 1e-13);
+    EXPECT_EQ(target->getParameterRevision(), revision);
+  }
+}
