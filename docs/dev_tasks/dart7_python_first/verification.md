@@ -1160,7 +1160,8 @@ Published as stack #3748: #3745 (WP-PD.1), #3746 (WP-PD.2) and #3747
   memory diagnostics. Update onboarding/build/CI, public visualization and
   example pages, Korean PO/MO, AI verification skill and generated adapter,
   dashboard, D31b/program handoffs and older task entrypoints. Move the
-  deferred entries unchanged into [changelog drafts](changelog-drafts.md),
+  deferred entries unchanged into the program home (now
+  [changelog fragments](../../../changelog.d/)),
   preserve earlier evidence above as historical, and delete the demo project
   home. `CHANGELOG.md` is unchanged: its entry is deferred to M6b's
   consolidation PR by maintainer instruction.
