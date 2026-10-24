@@ -167,10 +167,9 @@ void MeshShape::setLegacyMesh(const aiScene* mesh, MeshOwnership ownership)
       = meshIsCached ? MeshOwnership::Imported : ownership;
 
   if (mCachedAiScene) {
-    if (meshIsCached)
-      mCachedAiScene = nullptr;
-    else
+    if (!meshIsCached)
       aiReleaseImport(mCachedAiScene);
+    mCachedAiScene = nullptr;
   }
 
   releaseMesh();
@@ -664,10 +663,9 @@ void MeshShape::setMesh(
         = meshIsCached ? MeshOwnership::Imported : ownership;
 
     if (mCachedAiScene) {
-      if (meshIsCached)
-        mCachedAiScene = nullptr;
-      else
+      if (!meshIsCached)
         aiReleaseImport(mCachedAiScene);
+      mCachedAiScene = nullptr;
     }
 
     releaseMesh();
@@ -705,10 +703,9 @@ void MeshShape::setMesh(
   if (!sameMesh) {
     common::detail::checkShapeTopologyMutation(this);
     if (mCachedAiScene) {
-      if (mesh && mesh.get() == mCachedAiScene)
-        mCachedAiScene = nullptr;
-      else
+      if (!mesh || mesh.get() != mCachedAiScene)
         aiReleaseImport(mCachedAiScene);
+      mCachedAiScene = nullptr;
     }
 
     releaseMesh();
