@@ -111,10 +111,10 @@ msgstr "업데이트"
 
 #: ../../index.rst:48 3f69476da5af4658b2cfd243a9f3f8c7
 msgid ""
-"2026-10-19: DART version 6.20.2 released. See the `CHANGELOG "
+"2026-10-24: DART version 6.20.3 released. See the `CHANGELOG "
 "<https://github.com/dartsim/dart/blob/release-6.20/CHANGELOG.md>`_."
 msgstr ""
-"2026-10-19: DART 버전 6.20.2 출시. `CHANGELOG "
+"2026-10-24: DART 버전 6.20.3 출시. `CHANGELOG "
 "<https://github.com/dartsim/dart/blob/release-6.20/CHANGELOG.md>`_ 를 참고하세요."
 
 #: ../../index.rst:50 05567f0679f643878beb91d4663472eb
