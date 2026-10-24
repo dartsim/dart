@@ -229,6 +229,18 @@ test-ai-infra = { cmd = [
   "-q",
 ] }
 
+# Fast wheel checks also run on Linux pull requests.
+test-wheel-tooling = { cmd = [
+  "python",
+  "-I",
+  "scripts/run_pytest.py",
+  "tests/test_verify_wheel.py",
+  "tests/test_wheel_linux.py",
+  "tests/test_wheel_tls.py",
+  "tests/test_wheel_runtime_environment.py",
+  "-q",
+] }
+
 # Source-build compiler and dependency version boundaries.
 test-build-requirements = { cmd = [
   "python",
@@ -243,6 +255,7 @@ test-build-requirements = { cmd = [
   "tests/test_dartpy_backend.py",
   "tests/test_verify_wheel.py",
   "tests/test_wheel_linux.py",
+  "tests/test_wheel_tls.py",
   "-q",
 ] }
 

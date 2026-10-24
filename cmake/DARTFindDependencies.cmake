@@ -279,6 +279,31 @@ if(NOT DART_USE_SYSTEM_BULLET AND NOT DART_SKIP_BULLET)
       FILES "${bullet_SOURCE_DIR}/src/btBulletCollisionCommon.h"
       DESTINATION ${INCLUDE_INSTALL_DIR}/BulletCollision
     )
+    # Installed components search these include and library directories
+    # before the consumer's paths, which can list another Bullet first.
+    # Relative ones follow the components when the package is relocated.
+    set(_dart_bullet_config_dir "${CONFIG_INSTALL_DIR}")
+    if(NOT IS_ABSOLUTE "${_dart_bullet_config_dir}")
+      set(
+        _dart_bullet_config_dir
+        "${CMAKE_INSTALL_PREFIX}/${_dart_bullet_config_dir}"
+      )
+    endif()
+    set(DART_BULLET_INSTALL_DIRS)
+    foreach(_dart_bullet_dir "${INCLUDE_INSTALL_DIR}" "${LIBRARY_INSTALL_DIR}")
+      if(NOT IS_ABSOLUTE "${_dart_bullet_dir}")
+        file(
+          RELATIVE_PATH
+          _dart_bullet_dir
+          "${_dart_bullet_config_dir}"
+          "${CMAKE_INSTALL_PREFIX}/${_dart_bullet_dir}"
+        )
+        set(_dart_bullet_dir "\${CMAKE_CURRENT_LIST_DIR}/${_dart_bullet_dir}")
+      endif()
+      list(APPEND DART_BULLET_INSTALL_DIRS "${_dart_bullet_dir}")
+    endforeach()
+    unset(_dart_bullet_config_dir)
+    unset(_dart_bullet_dir)
     if(EXISTS "${bullet_BINARY_DIR}/bullet.pc")
       file(READ "${bullet_BINARY_DIR}/bullet.pc" _dart_bullet_pc)
       if(NOT _dart_bullet_pc MATCHES "-lBulletSoftBody -lBulletDynamics ")

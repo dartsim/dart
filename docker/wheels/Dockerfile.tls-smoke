@@ -1,0 +1,12 @@
+ARG BASE_IMAGE=debian:12
+FROM python:3.12-slim-bookworm AS python
+FROM ${BASE_IMAGE}
+
+# Debian 12's distro Python is 3.11; use the same 3.12 on both distributions.
+COPY --from=python /usr/local/ /usr/local/
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    ca-certificates libexpat1 libffi8 libbz2-1.0 liblzma5 libsqlite3-0 \
+    libreadline8 libncursesw6 libuuid1 \
+    && ldconfig \
+    && rm -rf /var/lib/apt/lists/*

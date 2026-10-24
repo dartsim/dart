@@ -34,9 +34,27 @@ DECLARATION = re.compile(
 )
 ENTRY_SEPARATOR = "-" * 72 + "\n"
 COMPILED_IN = "none (compiled into DART binaries)"
+WHEEL_LICENSES = (
+    "curl.txt",
+    "openssl.txt",
+    "nghttp2.txt",
+    "libssh2.txt",
+    "zlib.txt",
+    "zstd.txt",
+    "krb5.txt",
+    "libpsl.txt",
+    "public-suffix-list.txt",
+    "icu.txt",
+)
+# Upstream notices are inventoried separately, including deferred wheel platforms.
 # The fixture is never installed. NUL-containing files and compressed/archive
 # formats are not text inventories, even when an archive happens to lack NULs.
-EXCLUDED_PATHS = {"LICENSE", "NOTICE", "tests/cmake/filament_notices/LICENSE"}
+EXCLUDED_PATHS = {
+    "LICENSE",
+    "NOTICE",
+    "tests/cmake/filament_notices/LICENSE",
+    *(f"python/dartpy/licenses/{name}" for name in WHEEL_LICENSES),
+}
 COMPRESSED_SUFFIXES = {
     ".gz",
     ".bz2",
@@ -352,6 +370,13 @@ def test_inventory_skips_never_installed_fixture():
     assert not inventory(["tests/cmake/filament_notices/LICENSE"])
 
 
+@pytest.mark.parametrize("name", WHEEL_LICENSES)
+def test_inventory_skips_separately_shipped_wheel_notices(name):
+    path = f"python/dartpy/licenses/{name}"
+    assert (ROOT / path).is_file()
+    assert not inventory([path])
+
+
 def test_tracked_paths_skips_without_git(tmp_path):
     with pytest.raises(pytest.skip.Exception, match="Git|checkout"):
         tracked_paths(tmp_path)
@@ -362,6 +387,7 @@ def test_wheel_metadata_and_license_files_include_notice(tmp_path):
     source.mkdir()
     for name in ("pyproject.toml", "README.md", "package.xml", "LICENSE", "NOTICE"):
         shutil.copy2(ROOT / name, source / name)
+    shutil.copytree(ROOT / "python/dartpy/licenses", source / "python/dartpy/licenses")
     backend = source / "scripts/pep517"
     backend.mkdir(parents=True)
     shutil.copy2(ROOT / "scripts/pep517/dartpy_backend.py", backend)
@@ -395,11 +421,21 @@ def test_wheel_metadata_and_license_files_include_notice(tmp_path):
         )
         dist_info = metadata_path.rpartition("/")[0]
         metadata = archive.read(metadata_path).decode("utf-8").replace("\r\n", "\n")
-        for name in ("LICENSE", "NOTICE"):
+        for name in (
+            "LICENSE",
+            "NOTICE",
+            *(f"python/dartpy/licenses/{name}" for name in ("curl.txt", "openssl.txt")),
+        ):
             assert f"License-File: {name}\n" in metadata
             assert (
                 archive.read(f"{dist_info}/licenses/{name}")
                 == (ROOT / name).read_bytes()
+            )
+        for name in set(WHEEL_LICENSES) - {"curl.txt", "openssl.txt"}:
+            assert f"License-File: python/dartpy/licenses/{name}\n" not in metadata
+            assert (
+                f"{dist_info}/licenses/python/dartpy/licenses/{name}"
+                not in archive.namelist()
             )
     assert set(ROOT.iterdir()) == source_entries
     assert set((ROOT / "python").iterdir()) == python_entries

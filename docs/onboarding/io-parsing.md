@@ -77,10 +77,11 @@ pixi run agent-capture -- --factory python.examples.sdf_pose.main:make_world \
 ## Online Robot Models
 
 The optional `utils-assets` component supplies `ModelResourceRetriever` in C++
-and dartpy. Normal Pixi builds enable it; native CMake builds opt in with
-`-DDART_BUILD_UTILS_ASSETS=ON` and require libcurl 8.5 or newer and OpenSSL
-Crypto 3.0.13 or newer (the Ubuntu 24.04 LTS versions) at build time. Shared
-installs link them privately, so consumers do not need their development
+and dartpy. Normal Pixi builds and Linux pip wheels enable it; macOS and Windows
+wheels keep it disabled pending a dependency-size decision. Native CMake builds
+opt in with `-DDART_BUILD_UTILS_ASSETS=ON` and require libcurl 8.5 or newer and
+OpenSSL Crypto 3.0.13 or newer (the Ubuntu 24.04 LTS versions) at build time.
+Shared installs link them privately, so consumers do not need their development
 packages, only their runtime libraries; static installs also require the
 development packages from consumers.
 Existing components and parser defaults do not acquire networking dependencies.
@@ -130,3 +131,47 @@ The [WAM model](../../data/urdf/wam/README.md) uses the upstream BSD-3-Clause
 visual STLs in place of the removed GPL COLLADA meshes and JPEG textures.
 The WAM model URI and kinematics stay the same; visuals lose textures and have
 small geometry differences (up to 12.09 mm in link-frame bounds).
+
+### TLS Trust
+
+HTTPS always verifies the certificate chain and hostname. The retriever first
+honors a nonempty `CURL_CA_BUNDLE`, then a nonempty `SSL_CERT_FILE`; an invalid
+explicit path fails rather than falling back to another trust source. Origin
+and HTTPS-proxy connections use the same bundle and verification options.
+The retriever preserves libcurl's compiled-in CA path when it exists or cannot
+be inspected, leaving libcurl to report invalid or unreadable files. The macOS
+scikit-build exception is described below. If the default file is missing,
+the retriever tries these system bundles in order, taking the first regular file:
+
+1. `/etc/ssl/certs/ca-certificates.crt` (Debian/Ubuntu)
+2. `/etc/pki/tls/certs/ca-bundle.crt` (Fedora/RHEL)
+3. `/etc/ssl/ca-bundle.pem` (openSUSE)
+4. `/etc/ssl/cert.pem` (Alpine/macOS)
+
+Linux wheels pin curl's default bundle to
+`/etc/pki/tls/certs/ca-bundle.crt` and disable its compiled-in CA directory.
+There is no Python runtime dependency for CA discovery. Systems without native
+trust or a system bundle must install their distribution's CA certificates or
+supply an explicit bundle; verification is never disabled.
+
+Windows requests native trust instead of this filesystem search. conda-forge's
+[Windows curl build](https://github.com/conda-forge/curl-feedstock/blob/main/recipe/bld.bat)
+configures Schannel, which uses the Windows certificate store. Windows conda
+activation may set `SSL_CERT_FILE`; unset it to use the Windows store, or set
+`CURL_CA_BUNDLE` to a bundle containing any required private roots. When the
+default CA file is missing, native verification is also requested for
+Windows OpenSSL and Apple SecTrust-capable libcurl builds.
+
+macOS and Windows wheels currently omit the retriever. Every macOS
+scikit-build build that enables utils-assets (including `pip install .` and
+`pixi run build-py`) sets `DART_BUILD_WHEELS=ON`: it ignores libcurl's compiled-in
+CA path and disables OpenSSL's automatic configuration loading before the
+retriever's first crypto use. This avoids build-environment trust/configuration
+paths after relocation, but also ignores `OPENSSL_CONF` and private roots in
+conda's default bundle; set `CURL_CA_BUNDLE` explicitly to retain those roots.
+conda-forge's
+[macOS curl build](https://github.com/conda-forge/curl-feedstock/blob/main/recipe/build.sh)
+configures OpenSSL without Apple SecTrust. Such builds use an explicit bundle
+or the system PEM search above (normally `/etc/ssl/cert.pem`), rather than the
+Keychain. Enabling macOS/Windows wheel retrievers requires relocated-wheel TLS
+verification on those platforms; Linux tests alone do not prove their behavior.

@@ -61,10 +61,17 @@ MODEL_URI = "model://testbot/v1/robot.urdf"
 def local_https_server(before_response=None, stream_response=None):
     responses = dict(FILES)
     requests = []
+    proxy_requests = []
     failures = set()
     interrupted = set()
 
     class Handler(http.server.BaseHTTPRequestHandler):
+        def do_CONNECT(self):
+            proxy_requests.append(self.path)
+            self.send_response(502)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+
         def do_GET(self):
             path = self.path.removeprefix("/")
             requests.append(path)
@@ -105,6 +112,7 @@ def local_https_server(before_response=None, stream_response=None):
         "url": f"https://localhost:{server.server_port}",
         "responses": responses,
         "requests": requests,
+        "proxy_requests": proxy_requests,
         "failures": failures,
         "interrupted": interrupted,
     }
@@ -417,6 +425,47 @@ def test_ssl_cert_file_supplies_trusted_ca_when_curl_bundle_is_unset(
 
     assert retriever.exists(MODEL_URI)
     assert sorted(https_server["requests"]) == sorted(FILES)
+
+
+def test_explicit_curl_bundle_does_not_fall_back_to_ssl_cert_file(
+    tmp_path, https_server, monkeypatch
+):
+    monkeypatch.setenv("CURL_CA_BUNDLE", str(tmp_path / "missing-ca.pem"))
+    monkeypatch.setenv("SSL_CERT_FILE", str(https_server["certificate"]))
+    manifest = write_manifest(tmp_path, https_server["url"])
+    retriever = make_retriever(tmp_path / "cache", manifest)
+
+    assert not retriever.exists(MODEL_URI)
+    assert not https_server["requests"]
+
+
+@pytest.mark.parametrize("variable", ["CURL_CA_BUNDLE", "SSL_CERT_FILE"])
+@pytest.mark.parametrize("trust", ["trusted", "missing", "wrong-host"])
+def test_https_proxy_uses_the_same_ca_and_hostname_checks(
+    tmp_path, https_server, monkeypatch, variable, trust
+):
+    monkeypatch.delenv("CURL_CA_BUNDLE", raising=False)
+    monkeypatch.delenv("SSL_CERT_FILE", raising=False)
+    monkeypatch.setenv(
+        variable,
+        str(tmp_path / "missing-ca.pem")
+        if trust == "missing"
+        else str(https_server["certificate"]),
+    )
+    proxy = https_server["url"]
+    if trust == "wrong-host":
+        proxy = proxy.replace("localhost", "127.0.0.1")
+    monkeypatch.setenv("https_proxy", proxy)
+    monkeypatch.setenv("HTTPS_PROXY", proxy)
+    monkeypatch.setenv("NO_PROXY", "")
+    monkeypatch.setenv("no_proxy", "")
+    manifest = write_manifest(tmp_path, https_server["url"])
+    retriever = make_retriever(tmp_path / "cache", manifest)
+
+    # A 502 after CONNECT proves the proxy's TLS handshake passed first.
+    assert not retriever.exists(MODEL_URI)
+    assert bool(https_server["proxy_requests"]) == (trust == "trusted")
+    assert not https_server["requests"]
 
 
 @pytest.mark.parametrize(
