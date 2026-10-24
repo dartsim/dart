@@ -1,13 +1,13 @@
 #===============================================================================
 # CMake settings
 #===============================================================================
-cmake_minimum_required(VERSION 3.22.1)
+cmake_minimum_required(VERSION 3.28)
 
 project(dart)
 
 string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPERCASE)
 
-# DART 6 is a C++17 code base. Newer compilers default to C++20 or later, where
+# DART 7 defaults to C++17. Newer compilers default to C++20 or later, where
 # some of this code is deprecated (for example the implicit `this` capture of
 # `[=]` lambdas), so build DART itself as C++17 regardless of the compiler
 # default. Consumers still get the `cxx_std_17` minimum from the exported
@@ -17,18 +17,13 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Use MACOSX_RPATH by default on OS X. This was added in CMake 2.8.12 and
-# became default in CMake 3.0. Explicitly setting this policy is necessary to
-# suppress a warning in CMake 3.0 and above.
-if(POLICY CMP0042)
-  cmake_policy(SET CMP0042 NEW)
-endif()
+# The Filament backend is C++20; do not scan other C++ sources for modules
+# (CMP0155 is NEW at CMake 3.28).
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
-# Simplify variable reference and escape sequence evaluation. This was added in
-# CMake 3.1. Explicitly setting this policy is necessary to suppress a warning
-# in CMake 3.1 and above.
-if(POLICY CMP0053)
-  cmake_policy(SET CMP0053 NEW)
+# Require populated sources for fully disconnected FetchContent configures.
+if(POLICY CMP0170)
+  cmake_policy(SET CMP0170 NEW)
 endif()
 
 # Use DART_SOURCE/BINARY_DIR instead of CMAKE_SOURCE/BINARY_DIR to support the
@@ -37,6 +32,18 @@ set(DART_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(DART_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
 include(GNUInstallDirs)
+
+# Use the same default install component as libdart.
+install(
+  FILES "${PROJECT_SOURCE_DIR}/LICENSE" "${PROJECT_SOURCE_DIR}/NOTICE"
+  DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/dart"
+)
+install(
+  FILES "${PROJECT_SOURCE_DIR}/LICENSE" "${PROJECT_SOURCE_DIR}/NOTICE"
+  DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/dart"
+  COMPONENT headers
+  EXCLUDE_FROM_ALL
+)
 
 # Variables used in Components.cmake
 set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
@@ -119,7 +126,7 @@ list(GET DART_VERSION_PARTS 2 DART_PATCH_VERSION)
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(
   DART_PKG_EXTERNAL_DEPS
-  "assimp >= 5.2.0, ccd, eigen3 >= 3.4.0, fcl >= 0.7.0, fmt >= 8.1.1"
+  "assimp >= 5.3.0, ccd, eigen3 >= 3.4.0, eigen3 < 6, fcl >= 0.7.0"
 )
 
 #===============================================================================
@@ -272,12 +279,21 @@ dart_option(DART_FORCE_COLORED_OUTPUT
   "Always produce ANSI-colored output (GNU/Clang only)." OFF
 )
 dart_option(
+  DART_USE_SYSTEM_DEPENDENCIES
+  "Default to system packages for GoogleTest, GoogleBenchmark, and Tracy"
+  OFF
+)
+dart_option(
   DART_USE_SYSTEM_FMT
-  "Use system-installed fmt instead of building it from source (set OFF only when system fmt is unavailable or broken)"
+  "Deprecated no-op - DART no longer uses fmt (retained through DART 7.x)"
   ON
 )
 dart_option(DART_USE_SYSTEM_ODE "Use system ODE" ON)
 dart_option(DART_USE_SYSTEM_BULLET "Use system Bullet" ON)
+dart_option(DART_BULLET_FLOAT64
+  "Link system Bullet's double-precision (-float64) libraries when installed"
+  ON
+)
 dart_option(DART_USE_SYSTEM_IMGUI "Use system ImGui" OFF)
 # The bundled ImGui is always the docking release; drop the removed option.
 if(DEFINED DART_IMGUI_DOCKING)
@@ -287,15 +303,30 @@ if(DEFINED DART_IMGUI_DOCKING)
   )
   unset(DART_IMGUI_DOCKING CACHE)
 endif()
-dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF)
-dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF)
-dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind >= 3.1" OFF)
+dart_option(
+  DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" ${DART_USE_SYSTEM_DEPENDENCIES}
+)
+dart_option(
+  DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" ${DART_USE_SYSTEM_DEPENDENCIES}
+)
+dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind 3.1.x" OFF)
 dart_option(
   DART_DARTPY_STABLE_ABI
   "Build the nanobind dartpy for the CPython 3.12+ stable ABI (abi3)"
   OFF
 )
-dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF)
+dart_option(
+  DART_USE_SYSTEM_TRACY "Use system Tracy" ${DART_USE_SYSTEM_DEPENDENCIES}
+)
+dart_option(
+  DART_REQUIRE_OPTIONAL_DEPENDENCIES
+  "Fail configure when an optional component's dependency is missing"
+  OFF
+)
+# Doxygen no longer goes through the optional-component check; drop its
+# leftover cache entries.
+unset(DART_SKIP_DOXYGEN CACHE)
+unset(HAVE_DOXYGEN CACHE)
 dart_option(
   DART_ALLOW_SINGLE_PRECISION_LIBCCD
   "Build even if FCL's libccd uses single precision"
@@ -423,6 +454,25 @@ set_property(
   PROPERTY STRINGS TRACE DEBUG INFO WARN ERROR FATAL OFF
 )
 
+set(
+  dart_log_levels
+  TRACE
+  DEBUG
+  INFO
+  WARN
+  ERROR
+  FATAL
+  OFF
+)
+list(
+  FIND dart_log_levels
+  "${DART_ACTIVE_LOG_LEVEL}"
+  DART_ACTIVE_LOG_LEVEL_VALUE
+)
+if(DART_ACTIVE_LOG_LEVEL_VALUE EQUAL -1)
+  message(FATAL_ERROR "Invalid active log level: ${DART_ACTIVE_LOG_LEVEL}")
+endif()
+
 if("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "DEBUG")
   option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 else()
@@ -437,8 +487,8 @@ dart_check_compiler_version()
 # targets created during configure inherit the same directory options.
 if(MSVC)
   dart_configure_msvc_toolchain(
-    REQUIRED_VERSION 1930
-    REQUIRED_LABEL "Visual Studio 2022 v143"
+    REQUIRED_VERSION 1932
+    REQUIRED_LABEL "Visual Studio 2022 17.2"
   )
 endif()
 
@@ -617,6 +667,8 @@ install(
     ${DART_CONFIG_OUT}
     ${DART_VERSION_OUT}
     "${DART_SOURCE_DIR}/cmake/DARTFindPackageVersion.cmake"
+    # Deprecated no-op finder retained for older consumer configurations.
+    "${DART_SOURCE_DIR}/cmake/DARTFindspdlog.cmake"
     # Removed-component stub that reports the OSG GUI migration.
     "${DART_SOURCE_DIR}/cmake/dart_gui-osgComponent.cmake"
     "${DART_SOURCE_DIR}/cmake/dart_gui-osgTargets.cmake"
@@ -625,6 +677,10 @@ install(
 
 # Generate the DART pkg-config
 set(DART_PKG_CFLAGS "${CMAKE_CXX_FLAGS}")
+if(THREADS_HAVE_PTHREAD_ARG)
+  string(APPEND DART_PKG_CFLAGS " -pthread")
+endif()
+set(DART_PKG_PUBLIC_LIBS)
 set(DART_PKG_PRIVATE_LIBS)
 foreach(library ${CMAKE_DL_LIBS})
   string(APPEND DART_PKG_PRIVATE_LIBS " -l${library}")
@@ -632,22 +688,41 @@ endforeach()
 if(HAVE_OCTOMAP)
   string(APPEND DART_PKG_EXTERNAL_DEPS ", octomap >= 1.9.7")
 endif()
-if(spdlog_FOUND)
-  string(APPEND DART_PKG_EXTERNAL_DEPS ", spdlog >= 1.9.2")
-endif()
 if(HAVE_BULLET)
   set(bullet_pc bullet)
   if(BT_USE_DOUBLE_PRECISION)
     string(APPEND DART_PKG_CFLAGS " -DBT_USE_DOUBLE_PRECISION")
+  endif()
+  # Name the module of the libraries that DART links: bullet.pc describes the
+  # unsuffixed ones, which may also be double precision.
+  if(DART_BULLET_USES_FLOAT64)
     find_package(PkgConfig QUIET)
     if(PkgConfig_FOUND)
       pkg_check_modules(BULLET_FLOAT64 QUIET bullet-float64)
-      if(BULLET_FLOAT64_FOUND)
-        set(bullet_pc bullet-float64)
+    endif()
+    if(BULLET_FLOAT64_FOUND)
+      set(bullet_pc bullet-float64)
+    else()
+      # bullet.pc would add the single-precision libraries; name the -float64
+      # ones directly.
+      set(bullet_pc)
+      if(DART_BULLET_PC_ERROR)
+        message(FATAL_ERROR "${DART_BULLET_PC_ERROR}")
       endif()
+      string(APPEND DART_PKG_CFLAGS "${DART_BULLET_PC_CFLAGS}")
+      string(APPEND DART_PKG_PUBLIC_LIBS "${DART_BULLET_PC_LIBS}")
     endif()
   endif()
-  string(APPEND DART_PKG_EXTERNAL_DEPS ", ${bullet_pc} >= 3.05")
+  if(bullet_pc)
+    set(bullet_pc_minimum 3.05)
+    if(DART_BULLET_MINIMUM_VERSION)
+      set(bullet_pc_minimum ${DART_BULLET_MINIMUM_VERSION})
+    endif()
+    string(
+      APPEND DART_PKG_EXTERNAL_DEPS
+      ", ${bullet_pc} >= ${bullet_pc_minimum}"
+    )
+  endif()
 endif()
 if(HAVE_ODE)
   string(APPEND DART_PKG_EXTERNAL_DEPS ", ode >= 0.16.2")
@@ -732,10 +807,14 @@ configure_file(
   @ONLY
 )
 add_custom_target(
-  uninstall
+  dart-uninstall
   "${CMAKE_COMMAND}" -P
-  "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/cmake/uninstall_target.cmake"
 )
+# Fetched ODE owns its unguarded uninstall target; DART's remains available.
+if(NOT TARGET uninstall)
+  add_custom_target(uninstall DEPENDS dart-uninstall)
+endif()
 
 #===============================================================================
 # Code Formatting

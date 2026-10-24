@@ -45,6 +45,7 @@
 #include "dart/dynamics/WeldJoint.hpp"
 #include "dart/math/Constants.hpp"
 #include "dart/utils/urdf/DartLoader.hpp"
+#include "dart/utils/urdf/detail/urdf_world_parser.hpp"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -154,8 +155,35 @@ TEST(DartLoader, createShape_UnknownGeometryTypeReturnsNull)
 TEST(DartLoader, parseWorld)
 {
   DartLoader loader;
+  auto world = loader.parseWorld("dart://sample/urdf/test/testWorld.urdf");
+  ASSERT_NE(world, nullptr);
+  ASSERT_EQ(world->getNumSkeletons(), 1u);
+  auto arm = world->getSkeleton("six_axis_arm");
+  ASSERT_NE(arm, nullptr);
   EXPECT_TRUE(
-      nullptr != loader.parseWorld("dart://sample/urdf/test/testWorld.urdf"));
+      arm->getBodyNode("tool")->getWorldTransform().translation().isApprox(
+          Eigen::Vector3d(5.34, 0, 0.46), 1e-12));
+}
+
+//==============================================================================
+TEST(DartLoader, parseWorldURDF_EmptyStringReturnsNull)
+{
+  EXPECT_EQ(nullptr, utils::urdf_parsing::parseWorldURDF("", Uri(), nullptr));
+}
+
+//==============================================================================
+TEST(DartLoader, parseWorld_MissingRequiredAttributesReturnsNull)
+{
+  DartLoader loader;
+  for (const auto* file :
+       {"missing_include_filename.urdf",
+        "missing_include_model_name.urdf",
+        "missing_entity_model.urdf"}) {
+    SCOPED_TRACE(file);
+    EXPECT_EQ(
+        nullptr,
+        loader.parseWorld(std::string("dart://sample/urdf/test/") + file));
+  }
 }
 
 //==============================================================================
@@ -1044,24 +1072,40 @@ TEST(DartLoader, MultiTreeRobot)
 }
 
 //==============================================================================
-TEST(DartLoader, KR5MeshColor)
+TEST(DartLoader, SixAxisArmMeshColor)
 {
   DartLoader loader;
-  auto robot
-      = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+  auto robot = loader.parseSkeleton(
+      "dart://sample/urdf/six_axis_arm/six_axis_arm.urdf");
   ASSERT_TRUE(nullptr != robot);
 
   EXPECT_EQ(robot->getNumBodyNodes(), 7u);
   EXPECT_EQ(robot->getNumTrees(), 1u);
 
+  EXPECT_EQ(robot->getNumDofs(), 6u);
+  EXPECT_EQ(robot->getRootJoint()->getNumDofs(), 0u);
   robot->eachBodyNode([](dynamics::BodyNode* bodyNode) {
+    const bool graphite = bodyNode->getName() == "base"
+                          || bodyNode->getName() == "forearm"
+                          || bodyNode->getName() == "tool";
+    const Eigen::Vector3d color = graphite ? Eigen::Vector3d(0.25, 0.28, 0.32)
+                                           : Eigen::Vector3d(0.2, 0.45, 0.7);
+    std::size_t numVisuals = 0;
     bodyNode->eachShapeNodeWith<dynamics::VisualAspect>(
         [&](dynamics::ShapeNode* shapeNode) {
-          auto shape = shapeNode->getShape();
-          if (auto mesh = shape->as<dynamics::MeshShape>()) {
-            EXPECT_EQ(mesh->getColorMode(), dynamics::MeshShape::SHAPE_COLOR);
-          }
+          ++numVisuals;
+          auto mesh = shapeNode->getShape()->as<dynamics::MeshShape>();
+          ASSERT_NE(mesh, nullptr);
+          EXPECT_EQ(mesh->getColorMode(), dynamics::MeshShape::SHAPE_COLOR);
+          // URDF material channels are stored as floats.
+          EXPECT_TRUE(
+              shapeNode->getVisualAspect()->getColor().isApprox(color, 1e-7));
         });
+    EXPECT_EQ(numVisuals, 1u);
+    std::size_t numCollisions = 0;
+    bodyNode->eachShapeNodeWith<dynamics::CollisionAspect>(
+        [&](dynamics::ShapeNode*) { ++numCollisions; });
+    EXPECT_EQ(numCollisions, 1u);
   });
 }
 

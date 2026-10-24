@@ -35,16 +35,26 @@ if(DART_USE_SYSTEM_GOOGLETEST)
   find_package(GTest MODULE REQUIRED)
 else()
   include(FetchContent)
+  # Extract with current timestamps on CMake 3.24+ so archive updates rebuild.
+  set(dart_googletest_timestamp)
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
+    set(dart_googletest_timestamp DOWNLOAD_EXTRACT_TIMESTAMP FALSE)
+  endif()
   FetchContent_Declare(
     googletest
-    GIT_REPOSITORY https://github.com/google/googletest
-    GIT_TAG v1.15.2
+    URL
+      https://github.com/google/googletest/releases/download/v1.17.0/googletest-1.17.0.tar.gz
+    URL_HASH
+      SHA256=65fab701d9829d38cb77c14acdc431d2108bfdbf8979e40eb8ae567edf10b27c
+    TLS_VERIFY ON
+    ${dart_googletest_timestamp}
   )
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
   set(gtest_disable_pthreads ON CACHE BOOL "" FORCE)
   set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
   set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(googletest)
+  dart_check_fetchcontent(googletest DART_USE_SYSTEM_GOOGLETEST)
 endif()
 
 #===============================================================================
@@ -68,7 +78,8 @@ function(dart_add_test test_type target_name) # ARGN for source files
 
   add_executable(${target_name} ${sources})
   add_test(${target_name} ${target_name})
-  target_link_libraries(${target_name} dart GTest::gtest GTest::gtest_main)
+  # Put fetched GTest headers before system headers inherited from dart.
+  target_link_libraries(${target_name} GTest::gtest GTest::gtest_main dart)
 
   dart_format_add(${sources})
 endfunction()

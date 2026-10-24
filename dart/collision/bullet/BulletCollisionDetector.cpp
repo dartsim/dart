@@ -59,6 +59,8 @@
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/math/TriMesh.hpp"
 
+#include <assimp/scene.h>
+
 #include <algorithm>
 #include <limits>
 #include <typeinfo>
@@ -91,10 +93,6 @@ void reportRayHits(
 
 std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
     float sizeX, float sizeY, float sizeZ);
-
-[[maybe_unused]] std::unique_ptr<btCollisionShape>
-createBulletCollisionShapeFromAssimpScene(
-    const Eigen::Vector3d& scale, const aiScene* scene);
 
 std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromTriMesh(
     const Eigen::Vector3d& scale,
@@ -131,6 +129,7 @@ std::shared_ptr<BulletCollisionDetector> BulletCollisionDetector::create()
 //==============================================================================
 BulletCollisionDetector::~BulletCollisionDetector()
 {
+  mGroupForFiltering.reset();
   DART_ASSERT(mShapeMap.empty());
 }
 
@@ -325,8 +324,11 @@ bool BulletCollisionDetector::collide(
   // be able to inspect them after collide() returns. Resetting the member frees
   // the previous group (and its objects, broadphase proxies, and overlapping
   // pairs) before building the new one, so no memory is leaked across calls.
-  mGroupForFiltering
-      = std::make_unique<BulletCollisionGroup>(shared_from_this());
+  // The detector owns this group, so its back-reference must be non-owning.
+  // The alias has no control block, so neither this group nor its detector
+  // pointer may escape this class.
+  mGroupForFiltering = std::make_unique<BulletCollisionGroup>(
+      CollisionDetectorPtr(CollisionDetectorPtr{}, this));
   auto bulletCollisionWorld = mGroupForFiltering->getBulletCollisionWorld();
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
   std::unique_ptr<detail::BulletOverlapFilterCallback> filterCallback(
@@ -532,9 +534,18 @@ BulletCollisionDetector::claimBulletCollisionShape(
     return bulletCollShape;
   }
 
-  auto newBulletCollisionShape = std::shared_ptr<BulletCollisionShape>(
-      createBulletCollisionShape(shape).release(),
-      BulletCollisionShapeDeleter(this, shape));
+  std::shared_ptr<BulletCollisionShape> newBulletCollisionShape;
+  try {
+    newBulletCollisionShape = std::shared_ptr<BulletCollisionShape>(
+        createBulletCollisionShape(shape).release(),
+        BulletCollisionShapeDeleter(this, shape));
+  } catch (...) {
+    // Only a shape's deleter erases its entry, so drop the one inserted for a
+    // shape that was never created (a throwing Shape override).
+    if (inserted)
+      mShapeMap.erase(shape);
+    throw;
+  }
   info.mShape = newBulletCollisionShape;
   info.mLastKnownVersion = currentVersion;
 
@@ -663,6 +674,14 @@ BulletCollisionDetector::createBulletCollisionShape(
 
     auto bulletCollisionShape = std::make_unique<btMultiSphereShape>(
         bulletPositions.data(), bulletRadii.data(), numSpheres);
+    // btMultiSphereShape subtracts the margin from every radius to form the
+    // core used by GJK, so a margin larger than a radius (Bullet's default is
+    // 0.04) turns that core inside out.
+    if (numSpheres > 0u) {
+      bulletCollisionShape->setMargin(std::min(
+          bulletCollisionShape->getMargin(),
+          *std::min_element(bulletRadii.begin(), bulletRadii.end())));
+    }
 
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
@@ -1017,41 +1036,6 @@ std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
 }
 
 //==============================================================================
-[[maybe_unused]] std::unique_ptr<btCollisionShape>
-createBulletCollisionShapeFromAssimpScene(
-    const Eigen::Vector3d& scale, const aiScene* scene)
-{
-  auto triMesh = new btTriangleMesh();
-
-  for (auto i = 0u; i < scene->mNumMeshes; ++i) {
-    for (auto j = 0u; j < scene->mMeshes[i]->mNumFaces; ++j) {
-      btVector3 vertices[3];
-      for (auto k = 0u; k < 3; ++k) {
-        const aiVector3D& vertex
-            = scene->mMeshes[i]
-                  ->mVertices[scene->mMeshes[i]->mFaces[j].mIndices[k]];
-        vertices[k] = btVector3(
-            vertex.x * scale[0], vertex.y * scale[1], vertex.z * scale[2]);
-      }
-      triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
-    }
-  }
-  const bool makeConvexMesh
-      = scene->mNumMeshes == 1 && isConvex(scene->mMeshes[0]);
-  if (makeConvexMesh) {
-    auto convexMeshShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
-    convexMeshShape->setMargin(0.0f);
-    convexMeshShape->setUserPointer(triMesh);
-    return convexMeshShape;
-  } else {
-    auto gimpactMeshShape = std::make_unique<btGImpactMeshShape>(triMesh);
-    gimpactMeshShape->updateBound();
-    gimpactMeshShape->setUserPointer(triMesh);
-    return gimpactMeshShape;
-  }
-}
-
-//==============================================================================
 std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromTriMesh(
     const Eigen::Vector3d& scale,
     const std::shared_ptr<math::TriMesh<double>>& mesh)
@@ -1123,14 +1107,20 @@ std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
   const auto minHeight = heightMap->getMinHeight();
   const auto maxHeight = heightMap->getMaxHeight();
 
-  // determine which data type (float or double) is to be used for the field
-  PHY_ScalarType scalarType = PHY_FLOAT;
   if (std::is_same<typename HeightmapShapeT::S, double>::value) {
     dterr << "Bullet does not support DOUBLE as heightmap field yet.\n";
     return nullptr;
-    // take this back in as soon as it is supported
-    // scalarType = PHY_DOUBLE;
   }
+
+#if BT_BULLET_VERSION < 317 && defined(BT_USE_DOUBLE_PRECISION)
+  // Before Bullet 3.17 a heightfield's PHY_FLOAT data means btScalar, so a
+  // double-precision build would read these float heights as doubles.
+  dterr << "[BulletCollisionDetector] Bullet " << BT_BULLET_VERSION
+        << " built with double precision cannot use float height fields; use "
+        << "Bullet 3.17 or newer. Creating a sphere with 0.1 radius instead.\n";
+  return std::make_unique<BulletCollisionShape>(
+      std::make_unique<btSphereShape>(0.1));
+#endif
 
   // the y-values in the height field need to be flipped
   heightMap->flipY();
@@ -1140,6 +1130,18 @@ std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
   // create the height field
   const btVector3 localScaling(scale.x(), scale.y(), scale.z());
   const bool flipQuadEdges = false;
+#if BT_BULLET_VERSION >= 317
+  // The typed overload reads floats in any Bullet precision. The legacy one
+  // treats PHY_FLOAT as btScalar, which is double in double-precision builds.
+  auto heightFieldShape = std::make_unique<btHeightfieldTerrainShape>(
+      heightMap->getWidth(), // Width of height field
+      heightMap->getDepth(), // Depth of height field
+      heights.data(),        // Height values
+      minHeight,             // Min height
+      maxHeight,             // Max height
+      2,                     // Up axis
+      flipQuadEdges);        // Flip quad edges
+#else
   auto heightFieldShape = std::make_unique<btHeightfieldTerrainShape>(
       heightMap->getWidth(), // Width of height field
       heightMap->getDepth(), // Depth of height field
@@ -1148,8 +1150,9 @@ std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
       minHeight,             // Min height
       maxHeight,             // Max height
       2,                     // Up axis
-      scalarType,            // Float or double field
+      PHY_FLOAT,             // Float field
       flipQuadEdges);        // Flip quad edges
+#endif
   heightFieldShape->setLocalScaling(localScaling);
   heightFieldShape->setUseZigzagSubdivision(true);
 

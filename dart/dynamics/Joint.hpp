@@ -904,6 +904,9 @@ protected:
   /// Notify that this joint's automatic-constraint eligibility changed.
   void notifyAutomaticConstraintPropertiesUpdated();
 
+  /// Increment the version and stamp a parameter change for compiled Worlds.
+  void incrementParameterVersion();
+
   /// \brief Create a DegreeOfFreedom pointer.
   /// \param[in] _indexInJoint DegreeOfFreedom's index within the joint. Note
   /// that the index should be unique within the joint.

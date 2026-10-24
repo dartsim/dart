@@ -12,7 +12,8 @@
 # To add a toolchain (e.g. an oldest-supported gcc, or a pinned compiler), add a
 # row to the matrix below: { name, runner, family (gcc|clang), version, cc, cxx,
 # distribution (true for Ubuntu-packaged compilers) }. An optional `eigen` spec
-# replaces the default environment's Eigen pin and re-solves it.
+# replaces the Eigen pin every Pixi environment takes from the eigen34 feature
+# and re-solves the default environment.
 
 name: CI Toolchain (Linux)
 
@@ -46,19 +47,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: gcc 11 (Ubuntu 22.04 baseline)
-            runner: ubuntu-22.04
+          - name: gcc 13 (Ubuntu 24.04 baseline)
+            runner: ubuntu-24.04
             family: gcc
-            version: "11"
-            cc: gcc-11
-            cxx: g++-11
-            distribution: true
-          - name: clang 13 (Ubuntu 22.04 baseline)
-            runner: ubuntu-22.04
-            family: clang
             version: "13"
-            cc: clang-13
-            cxx: clang++-13
+            cc: gcc-13
+            cxx: g++-13
+            distribution: true
+          - name: clang 18 (Ubuntu 24.04 baseline)
+            runner: ubuntu-24.04
+            family: clang
+            version: "18"
+            cc: clang-18
+            cxx: clang++-18
             distribution: true
           # GCC 16 is not in Ubuntu 24.04; it comes from the Ubuntu toolchain
           # PPA. It is the compiler that exposed dartsim/dart#3447 (aligned
@@ -87,6 +88,7 @@ jobs:
             cxx: g++-13
             distribution: true
             eigen: "5.*"
+            system_nanobind: true
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -97,8 +99,8 @@ jobs:
           EIGEN: ${{ matrix.eigen }}
         run: |
           set -euo pipefail
-          # Only the default feature's pin; the pixi setup below re-solves it.
-          sed -i "0,/^eigen = \">=3.4.0,<4\"\$/s//eigen = \"${EIGEN}\"/" pixi.toml
+          # Replace the default baseline pin; the pixi setup below re-solves it.
+          sed -i "0,/^eigen = \"==3.4.0\"\$/s//eigen = \"${EIGEN}\"/" pixi.toml
           grep -qxF "eigen = \"${EIGEN}\"" pixi.toml
 
       - name: Install ${{ matrix.cc }}
@@ -128,7 +130,7 @@ jobs:
           fi
 
       - name: Setup pixi
-        uses: prefix-dev/setup-pixi@v0.11.0
+        uses: prefix-dev/setup-pixi@v0.11.2
         with:
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
@@ -145,17 +147,14 @@ jobs:
           set -euo pipefail
           "${CC}" --version
           pixi run test-build-requirements
+          if [ "${{ matrix.system_nanobind }}" = "true" ]; then
+            pixi run config -- -DDART_USE_SYSTEM_NANOBIND=ON
+            grep -qxF "DART_USE_SYSTEM_NANOBIND:BOOL=ON" build/default/cpp/Release/CMakeCache.txt
+          fi
           # CC/CXX are honored by the `config` task that `build-tests` runs
           # first (it does not pin a compiler), so the whole tree is compiled
           # with the selected toolchain.
           pixi run -- bash -euc '
-            case "${CC}" in
-              gcc-11|clang-13)
-                # Pixi dependencies need a newer runtime than Ubuntu 22.04 ships.
-                export LDFLAGS="-L${CONDA_PREFIX}/lib${LDFLAGS:+ ${LDFLAGS}}"
-                export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
-                ;;
-            esac
             pixi run build-tests
             ctest --test-dir "build/${PIXI_ENVIRONMENT_NAME}/cpp/Release" --output-on-failure -j2 -LE gui-device
           '

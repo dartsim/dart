@@ -19,7 +19,7 @@ description = "Python API of Dynamic Animation and Robotics Toolkit."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "BSD-2-Clause"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "Jeongseok Lee", email = "jslee02@gmail.com" }]
 keywords = ["dartsim", "robotics"]
 classifiers = [
@@ -31,7 +31,7 @@ classifiers = [
   "Operating System :: MacOS",
   "Operating System :: POSIX :: Linux",
 ]
-dependencies = ["numpy>=1.21.5"]
+dependencies = ["numpy>=1.26.4"]
 
 [project.optional-dependencies]
 test = ["pytest>=6.0"]
@@ -41,8 +41,8 @@ Homepage = "https://github.com/dartsim/dart"
 
 [tool.scikit-build]
 minimum-version = "build-system.requires"
-# The stable-ABI build needs CMake 3.26 (python/CMakeLists.txt).
-cmake.version = ">=3.26"
+# Match the project CMake floor so source installs provision a valid tool.
+cmake.version = ">=3.28"
 ninja.version = ">=1.13.2"
 cmake.build-type = "Release"
 # `build/{wheel_tag}` keeps wheel builds incremental; SKBUILD_BUILD_DIR moves

@@ -49,11 +49,9 @@
 #include "dart/dynamics/WeldJoint.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
-#include "dart/utils/urdf/BackwardCompatibility.hpp"
-#include "dart/utils/urdf/IncludeUrdf.hpp"
-#include "dart/utils/urdf/urdf_world_parser.hpp"
-
-#include <tinyxml2.h>
+#include "dart/utils/urdf/detail/IncludeUrdf.hpp"
+#include "dart/utils/urdf/detail/JointXmlElementMetadata.hpp"
+#include "dart/utils/urdf/detail/urdf_world_parser.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -66,41 +64,6 @@ namespace utils {
 using ModelInterfacePtr = std::shared_ptr<urdf::ModelInterface>;
 
 namespace {
-
-JointXmlElementMetadata collectJointXmlElementMetadata(
-    const std::string& urdfString)
-{
-  JointXmlElementMetadata metadata;
-
-  tinyxml2::XMLDocument xmlDoc;
-  if (xmlDoc.Parse(urdfString.c_str()) != tinyxml2::XML_SUCCESS)
-    return metadata;
-
-  auto* robotXml = xmlDoc.FirstChildElement("robot");
-  if (!robotXml)
-    return metadata;
-
-  for (auto* jointXml = robotXml->FirstChildElement("joint");
-       jointXml != nullptr;
-       jointXml = jointXml->NextSiblingElement("joint")) {
-    const char* name = jointXml->Attribute("name");
-    if (!name)
-      continue;
-
-    if (jointXml->FirstChildElement("axis"))
-      metadata.jointsWithAxisElement.emplace(name);
-
-    auto* limitXml = jointXml->FirstChildElement("limit");
-    if (limitXml) {
-      if (limitXml->Attribute("lower"))
-        metadata.jointsWithLimitLowerAttribute.emplace(name);
-      if (limitXml->Attribute("upper"))
-        metadata.jointsWithLimitUpperAttribute.emplace(name);
-    }
-  }
-
-  return metadata;
-}
 
 bool hasAxisElement(
     const urdf::Joint* joint,
@@ -211,7 +174,8 @@ dynamics::SkeletonPtr DartLoader::parseSkeleton(const common::Uri& uri)
     return nullptr;
   }
 
-  const auto jointXmlElementMetadata = collectJointXmlElementMetadata(content);
+  const auto jointXmlElementMetadata
+      = detail::collectJointXmlElementMetadata(content);
   return modelInterfaceToSkeleton(
       urdfInterface.get(),
       uri,
@@ -254,7 +218,7 @@ dynamics::SkeletonPtr DartLoader::parseSkeletonString(
   }
 
   const auto jointXmlElementMetadata
-      = collectJointXmlElementMetadata(urdfString);
+      = detail::collectJointXmlElementMetadata(urdfString);
   return modelInterfaceToSkeleton(
       urdfInterface.get(),
       baseUri,
@@ -976,8 +940,8 @@ dynamics::ShapePtr DartLoader::createShape(
 
       const Eigen::Vector3d scale(mesh->scale.x, mesh->scale.y, mesh->scale.z);
       DART_SUPPRESS_DEPRECATED_BEGIN
-      shape = std::make_shared<dynamics::MeshShape>(
-          scale, scene, resolvedUri, _resourceRetriever);
+      shape = std::shared_ptr<dynamics::MeshShape>(new dynamics::MeshShape(
+          scale, scene, resolvedUri, _resourceRetriever));
       DART_SUPPRESS_DEPRECATED_END
       break;
     }

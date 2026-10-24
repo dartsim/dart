@@ -1,7 +1,7 @@
 """Build and check the production Eigen caster against the active NumPy version.
 
 For the NumPy 1.x fallback, run from the repository root:
-  pixi exec --spec python=3.12 --spec numpy=1.26 --spec nanobind=3.1 \
+  pixi exec --spec python=3.12 --spec numpy=1.26 --spec 'nanobind=3.1.*' \
     --spec eigen --spec cmake --spec ninja -- python scripts/nanobind/probe_eigen.py \
     --build-dir build/nanobind-eigen-numpy1
 Repeat with --spec numpy=2 and a separate build directory for the fast path.
@@ -28,16 +28,21 @@ def check_exports(module_dir):
         gc.collect()
         np.testing.assert_array_equal(actual, np.arange(1, size + 1, dtype=float))
         assert actual.dtype == np.float64 and actual.shape == (size,)
-        assert actual.flags.writeable
-        if size:
-            actual[0] = -1
+        assert not actual.flags.writeable
+        with np.testing.assert_raises_regex(
+            ValueError, "assignment destination is read-only"
+        ):
+            actual[...] = -1
+        writable = actual.copy()
+        assert writable.flags.writeable
+        writable[...] = -1
     for shape in ((0, 0), (0, 3), (2, 0), (2, 3), (10, 7)):
         actual = probe.matrix(*shape)
         gc.collect()
         expected = np.arange(1, shape[0] * shape[1] + 1, dtype=float).reshape(shape)
         np.testing.assert_array_equal(actual, expected)
         assert actual.dtype == np.float64 and actual.shape == shape
-        assert actual.flags.writeable
+        assert not actual.flags.writeable
     for shape in ((7,), (7, 1)):
         storage = np.arange(7.0, dtype=np.float64)
         output = storage.reshape(shape)

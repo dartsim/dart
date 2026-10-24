@@ -36,7 +36,7 @@
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
-#include "dart/config.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 
@@ -54,105 +54,6 @@
 #include <sstream>
 #include <string>
 #include <utility>
-
-#if !(ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
-// We define our own constructor and destructor for aiScene, because it seems to
-// be missing from the standard assimp library (see #451)
-aiScene::aiScene()
-  : mFlags(0),
-    mRootNode(nullptr),
-    mNumMeshes(0),
-    mMeshes(nullptr),
-    mNumMaterials(0),
-    mMaterials(nullptr),
-    mNumAnimations(0),
-    mAnimations(nullptr),
-    mNumTextures(0),
-    mTextures(nullptr),
-    mNumLights(0),
-    mLights(nullptr),
-    mNumCameras(0),
-    mCameras(nullptr),
-    mMetaData(nullptr),
-    mName(),
-  #if ASSIMP_AISCENE_HAS_SKELETONS
-    mNumSkeletons(0),
-    mSkeletons(nullptr),
-  #endif
-    mPrivate(nullptr)
-{
-}
-
-aiScene::~aiScene()
-{
-  delete mRootNode;
-
-  if (mNumMeshes && mMeshes)
-    for (std::size_t a = 0; a < mNumMeshes; ++a)
-      delete mMeshes[a];
-  delete[] mMeshes;
-
-  if (mNumMaterials && mMaterials)
-    for (std::size_t a = 0; a < mNumMaterials; ++a)
-      delete mMaterials[a];
-  delete[] mMaterials;
-
-  if (mNumAnimations && mAnimations)
-    for (std::size_t a = 0; a < mNumAnimations; ++a)
-      delete mAnimations[a];
-  delete[] mAnimations;
-
-  if (mNumTextures && mTextures)
-    for (std::size_t a = 0; a < mNumTextures; ++a)
-      delete mTextures[a];
-  delete[] mTextures;
-
-  if (mNumLights && mLights)
-    for (std::size_t a = 0; a < mNumLights; ++a)
-      delete mLights[a];
-  delete[] mLights;
-
-  if (mNumCameras && mCameras)
-    for (std::size_t a = 0; a < mNumCameras; ++a)
-      delete mCameras[a];
-  delete[] mCameras;
-
-  delete mMetaData;
-
-  #if ASSIMP_AISCENE_HAS_SKELETONS
-  if (mNumSkeletons && mSkeletons)
-    for (std::size_t a = 0; a < mNumSkeletons; ++a)
-      delete mSkeletons[a];
-  delete[] mSkeletons;
-  #endif
-}
-#endif // #if !(ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
-
-// We define our own constructor and destructor for aiMaterial, because it seems
-// to be missing from the standard assimp library (see #451)
-#if !(ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
-aiMaterial::aiMaterial()
-{
-  mNumProperties = 0;
-  mNumAllocated = 5;
-  mProperties = new aiMaterialProperty*[5];
-  for (std::size_t i = 0; i < 5; ++i)
-    mProperties[i] = nullptr;
-}
-
-aiMaterial::~aiMaterial()
-{
-  for (std::size_t i = 0; i < mNumProperties; ++i) {
-    auto* prop = mProperties[i];
-    if (!prop)
-      continue;
-    delete[] prop->mData;
-    delete prop;
-  }
-
-  delete[] mProperties;
-}
-#endif // #if !(ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
 
 namespace dart {
 namespace dynamics {
@@ -318,7 +219,10 @@ std::shared_ptr<const aiScene> MeshShape::makeMeshHandle(
 //==============================================================================
 MeshShape::MeshHandle& MeshShape::MeshHandle::operator=(const aiScene* mesh)
 {
-  set(mesh, MeshOwnership::None);
+  // aiReleaseImport also deletes manually allocated scenes from legacy
+  // subclasses.
+  if (mesh != mMesh.get())
+    set(mesh, MeshOwnership::Imported);
   return *this;
 }
 
@@ -754,6 +658,7 @@ void MeshShape::setMesh(
     return;
 
   if (!sameMesh) {
+    common::detail::checkShapeTopologyMutation(this);
     const bool meshIsCached = mesh && mesh == mCachedAiScene;
     const MeshOwnership effectiveOwnership
         = meshIsCached ? MeshOwnership::Imported : ownership;
@@ -778,7 +683,10 @@ void MeshShape::setMesh(
 
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
-  incrementVersion();
+  if (sameMesh)
+    incrementVersion();
+  else
+    common::detail::incrementShapeTopologyVersion(this);
 }
 
 //==============================================================================
@@ -795,6 +703,7 @@ void MeshShape::setMesh(
     return;
 
   if (!sameMesh) {
+    common::detail::checkShapeTopologyMutation(this);
     if (mCachedAiScene) {
       if (mesh && mesh.get() == mCachedAiScene)
         mCachedAiScene = nullptr;
@@ -815,7 +724,10 @@ void MeshShape::setMesh(
 
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
-  incrementVersion();
+  if (sameMesh)
+    incrementVersion();
+  else
+    common::detail::incrementShapeTopologyVersion(this);
 }
 
 //==============================================================================
@@ -1101,13 +1013,11 @@ const aiScene* MeshShape::loadMesh(
       AI_CONFIG_PP_SBP_REMOVE,
       aiPrimitiveType_POINT | aiPrimitiveType_LINE);
 
-#ifdef AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION
   if (isCollada) {
     // Keep authoring up-axis and allow us to preserve the Collada unit scale.
     aiSetImportPropertyInteger(
         propertyStore, AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION, 1);
   }
-#endif
 
   // Wrap ResourceRetriever in an IOSystem from Assimp's C++ API.  Then wrap
   // the IOSystem in an aiFileIO from Assimp's C API. Yes, this API is
@@ -1132,13 +1042,7 @@ const aiScene* MeshShape::loadMesh(
     return nullptr;
   }
 
-#if !defined(AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION)
-  if (isCollada && scene->mRootNode)
-    scene->mRootNode->mTransformation = aiMatrix4x4();
-#endif
-
-  // Finally, pre-transform the vertices. We can't do this as part of the
-  // import process, because we may have changed mTransformation above.
+  // Finally, pre-transform the vertices.
   scene = aiApplyPostProcessing(scene, aiProcess_PreTransformVertices);
   if (!scene)
     dtwarn << "[MeshShape::loadMesh] Failed pre-transforming vertices.\n";
@@ -1185,12 +1089,10 @@ const aiScene* MeshShape::loadPolygonScene(
       AI_CONFIG_PP_SBP_REMOVE,
       aiPrimitiveType_POINT | aiPrimitiveType_LINE);
 
-#ifdef AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION
   if (isCollada) {
     aiSetImportPropertyInteger(
         propertyStore, AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION, 1);
   }
-#endif
 
   AssimpInputResourceRetrieverAdaptor systemIO(retriever);
   aiFileIO fileIO = createFileIO(&systemIO);
@@ -1206,11 +1108,6 @@ const aiScene* MeshShape::loadPolygonScene(
     aiReleasePropertyStore(propertyStore);
     return nullptr;
   }
-
-#if !defined(AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION)
-  if (isCollada && scene->mRootNode)
-    scene->mRootNode->mTransformation = aiMatrix4x4();
-#endif
 
   scene = aiApplyPostProcessing(scene, aiProcess_PreTransformVertices);
 

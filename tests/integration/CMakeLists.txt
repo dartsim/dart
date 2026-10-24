@@ -130,7 +130,7 @@ if(TARGET dart-collision-bullet)
   target_link_libraries(test_IslandDeactivation dart-collision-bullet)
   target_link_libraries(test_CustomFilterSleeping dart-collision-bullet)
 endif()
-if(TARGET dart-collision-ode AND TARGET dart-utils)
+if(TARGET dart-collision-ode AND TARGET dart-io-sdf)
   # Covers the `contact_benchmark --gz-preset` helpers.
   dart_add_test("integration" test_ContactBenchmarkGazeboPreset)
   target_link_libraries(
@@ -172,7 +172,8 @@ set_tests_properties(
 # The NSGS and FBF thread-count determinism checks step 130-box scenes many
 # times. Under gcov they outlast test_ConstraintSolver's 3000-second budget
 # even at one and two threads (the NSGS check alone took 16 minutes), so the
-# coverage job (`--label-exclude no-coverage-value` in pixi's build-coverage)
+# coverage job (`--label-exclude no-coverage-value` in
+# `pixi run -e coverage build-coverage`)
 # skips this entry; every functional CI job still runs it.
 add_test(
   NAME test_ConstraintSolver_thread_determinism
@@ -221,14 +222,16 @@ if(TARGET dart-utils)
   dart_add_test("integration" test_MjcfParser)
   target_link_libraries(test_MjcfParser dart-utils)
 
-  dart_add_test("integration" test_SdfParser)
-  target_link_libraries(test_SdfParser dart-utils ${SDFORMAT_LIBRARIES})
-  if(TARGET dart-collision-bullet)
-    target_link_libraries(test_SdfParser dart-collision-bullet)
-  endif()
+  if(TARGET dart-io-sdf)
+    dart_add_test("integration" test_SdfParser)
+    target_link_libraries(test_SdfParser dart-utils ${SDFORMAT_LIBRARIES})
+    if(TARGET dart-collision-bullet)
+      target_link_libraries(test_SdfParser dart-collision-bullet)
+    endif()
 
-  dart_add_test("integration" test_MimicConstraint)
-  target_link_libraries(test_MimicConstraint dart-utils)
+    dart_add_test("integration" test_MimicConstraint)
+    target_link_libraries(test_MimicConstraint dart-utils)
+  endif()
 
   dart_add_test("integration" test_SkelParser)
   target_link_libraries(test_SkelParser dart-utils)
@@ -251,8 +254,9 @@ endif()
 
 if(TARGET dart-utils-urdf)
   if(NOT MSVC)
+    dart_find_package(urdfdom)
     dart_add_test("integration" test_DartLoader)
-    target_link_libraries(test_DartLoader dart-utils-urdf)
+    target_link_libraries(test_DartLoader dart-utils-urdf urdfdom)
   endif()
 endif()
 
@@ -298,8 +302,10 @@ if(TARGET dart-utils)
   dart_add_test("integration" test_Joints)
   target_link_libraries(test_Joints dart-utils)
 
-  dart_add_test("integration" test_JointForceTorque)
-  target_link_libraries(test_JointForceTorque dart-utils)
+  if(TARGET dart-io-sdf)
+    dart_add_test("integration" test_JointForceTorque)
+    target_link_libraries(test_JointForceTorque dart-utils)
+  endif()
 
   dart_add_test("integration" test_Skeleton)
   target_link_libraries(test_Skeleton dart-utils)

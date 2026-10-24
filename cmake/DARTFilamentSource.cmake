@@ -2,11 +2,7 @@
 # Keep SDK compiler flags private and use the active wheel environment's sysroot.
 function(dart_filament_build_source_sdk output)
   include(FetchContent)
-  # The timestamp option needs CMake 3.24; DART supports 3.22.1.
-  set(_dart_filament_timestamp)
-  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
-    set(_dart_filament_timestamp DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
-  endif()
+  set(_dart_filament_timestamp DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
   FetchContent_Declare(
     dart_filament_sdk
     URL "https://codeload.github.com/google/filament/tar.gz/refs/tags/v1.77.3"
@@ -18,6 +14,7 @@ function(dart_filament_build_source_sdk output)
     dart-private-sdk
   )
   FetchContent_MakeAvailable(dart_filament_sdk)
+  dart_check_fetchcontent(dart_filament_sdk DART_USE_SYSTEM_FILAMENT)
   set(_source "${dart_filament_sdk_SOURCE_DIR}")
   set(_build "${dart_filament_sdk_BINARY_DIR}")
   set(_prefix "${_build}/sdk")

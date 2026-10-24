@@ -33,6 +33,7 @@ TRACKED_SPECIAL_NAMES = frozenset(
 # group or any other absent budgeted owner is a staleness failure. Guards:
 # - HAVE_BULLET / HAVE_ODE: python/dartpy/collision/module.cpp (from
 #   dart/config.hpp via cmake/DARTFindDependencies.cmake)
+# - HAVE_SDFORMAT: python/dartpy/utils/SdfParser.cpp (Options and RootJointType)
 # - HAVE_OCTOMAP: python/dartpy/dynamics/Shape.cpp (VoxelGridShape)
 # - DARTPY_HAS_UTILS_ASSETS: python/dartpy/utils/ResourceRetriever.cpp
 #   (defined in python/dartpy/CMakeLists.txt when dart-utils-assets exists)
@@ -50,6 +51,10 @@ OPTIONAL_OWNER_GROUPS = (
     },
     {"dartpy.dynamics.VoxelGridShape"},
     {"dartpy.utils.ModelResourceRetriever"},
+    {
+        "dartpy.utils.SdfParser.Options",
+        "dartpy.utils.SdfParser.RootJointType",
+    },
     {"dartpy.viewer"},
 )
 

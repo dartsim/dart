@@ -32,30 +32,240 @@
 
 #include "dart/common/Console.hpp"
 
+#include <dart/common/Logging.hpp>
+
+#include <atomic>
+#include <exception>
 #include <iostream>
+#include <streambuf>
+#include <utility>
 
 namespace dart {
 namespace common {
 
-std::ostream& colorMsg(const std::string& _msg, int _color)
+namespace {
+
+std::ostream& defaultOut()
 {
-  std::cout << "\033[1;" << _color << "m" << _msg << "\033[0m ";
   return std::cout;
 }
+std::ostream& defaultErr()
+{
+  return std::cerr;
+}
+std::atomic<ConsoleStream> sConsoleOut{&defaultOut};
+std::atomic<ConsoleStream> sConsoleErr{&defaultErr};
 
+thread_local bool insideConsoleEmit = false;
+
+// Each thread assembles its own lines before entering the serialized sink.
+class ConsoleBuffer : public std::streambuf
+{
+public:
+  explicit ConsoleBuffer(LogLevel level) : mLevel(level) {}
+
+  void markPrefix(int color)
+  {
+    mPrefixLength = mText.size();
+    mColor = color;
+  }
+
+protected:
+  int_type overflow(int_type c) override
+  {
+    if (traits_type::eq_int_type(c, traits_type::eof()))
+      return traits_type::not_eof(c);
+    const auto ch = traits_type::to_char_type(c);
+    if (ch == '\n')
+      emit(true);
+    else {
+      try {
+        mText += ch;
+      } catch (const std::exception&) {
+        // Drop the failed line without poisoning the ostream with badbit.
+        mText.clear();
+        mPrefixLength = 0;
+      }
+    }
+    return c;
+  }
+
+  int sync() override
+  {
+    if (!mText.empty())
+      emit(false);
+    return 0;
+  }
+
+private:
+  void emit(bool newline)
+  {
+    struct EmitScope
+    {
+      const bool previous = insideConsoleEmit;
+      ~EmitScope()
+      {
+        insideConsoleEmit = previous;
+      }
+    } scope;
+    insideConsoleEmit = true;
+    auto text = std::move(mText);
+    mText.clear();
+    const auto prefix = mPrefixLength;
+    mPrefixLength = 0;
+    // Dispatch contains ordinary exceptions and propagates forced unwind.
+    detail::logConsoleRecord(mLevel, text, prefix, mColor, newline);
+  }
+
+  LogLevel mLevel;
+  std::string mText;
+  std::size_t mPrefixLength = 0;
+  int mColor = 0;
+};
+
+//==============================================================================
+struct ConsoleTarget
+{
+  std::ostream& stream;
+  ConsoleBuffer* buffer;
+};
+
+ConsoleTarget consoleStream(LogLevel level)
+{
+  auto& fallback = level >= LogLevel::Warn ? consoleErr() : consoleOut();
+  thread_local bool cleaned = false;
+  if (insideConsoleEmit || cleaned)
+    return {fallback, nullptr};
+  struct Stream
+  {
+    ConsoleBuffer buffer;
+    std::ostream stream;
+
+    explicit Stream(LogLevel severity) : buffer(severity), stream(&buffer) {}
+  };
+  struct Cleanup
+  {
+    Stream** streams;
+    bool& cleaned;
+
+    ~Cleanup() noexcept(false)
+    {
+      cleaned = true;
+      struct DeleteStreams
+      {
+        Stream** streams;
+        ~DeleteStreams()
+        {
+          for (int i = 0; i < 4; ++i) {
+            delete streams[i];
+            streams[i] = nullptr;
+          }
+        }
+      } destroy{streams};
+      for (int i = 0; i < 4; ++i) {
+        if (streams[i]) {
+          try {
+            streams[i]->stream.clear();
+            streams[i]->stream.flush();
+#if defined(__GLIBCXX__)
+          } catch (const abi::__forced_unwind&) {
+            throw;
+#endif
+          } catch (...) {
+          }
+        }
+      }
+    }
+  };
+  thread_local Stream* streams[4]{};
+  thread_local bool hasStreams = false;
+  if (!hasStreams && !detail::hasCustomLogSink())
+    return {fallback, nullptr};
+  for (auto* stream : streams) {
+    if (stream) {
+      try {
+        stream->stream.clear();
+        stream->stream.flush();
+#if defined(__GLIBCXX__)
+      } catch (const abi::__forced_unwind&) {
+        throw;
+#endif
+      } catch (...) {
+      }
+    }
+  }
+  if (!detail::hasCustomLogSink())
+    return {fallback, nullptr};
+
+  const auto index = level == LogLevel::Debug   ? 0
+                     : level == LogLevel::Warn  ? 2
+                     : level == LogLevel::Error ? 3
+                                                : 1;
+  auto& stream = streams[index];
+  if (!stream) {
+    try {
+      stream = new Stream(level);
+      thread_local Cleanup cleanup{streams, cleaned};
+      hasStreams = true;
+    } catch (const std::exception&) {
+      return {fallback, nullptr};
+    }
+  }
+  stream->stream.clear();
+  return {stream->stream, &stream->buffer};
+}
+
+} // namespace
+
+void setConsoleStreams(ConsoleStream out, ConsoleStream err)
+{
+  sConsoleOut = out ? out : &defaultOut;
+  sConsoleErr = err ? err : &defaultErr;
+}
+
+std::ostream& consoleOut()
+{
+  return sConsoleOut.load()();
+}
+std::ostream& consoleErr()
+{
+  return sConsoleErr.load()();
+}
+
+//==============================================================================
+std::ostream& colorMsg(const std::string& _msg, int _color)
+{
+  auto target = consoleStream(_color == 36 ? LogLevel::Debug : LogLevel::Info);
+  auto& stream = target.stream;
+  if (!target.buffer)
+    stream << "\033[1;" << _color << "m" << _msg << "\033[0m ";
+  else {
+    stream << _msg;
+    target.buffer->markPrefix(_color);
+    stream << ' ';
+  }
+  return stream;
+}
+
+//==============================================================================
 std::ostream& colorErr(
     const std::string& _msg,
     const std::string& _file,
     unsigned int _line,
     int _color)
 {
-  int index = _file.find_last_of("/") + 1;
-
-  std::cerr << "\033[1;" << _color << "m" << _msg << " ["
-            << _file.substr(index, _file.size() - index) << ":" << _line
-            << "]\033[0m ";
-
-  return std::cerr;
+  const auto index = _file.find_last_of("/") + 1;
+  auto target = consoleStream(_color == 31 ? LogLevel::Error : LogLevel::Warn);
+  auto& stream = target.stream;
+  if (!target.buffer)
+    stream << "\033[1;" << _color << "m";
+  stream << _msg << " [" << _file.substr(index) << ":" << _line << "]";
+  if (!target.buffer)
+    stream << "\033[0m";
+  else
+    target.buffer->markPrefix(_color);
+  stream << ' ';
+  return stream;
 }
 
 } // namespace common

@@ -22,6 +22,7 @@ faulthandler.dump_traceback_later(60, repeat=True)
 print("Native smoke: importing dartpy", flush=True)
 import dartpy as dart
 import dartpy.experimental
+import numpy as np
 from dartpy.gui import InteractiveFrame
 from dartpy.math import Random
 from dartpy.utils import DartLoader, MjcfParser, SdfParser, SkelParser
@@ -29,9 +30,21 @@ from dartpy.utils import DartLoader, MjcfParser, SdfParser, SkelParser
 print("Native smoke: package layout", flush=True)
 # A package with a private extension; public types keep their public module.
 assert dart.__file__.endswith("__init__.py"), dart.__file__
-assert os.path.dirname(dart._dartpy.__file__) == os.path.dirname(dart.__file__)
+assert os.path.dirname(dart._core.__file__) == os.path.dirname(dart.__file__)
 assert dart.dynamics.Skeleton.__module__ == "dartpy.dynamics"
 assert sys.modules["dartpy.dynamics"] is dart.dynamics
+
+print(f"Native smoke: NumPy {np.__version__} array round trip", flush=True)
+if sys.version_info[:2] == (3, 12):
+    assert np.__version__ == "1.26.4", np.__version__
+translation = np.array([1.0, 2.0, 3.0])
+transform = dart.math.Isometry3()
+transform.set_translation(translation)
+np.testing.assert_array_equal(transform.translation(), translation)
+matrix = np.eye(4)
+matrix[:3, 3] = -translation
+transform.set_matrix(matrix)
+np.testing.assert_array_equal(transform.matrix(), matrix)
 
 print("Native smoke: physics and parsers", flush=True)
 assert dart.collision.BulletCollisionDetector() is not None
@@ -56,6 +69,7 @@ assert skeleton is not None
 assert skeleton.getNumBodyNodes() == 1
 
 # Exercise embedded sdformat schemas and conversion without installed data.
+assert hasattr(SdfParser, "Options"), "wheel built without SDF"
 with tempfile.TemporaryDirectory() as sdf_directory:
     os.environ["SDF_PATH"] = str(Path(sdf_directory) / "missing-schemas")
     sdf_file = Path(sdf_directory) / "smoke.sdf"
@@ -216,8 +230,12 @@ def test_wheel(wheel_path: Path) -> None:
             ],
             stage="pip upgrade",
         )
+        # Test the NumPy floor on Python 3.12; newer Python uses current NumPy.
+        requirements = [str(wheel_path)]
+        if sys.version_info[:2] == (3, 12):
+            requirements.append("numpy==1.26.4")
         run_command(
-            [str(python_path), "-m", "pip", "install", str(wheel_path)],
+            [str(python_path), "-m", "pip", "install", *requirements],
             stage="wheel installation",
         )
         run_command(

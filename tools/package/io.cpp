@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/config.hpp>
 #include <dart/utils/urdf/DartLoader.hpp>
 #include <dart/utils/utils.hpp>
 
@@ -55,20 +56,27 @@ int main(int argc, char* argv[])
       || models.retrieve("model://package-smoke/v1/robot.urdf"))
     return 1;
 #endif
-  std::array<dart::simulation::WorldPtr, 3> worlds{
+  std::array<dart::simulation::WorldPtr, 2> worlds{
       dart::utils::SkelParser::readWorld(
           data + "/skel/test/single_pendulum.skel"),
-      dart::utils::SdfParser::readWorld(
-          data + "/sdf/test/single_bodynode_skeleton.world"),
       dart::utils::MjcfParser::readWorld(
-          data + "/mjcf/openai/inverted_pendulum.xml")};
+          data + "/mjcf/deepmind/cartpole.xml")};
   if (!worlds[0] || worlds[0]->getNumSkeletons() != 1
       || worlds[0]->getSkeleton(0)->getNumBodyNodes() != 1 || !worlds[1]
-      || worlds[1]->getNumSkeletons() != 1
-      || worlds[1]->getSkeleton(0)->getNumBodyNodes() != 1 || !worlds[2]
-      || worlds[2]->getNumSkeletons() != 2 || !worlds[2]->getSkeleton("cart")
-      || worlds[2]->getSkeleton("cart")->getNumBodyNodes() != 2)
+      || worlds[1]->getNumSkeletons() != 4 || !worlds[1]->getSkeleton("cart")
+      || worlds[1]->getSkeleton("cart")->getNumBodyNodes() != 2)
     return 1;
+
+#if HAVE_SDFORMAT
+  auto sdf = dart::utils::SdfParser::readWorld(
+      data + "/sdf/test/single_bodynode_skeleton.world");
+  if (!sdf || sdf->getNumSkeletons() != 1
+      || sdf->getSkeleton(0)->getNumBodyNodes() != 1)
+    return 1;
+  sdf->step();
+  if (!std::isfinite(sdf->getSkeleton(0)->getPositions().norm()))
+    return 1;
+#endif
 
   for (const auto& world : worlds) {
     world->step();

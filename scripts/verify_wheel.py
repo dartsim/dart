@@ -33,7 +33,7 @@ def verify_wheel(wheel_path: Path) -> bool:
     extensions = [
         name
         for name in file_list
-        if name.startswith("dartpy/_dartpy.") and name.endswith((".so", ".pyd"))
+        if name.startswith("dartpy/_core.") and name.endswith((".so", ".pyd"))
     ]
     non_metadata_files = [
         name
@@ -50,7 +50,7 @@ def verify_wheel(wheel_path: Path) -> bool:
         print("ERROR: Expected a cp312-abi3 wheel (DART_DARTPY_STABLE_ABI).")
         ok = False
     if not extensions:
-        print("ERROR: No dartpy._dartpy extension module found in wheel.")
+        print("ERROR: No dartpy._core extension module found in wheel.")
         ok = False
     for required in (
         "dartpy/__init__.py",

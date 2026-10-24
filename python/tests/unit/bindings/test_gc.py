@@ -362,7 +362,7 @@ def _reference_frame(owner, kind):
 def _parser_owner(kind, retriever):
     classes = {
         "dart_options": dart.utils.DartLoaderOptions,
-        "sdf_options": dart.utils.SdfParser.Options,
+        "sdf_options": getattr(dart.utils.SdfParser, "Options", None),
         "mjcf_options": dart.utils.MjcfParser.Options,
         "loader": dart.utils.DartLoaderOptions,
     }
@@ -490,6 +490,8 @@ def test_task_space_live_native_alias_preserves_reference_frame(kind):
     "kind", ["dart_options", "sdf_options", "mjcf_options", "loader"]
 )
 def test_parser_retriever_cycle_collects(kind):
+    if kind == "sdf_options" and not hasattr(dart.utils.SdfParser, "Options"):
+        pytest.skip("SDF loading is disabled")
     run_isolated(
         f"""
         import weakref
@@ -522,6 +524,8 @@ def test_parser_retriever_cycle_collects(kind):
     "kind", ["dart_options", "sdf_options", "mjcf_options", "loader"]
 )
 def test_parser_live_native_alias_preserves_retriever(kind):
+    if kind == "sdf_options" and not hasattr(dart.utils.SdfParser, "Options"):
+        pytest.skip("SDF loading is disabled")
     run_isolated(
         f"""
         import weakref
@@ -1226,4 +1230,117 @@ def test_separate_hierarchy_leaves_a_live_skeletons_modules_alone(path):
         assert body.getIK().getObjective() is not None
         """,
         allow_leaks=True,
+    )
+
+
+def test_mesh_live_world_shape_alias_preserves_retriever():
+    run_isolated(
+        """
+        import sys
+        import weakref
+        errors = []
+        sys.unraisablehook = errors.append
+        class Retriever(dart.common.LocalResourceRetriever):
+            def getFilePath(self, uri):
+                return 'retained-override'
+        retriever = Retriever()
+        shape = dart.dynamics.MeshShape([1, 1, 1], None, dart.common.Uri(), retriever)
+        retriever.owner = shape
+        frame = dart.dynamics.SimpleFrame()
+        frame.setShape(shape)
+        world = dart.simulation.World()
+        world.addSimpleFrame(frame)
+        refs = weakref.ref(retriever), weakref.ref(shape)
+        del retriever, shape, frame
+        for _ in range(3):
+            gc.collect()
+        assert not errors
+        assert all(ref() is not None for ref in refs)
+        fetched = world.getSimpleFrame(0).getShape()
+        assert fetched is refs[1]()
+        np.testing.assert_array_equal(fetched.getScale(), [1, 1, 1])
+        assert fetched.getResourceRetriever().getFilePath(dart.common.Uri()) == 'retained-override'
+        del fetched, world
+        for _ in range(3):
+            gc.collect()
+        assert not errors
+        assert all(ref() is None for ref in refs)
+        """
+    )
+
+
+
+def test_compiled_world_preserves_cyclic_mesh_retriever():
+    run_isolated(
+        """
+        import sys
+        import weakref
+        import _dartpy_gc_test as native
+
+        errors = []
+        sys.unraisablehook = errors.append
+        class Retriever(dart.common.LocalResourceRetriever):
+            def getFilePath(self, uri):
+                return 'retained-override'
+
+        retriever = Retriever()
+        shape = dart.dynamics.MeshShape([1, 1, 1], None, dart.common.Uri(), retriever)
+        retriever.owner = shape
+        native.seed_mesh(shape)
+        assert shape.getResourceRetriever() is retriever
+        mesh_path = shape.getMeshPath()
+        expected_vertices = ((0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1))
+        np.testing.assert_array_equal(shape.mesh_vertex_groups[0], expected_vertices)
+        skeleton = dart.dynamics.Skeleton()
+        joint, body = skeleton.createFreeJointAndBodyNodePair()
+        node = body.createShapeNode(shape)
+        node.createCollisionAspect()
+        world = dart.simulation.World()
+        world.addSkeleton(skeleton)
+        native.compile_world(world)
+        before = native.snapshot(world, shape)
+        compiled, prepared, topology, parameters, version, world_ptr, mesh_ptr, retriever_ptr, frames, matching_frames, vertices = before
+        assert compiled and prepared
+        assert topology > 0 and version > 0
+        assert world_ptr and mesh_ptr and retriever_ptr
+        assert frames == matching_frames == 1
+        assert vertices == expected_vertices
+        print('compiled snapshot:', before)
+
+        try:
+            native.seed_mesh(shape)
+        except RuntimeError as error:
+            assert 'ModelFrozenError' in str(error), str(error)
+        else:
+            raise AssertionError('compiled World did not freeze its owned mesh')
+        assert native.snapshot(world, shape) == before
+        refs = weakref.ref(retriever), weakref.ref(shape)
+        del retriever, shape, joint, body, node, skeleton
+        for _ in range(3):
+            gc.collect()
+            assert all(ref() is not None for ref in refs)
+            assert not any(value is refs[0]() for value in gc.get_referents(refs[1]()))
+            native.clear_shape(refs[1]())
+            assert native.snapshot(world, refs[1]()) == before
+            assert refs[1]().getResourceRetriever() is refs[0]()
+            assert refs[1]().getMeshPath() == mesh_path
+            assert refs[1]().getResourceRetriever().getFilePath(dart.common.Uri()) == 'retained-override'
+            np.testing.assert_array_equal(refs[1]().mesh_vertex_groups[0], expected_vertices)
+            assert not errors
+
+        # Borrow only the shape while releasing the native World/subscriptions.
+        fetched = refs[1]()
+        del world
+        native.seed_mesh(fetched)
+        assert fetched.getMeshPath() == mesh_path
+        np.testing.assert_array_equal(fetched.mesh_vertex_groups[0], expected_vertices)
+        referents = gc.get_referents(fetched)
+        assert any(value is refs[0]() for value in referents)
+        del referents, fetched
+        for _ in range(3):
+            gc.collect()
+        print('collected weakrefs:', tuple(ref() is None for ref in refs))
+        assert all(ref() is None for ref in refs)
+        assert not errors
+        """
     )

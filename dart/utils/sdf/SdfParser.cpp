@@ -671,8 +671,8 @@ dynamics::ShapePtr readSdfShape(
       requireSdf(
           scene != nullptr, "Failed to load mesh [" + uri.toString() + "]");
       DART_SUPPRESS_DEPRECATED_BEGIN
-      auto shape = std::make_shared<dynamics::MeshShape>(
-          scale, scene, uri, options.mResourceRetriever);
+      auto shape = std::shared_ptr<dynamics::MeshShape>(new dynamics::MeshShape(
+          scale, scene, uri, options.mResourceRetriever));
       DART_SUPPRESS_DEPRECATED_END
       return shape;
     }

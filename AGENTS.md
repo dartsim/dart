@@ -65,9 +65,11 @@ the repository root to the working directory.
   installed headers, package components (including legacy forwarding components),
   and source and behavior compatibility of the C++ API used by Gazebo/gz-physics
   and gz-sim. PLAN-624 approves the dartpy clean break, the OSG-to-Filament
-  renderer replacement merged in #3696, and labeled default-behavior changes
-  behind its gates; any other public-API, ABI-layout, or default-behavior change
-  needs maintainer approval.
+  renderer replacement merged in #3696, labeled default-behavior changes
+  behind its gates, and, until 7.0.0 is packaged, ABI-layout changes in classes
+  Gazebo neither subclasses nor reads, gated by the API inventory check and the
+  unpatched Gazebo lanes; any other public-API, ABI-layout, or default-behavior
+  change needs maintainer approval.
 - dartpy uses nanobind as its only binder, under `python/dartpy/`; follow
   `docs/onboarding/python-bindings.md`.
 - New fixes land on `main`; backports to a `release-*` branch use
@@ -121,7 +123,8 @@ project home is `docs/dev_tasks/<task>/`.
 - Run `pixi run lint`, even for docs-only changes.
 - Run `pixi run build` and focused tests when C++ or Python behavior changes;
   GUI changes also run `pixi run test-gui`.
-- Use `dart-changelog` to decide whether `CHANGELOG.md` needs an entry.
+- Use `dart-changelog` to decide whether the change needs a `changelog.d/`
+  fragment; on `main`, only checkpoint assembly adds entries to `CHANGELOG.md`.
 - Promote durable facts and remove a completing `docs/dev_tasks/<task>/` folder.
 - Run `pixi run install-hooks` once per clone. Its fast staged safety check is
   not a substitute for the full lint requirement. When it blocks a commit, fix

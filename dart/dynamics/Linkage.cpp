@@ -33,6 +33,7 @@
 #include "dart/dynamics/Linkage.hpp"
 
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 
 #include <algorithm>
@@ -553,6 +554,14 @@ bool Linkage::isAssembled() const
 //==============================================================================
 void Linkage::reassemble()
 {
+  for (std::size_t i = 0; i < mBodyNodes.size(); ++i) {
+    BodyNode* body = mBodyNodes[i];
+    const auto parent = mParentBodyNodes[i].lock();
+    if (body->getParentBodyNode() != parent) {
+      common::detail::checkTopologyMutation(body);
+      common::detail::checkTopologyMutation(parent.get());
+    }
+  }
   for (std::size_t i = 0; i < mBodyNodes.size(); ++i) {
     BodyNode* bn = mBodyNodes[i];
     bn->moveTo(mParentBodyNodes[i].lock());

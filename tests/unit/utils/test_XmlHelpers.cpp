@@ -91,6 +91,38 @@ void expectFixedSizeParsing(
 } // namespace
 
 //==============================================================================
+TEST(XmlHelpers, ScalarToString)
+{
+  EXPECT_EQ("true", toString(true));
+  EXPECT_EQ("false", toString(false));
+  EXPECT_EQ("x", toString('x'));
+  EXPECT_EQ(std::string(1, '\0'), toString('\0'));
+  EXPECT_EQ("-42", toString(-42));
+  EXPECT_EQ("42", toString(42u));
+  EXPECT_EQ("1.500000", toString(1.5f));
+  EXPECT_EQ("1.500000", toString(1.5));
+}
+
+//==============================================================================
+TEST(XmlHelpers, ChildTextErrorMessages)
+{
+  tinyxml2::XMLDocument document;
+  ASSERT_EQ(tinyxml2::XML_SUCCESS, document.Parse("<parent><empty/></parent>"));
+  for (const std::string child : {"missing", "empty"}) {
+    try {
+      getValueString(document.RootElement(), child);
+      FAIL() << "Expected missing child text to throw";
+    } catch (const std::runtime_error& error) {
+      EXPECT_EQ(
+          child == "missing"
+              ? "Child element [missing] not found in parent element [parent]"
+              : "Child element [empty] in parent [parent] has no text content",
+          std::string(error.what()));
+    }
+  }
+}
+
+//==============================================================================
 TEST(XmlHelpers, Vector2dRequiresExactElementCount)
 {
   expectFixedSizeParsing(toVector2d, 2, "1.5 -2.5", Eigen::Vector2d(1.5, -2.5));

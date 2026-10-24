@@ -3,7 +3,7 @@
 DART Python bindings are built through the Pixi/CMake workflow.
 
 On `main`, `dartpy` is a Python package with one private nanobind extension,
-`dartpy._dartpy`, containing core, collision backends enabled in the build, IO
+`dartpy._core`, containing core, collision backends enabled in the build, IO
 parsers and the Filament GUI bindings (`dartpy.gui`). It links `dart`,
 `dart-io` and `dart-gui`. Enabling `DART_BUILD_DARTPY` requires both
 `DART_BUILD_IO=ON` and `DART_BUILD_GUI=ON`; for a headless C++ installation,
@@ -18,7 +18,7 @@ The package layout (DART 7 design decisions D6, D19, D20 and D22):
   and outside SemVer. They sit in a subdirectory so that `python/dartpy/`,
   the C++ binding directory, is never importable as the `dartpy` package:
   tests and examples put `python/` on `sys.path` ahead of the build tree.
-- `python/dartpy/module.cpp` defines `NB_MODULE(_dartpy)`. The package imports
+- `python/dartpy/module.cpp` defines `NB_MODULE(_core)`. The package imports
   the extension while it initializes, and the extension binds every public
   submodule into the package module it finds in `sys.modules`. nanobind
   therefore registers `dartpy.dynamics`, `dartpy.utils.SdfParser` and the
@@ -29,7 +29,7 @@ The package layout (DART 7 design decisions D6, D19, D20 and D22):
   `python/tests/unit/bindings/test_metadata.py` walks the package to check
   this, and `scripts/nanobind/api_surface.py --snapshot` records the public
   surface with its module paths.
-- The CMake target is still `dartpy`; it builds `_dartpy` into the staged
+- The CMake target is still `dartpy`; it builds `_core` into the staged
   package at `${DART_DARTPY_BUILD_DIR}/dartpy`, and a build step it depends on
   copies the pure-Python files there, so each configuration a multi-config
   generator builds gets a complete package and an edited file re-stages
@@ -91,10 +91,20 @@ M6a landed the renderer in [#3696](https://github.com/dartsim/dart/pull/3696);
 M6b still replaces the interim GUI module with `dart.render` and `dart.viewer`
 before the first release candidate. `release-6.20` retains pybind11 and OSG.
 
-Python 3.12 or newer and nanobind 3.1 or newer are required.
-`DART_USE_SYSTEM_NANOBIND` defaults to `OFF`, fetching nanobind v3.1.0 with its
-`robin_map` submodule. With `ON`, CMake uses `nanobind_DIR` when it is set and
-otherwise locates nanobind's CMake directory using
+Python 3.12 or newer, NumPy 1.26.4 or newer (including NumPy 2.x), and
+nanobind 3.1.x are required. CMake discovers Python once in
+`python/CMakeLists.txt` and caches the selected interpreter as
+`Python3_EXECUTABLE` for tests, examples and tutorials. Select the interpreter
+with `Python_EXECUTABLE`; `Python3_EXECUTABLE` only seeds a fresh configure.
+If both are set and differ, CMake warns unless `Python3_EXECUTABLE` still holds
+the value DART last cached, and uses `Python_EXECUTABLE`.
+Use `Python_ROOT_DIR` and other `Python_*` hints; the `Python3_*` forms no longer
+apply. C++ builds with
+`DART_BUILD_DARTPY=OFF` do not discover Python.
+`DART_USE_SYSTEM_NANOBIND` defaults to `OFF`, fetching the nanobind 3.1.0
+PyPI sdist by URL and SHA-256 with TLS verification. The sdist bundles
+`robin_map`. With `ON`, CMake uses `nanobind_DIR` when it is set and otherwise
+locates nanobind's CMake directory using
 `python -m nanobind --cmake_dir`. Set `nanobind_DIR` when the build's Python
 cannot import nanobind, as in cross builds and isolated pip builds. Source
 builds through `pip` use scikit-build-core (`pyproject.toml`) and keep the
@@ -104,6 +114,15 @@ examples import the staged package from `DART_PYTHONPATH`. The
 `DART_DARTPY_BINDER` and `DART_USE_SYSTEM_PYBIND11` options are removed.
 Passing the legacy binder value `pybind11` fails configure; `nanobind` is
 accepted for compatibility and removed from the cache.
+
+`python/dartpy/detail/construction.cpp` checks nanobind's internal factory
+attachment ABI (`NB_INTERNALS_VERSION=22`), pinning system nanobind to 3.1.x.
+CMake checks both the selected headers' version and internals version at
+configure time for system and fetched builds. When bumping nanobind, audit
+that check and re-diff `python/dartpy/detail/dart_eigen_dense.h` against
+nanobind's stock `include/nanobind/eigen/dense.h` to preserve DART's NumPy
+compatibility changes. The Eigen 5 toolchain CI lane also builds and tests
+with `DART_USE_SYSTEM_NANOBIND=ON`.
 
 ### Changes from DART 6.20 (pybind11)
 
@@ -120,8 +139,97 @@ accepted for compatibility and removed from the cache.
 
 Python overrides and subclass state stay alive while C++ uses the object.
 Wrappers for graph objects, including joints and degrees of freedom, keep
-their skeleton alive. Views of const Eigen data are read-only; code that
-needs a writable independent array should make an explicit copy.
+their skeleton alive. Owned Eigen vector and matrix returns are read-only
+NumPy copies; call `.copy()` before writing and use a setter to update DART
+state. Existing live views preserve their mutability, including read-only
+views of const Eigen data. Inputs and caller-provided output buffers are
+unaffected.
+
+### Errors and logging
+
+`dartpy.errors` holds the exception hierarchy. The errors dartpy defines
+derive from `DartError`, which has three branches named after their builtin
+parent: `ValidationError` (`ValueError`) for invalid arguments and inputs,
+`NotFoundError` (`KeyError`) for failed name lookups, whose message lists the
+valid names, and `OperationError` (`RuntimeError`) for operations that fail
+or run in the wrong state. `WorldBusyError` and `ModelFrozenError` derive
+from `OperationError`; `CheckpointMismatchError` and `NameConflictError`
+derive from `ValidationError`. The design doc's top-level allowlist excludes
+errors, so they live in their own submodule and their `__module__` is
+`dartpy.errors`.
+
+Not every exception dartpy raises is a `DartError`. A translator registered
+before every submodule maps the C++ exceptions DART throws:
+`std::invalid_argument` and `std::length_error` to `ValidationError`, and
+`std::runtime_error`, `std::logic_error` and every other `std::exception`
+subclass not listed next to `OperationError`. `std::out_of_range`
+(`IndexError`), `std::domain_error` and `std::range_error` (`ValueError`),
+`std::overflow_error` (`OverflowError`) and `std::bad_alloc` (`MemoryError`)
+keep nanobind's builtin mapping on purpose, and nanobind's own argument
+conversion failures raise plain `TypeError`. Register more specific nanobind
+exceptions in their submodule with `dartnb::operationError()` as the base, as
+`dartpy.gui` and `dartpy.viewer` do; nanobind runs later registrations first.
+Binding-side `nb::value_error` and `nb::type_error` checks are still plain
+builtins; bad input raises, it is never logged and ignored.
+
+DART's C++ diagnostics reach `logging.getLogger("dartpy")`. The bridge in
+`detail/logging.cpp` registers a `dart::common::setLogCallback()` callback
+for the `DART_WARN` family and redirects the `dtwarn`/`dterr`/`dtmsg`/`dtdbg`
+console streams through `dart::common::setConsoleStreams()`. The callback
+hook lives in libdart, so it receives diagnostics emitted inside libdart and
+from the extension. The logging implementation formats each message once
+and offers it to the callback before acquiring or initializing sink state.
+A message the callback declines goes to the selected sink or console streams,
+subject to the runtime threshold. The callback receives every message that
+`DART_ACTIVE_LOG_LEVEL` compiles in, regardless of `setLogLevel()`, including
+`Off`; `logging.getLogger("dartpy")` filters by its own level. The
+bridge does not apply that level before queueing a record. Python's
+`logging` has no hook that fires when a level changes, so a cached
+threshold could go stale and silently drop messages a user just enabled,
+and DART formats the message before the callback runs, so the check would
+save only a string copy and a queue push. The console
+hook takes stream providers, and the bridge hands every thread its own
+`std::ostream` over a per-thread line buffer, so concurrent writers share
+neither manipulator state nor a partial line; a thread-local or static
+destructor that logs after that stream is destroyed gets a leaked fallback
+stream instead. Logging threads never touch Python: each completed line or
+`DART_WARN` message goes into a bounded queue (1024 records, oldest dropped
+and the count reported), under one mutex that also guards the pass-through
+flag and the pending-call bookkeeping. `Py_AddPendingCall` drains the queue on the main
+thread at its next safe point, which is right after the binding call that
+logged returns. Records from C++ worker threads wait until the main thread
+runs Python again or `dartpy.common.flush_logs()` is called;
+`flush_logs()` delivers on the thread that calls it and returns the number
+of records it drained, counting the drop notice. Delivery catches Python
+and C++ exceptions per record and reports them as unraisable or on stderr,
+so one failing handler loses only its record. Levels map one to one;
+trace maps to level 5. On POSIX, `pthread_atfork` handlers hold the queue
+mutex, the only lock on the bridged path, across `fork()` and give the
+child an unlocked, empty queue, so a child forked from a single-threaded
+process can log and flush. Forking a process that has other running threads
+is unsupported: a thread the child does not have may hold a lock below the
+bridge, such as libstdc++'s locale mutex that any stream construction takes
+under a non-classic global locale, or a selected log sink mutex, and the child then
+blocks on its first log. CPython warns about forking a multi-threaded process
+for the same reason; use the `spawn` or `forkserver` start method there.
+Python's `atexit` drains the queue and switches the bridge to pass-through,
+so diagnostics logged while the interpreter shuts down print to stderr
+without touching Python. There is no default handler: with no logging
+configuration, Python's last-resort handler prints warnings and errors to
+stderr, and info messages stay quiet; set the logger's level or handlers to
+silence or route DART output.
+The GUI App separately observes callback-consumed records at the native sink
+threshold and queues its panel notifications until the GUI owner drains them.
+It neither installs another Python bridge nor invokes Python from producers.
+Closing a capture discards pending panel notifications without changing the
+automatic Python bridge. The superseded manual enable/disable API is removed;
+configure the Python logger and use `flush_logs()` for explicit delivery.
+
+`dartpy._testing` holds hooks for dartpy's own tests (worker-thread logging,
+destructor-time logging, throwing a named C++ exception). It is not part of
+the API: `python/dartpy/CMakeLists.txt` compiles it in only when
+`BUILD_TESTING` is on and `DART_BUILD_WHEELS` is off, and the tests that
+use it skip when it is absent.
 
 ### GUI ownership
 
@@ -204,9 +312,11 @@ the helper when nanobind changes its internals ABI.
 The Eigen caster preserves Eigen dimensions, strides, and ownership. By-value
 results move into a heap owner. At runtime, NumPy 2 uses its C API to export
 the array; NumPy 1 uses nanobind's `numpy.asarray` export with that same owner.
-Both paths keep returned storage alive. The NumPy export cache assumes the
-GIL and a single interpreter; isolated interpreters and free-threaded Python
-need a separate ownership and synchronization design.
+Both paths keep returned storage alive and read-only. Explicit copy-policy
+exports and empty owned arrays also clear NumPy's writeability flag after
+exporting. The NumPy export cache assumes the GIL and a single interpreter;
+isolated interpreters and free-threaded Python need a separate ownership and
+synchronization design.
 
 `optimizer.Function.evalGradient` overrides receive an owned NumPy output
 array initialized from the native gradient. In-place updates are copied back
@@ -239,7 +349,7 @@ skeleton snapshots with different soft-point counts raises `ValueError` before
 mutation. `Skeleton.setState()` retains C++ joint restore semantics, including
 deriving FORCE-joint commands from restored forces.
 
-`MeshShape.mesh_vertex_groups` returns independent, writable arrays of unscaled
+`MeshShape.mesh_vertex_groups` returns independent, read-only arrays of unscaled
 vertices in submesh order. `VoxelGridShape.validate_occupancy_update()` checks
 the same inputs as `updateOccupancy()` without changing occupancy, allowing
 callers to validate a cloud before changing other sensor state.
@@ -287,12 +397,86 @@ changes from DART 6.20. Regular Python CI jobs cover GUI construction and
 ownership; `CI Filament` runs the rendering tests. Windows uses its existing
 unity build.
 
+### Transform and Rotation values
+
+`dartpy.math.Transform` and `dartpy.math.Rotation` (re-exported at the top
+level) are immutable values backed by contiguous `Eigen::Isometry3d` storage:
+one item for a scalar, `N >= 1` items for a batch built from arrays with a
+leading axis (an empty leading axis raises `ValueError`). Constructors are
+keyword-only and take at most one rotation form (`rotation=` a 3x3 or a
+`Rotation`, `wxyz=`, `xyzw=`, `rpy=`) plus `translation=` for a `Transform`.
+Alternatively, `Transform(matrix=...)` takes a homogeneous matrix that already
+contains translation and excludes `translation=` and all other rotation forms.
+No rotation form gives the identity, and
+`identity()` spells that out. `Rotation.from_axis_angle(axis, angle)` builds a
+scalar rotation from a nonzero axis of any magnitude (it is scaled by its
+largest component before normalization) and an angle in radians. `rpy` is
+extrinsic X-Y-Z, `Rz(yaw) Ry(pitch) Rx(roll)`, the URDF/SDF convention;
+`Rotation.as_rpy()` inverts it with roll set to 0 at gimbal lock. It does not
+use `dart::math::eulerXYZToMatrix`, whose convention differs. Read-only array
+properties are `matrix` (3x3 for a `Rotation`, 4x4 for a `Transform`),
+`translation`, `wxyz` and `xyzw`, each with a leading `N` for a batch, and
+`Transform.rotation` returns the rotation part as a `Rotation`. Only `@` is
+defined: it composes values, with a scalar broadcasting against a batch
+and batches requiring equal length. Scalar values apply to `(..., 3)` point
+arrays of any rank (rows are points). Batched values accept a single `(3,)`
+point broadcast to every value or a pairwise `(N, 3)` point array.
+`__array_ufunc__ = None`, so `points @ value` raises `TypeError`
+instead of letting NumPy broadcast.
+
+Validation raises `ValueError` and checks finite values,
+`|R^T R - I|_F`, `|det R - 1|`, the homogeneous row of a 4x4 input and
+`|norm(q) - 1|`, all against a default tolerance of `1e-5`. The calibration
+measured composition of up to 1e4 rotations (below 1e-13), quaternion round
+trips (below 1e-14), text with six to nine significant digits (2.3e-6 down to
+2.4e-9), float32 round trips (1.2e-7) and per-entry noise (1e-6 gives 1e-5,
+1e-4 gives 1e-3); the tolerance sits one order of magnitude above the worst
+legitimate source and one below inputs that must fail. `normalize=True`
+projects a matrix onto the nearest rotation through SVD (`U V^T`) and rescales
+a quaternion coefficient by coefficient (each is divided by the largest
+magnitude, then by the norm of that scaled vector, so coefficients near 1e308
+or subnormal still normalize). It accepts a matrix only when its determinant
+is positive, every singular value lies within `1e-2` of 1, and the relative
+spread of the singular values `(max - min) / max` is at most `1e-3`. Stretch
+alone bounds the operator-norm distance to the nearest rotation but admits a
+shear of 0.005 (singular values `1 +- 0.0025`); the spread catches shear and
+non-uniform scale while a uniform `1.001` scale or float32 rounding (spread
+about 1e-7) still passes. Reflections, and shear or non-uniform scale beyond
+that spread, raise, and
+the error message suggests `normalize=True` only for inputs that meet both
+criteria. Composition and
+`inverse()` never normalize: a chain of 1e4 compositions drifts by about 1e-13,
+and `Transform(matrix=value.matrix, normalize=True)` restores exactness when
+needed. Composition and `inverse()` raise `ValueError` if any result entry is
+nonfinite or its rotation leaves the near-rotation envelope above; batch errors
+identify the first failing index.
+
+Quaternion order is always named (`wxyz=`/`xyzw=` in, `.wxyz`/`.xyzw` out).
+Matrix-to-quaternion conversion uses Eigen's largest-diagonal branch, and the
+sign policy makes `w >= 0` and, for `w == 0`, the first nonzero of `(x, y, z)`
+positive. The rule reads the exact bits: a `w` that rounds to `-1e-17` negates
+the quaternion, and only an exact zero defers to the next coefficient. Array
+properties return read-only copies. `==` and `hash()` are bit-exact over the
+stored 4x4 matrix, so `-0.0` and `0.0` are different values; `hash()` works for
+scalars only (batches raise `TypeError`, like NumPy arrays). Pickling keeps
+the exact bits, and unpickling validates byte length, finite entries, the
+homogeneous row, a rotation inside the `normalize=True` near-rotation envelope
+(positive determinant, singular-value stretch at most `1e-2` and relative
+spread at most `1e-3`), and zero translation for a `Rotation`. It preserves
+drift beyond the construction tolerance without projecting; crafted state
+outside these invariants raises `ValueError`. Restoring state on an already
+initialized value raises `TypeError`; pickle, copy and deepcopy create new values.
+`Transform.from_isometry()`
+validates a `dartpy.math.Isometry3` and `to_isometry()` returns a mutable
+copy for the camelCase API; there is no implicit conversion in either
+direction.
+
 ## Wheels
 
 `pyproject.toml` builds wheels with scikit-build-core: it builds only the
 `dartpy` CMake target and installs only the `python` component, so a wheel
 holds the `dartpy` package (`__init__.py`, `py.typed`, `experimental/`, the
-`_dartpy` extension) plus the licenses, and no test package. The version comes
+`_core` extension) plus the licenses, and no test package. The version comes
 from `package.xml`. `scripts/pep517/dartpy_backend.py` is a thin PEP 517
 wrapper around scikit-build-core, which resolves license files before CMake
 runs: CMake stages the fetched Filament SDK license and notices inside the
@@ -315,8 +499,8 @@ flags) through `CMAKE_ARGS`; the fixed wheel configuration lives in
 `pyproject.toml`.
 
 Wheels require Python 3.12 and use the nanobind binder for CPython's stable
-ABI (`DART_DARTPY_STABLE_ABI=ON`, which needs CMake 3.26), so every build is
-tagged `cp312-abi3` and one wheel per platform serves Python 3.12 and every
+ABI (`DART_DARTPY_STABLE_ABI=ON`); source builds require CMake 3.28 or newer.
+Every build is tagged `cp312-abi3`, and one wheel per platform serves Python 3.12 and every
 later version. The release matrix builds four wheels: Linux x86_64 and
 aarch64, macOS arm64, and Windows x64. Each row checks the wheel with
 `abi3audit --strict` and tests it on Python 3.13: the Linux driver below does
@@ -328,9 +512,10 @@ license, or ships files outside the package.
 
 Linux release wheels use `python3 scripts/wheel_linux.py cp312` on native
 x86_64 or aarch64 hosts with Docker.
-The driver builds `docker/wheels/Dockerfile.manylinux_2_28`, compiles native
-dependencies and dartpy with the manylinux toolchain, requires
-`auditwheel repair --plat manylinux_2_28_<arch>`, and runs the wheel smoke
+The driver builds `docker/wheels/Dockerfile.manylinux_2_28`, which fetches each
+source-built native dependency as a release or tag archive checked with
+`sha256sum` (update the hash with the version). It compiles those dependencies and dartpy
+with the manylinux toolchain, requires `auditwheel repair --plat manylinux_2_28_<arch>`, and runs the wheel smoke
 test in a fresh manylinux 2.28 base container. Outputs are in `dist/`.
 The source checkout is mounted read-only; temporary container builds avoid
 reusing host CMake caches.
@@ -361,3 +546,6 @@ The repaired-wheel smoke test requires all four parser APIs and constructs a
 display. It also parses an inline URDF model, so missing IO or GUI support fails
 acceptance. Linux release wheels run this check in the fresh manylinux
 container without a display.
+
+On Python 3.12, the smoke test pins NumPy 1.26.4 and round-trips vector and
+matrix arrays through dartpy. The Python 3.13 abi3 smoke test uses current NumPy.

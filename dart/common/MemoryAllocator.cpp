@@ -40,8 +40,10 @@ namespace dart::common {
 //==============================================================================
 MemoryAllocator& MemoryAllocator::GetDefault()
 {
-  static CAllocator defaultAllocator;
-  return defaultAllocator;
+  // Global Worlds can release memory after function-local static objects are
+  // destroyed.
+  static auto* defaultAllocator = new CAllocator;
+  return *defaultAllocator;
 }
 
 //==============================================================================

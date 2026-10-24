@@ -36,11 +36,7 @@ if(NOT DART_USE_SYSTEM_FILAMENT)
       )
     endif()
     include(FetchContent)
-    # The timestamp option needs CMake 3.24; DART supports 3.22.1.
-    set(_dart_filament_timestamp)
-    if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
-      set(_dart_filament_timestamp DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
-    endif()
+    set(_dart_filament_timestamp DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
     FetchContent_Declare(
       dart_filament_sdk
       URL
@@ -49,6 +45,7 @@ if(NOT DART_USE_SYSTEM_FILAMENT)
       ${_dart_filament_timestamp}
     )
     FetchContent_MakeAvailable(dart_filament_sdk)
+    dart_check_fetchcontent(dart_filament_sdk DART_USE_SYSTEM_FILAMENT)
     set(Filament_ROOT "${dart_filament_sdk_SOURCE_DIR}")
     if(EXISTS "${Filament_ROOT}/filament/include")
       string(APPEND Filament_ROOT "/filament")

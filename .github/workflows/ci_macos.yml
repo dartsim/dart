@@ -62,8 +62,9 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Setup pixi
-        uses: prefix-dev/setup-pixi@v0.11.0
+        uses: prefix-dev/setup-pixi@v0.11.2
         with:
+          environments: default system-imgui
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
@@ -84,6 +85,67 @@ jobs:
           BUILD_TYPE=${{ matrix.build_type }} \
           pixi run test-all
 
+      - name: Check legacy floating-point logging (system toolchain)
+        # Runs outside pixi on Apple's own clang/libc++ at a macOS 13.0
+        # deployment target, where floating-point to_chars is unavailable.
+        # Hosted runners are newer than macOS 13.3, so this proves the
+        # compile/link/symbol/behavior contract, not old-OS runtime behavior.
+        env:
+          BUILD_DIR: build/default/cpp/Release
+        run: |
+          set -euo pipefail
+          unset CONDA_PREFIX CONDA_DEFAULT_ENV BUILD_PREFIX PREFIX \
+            CPATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH LIBRARY_PATH \
+            LD_LIBRARY_PATH DYLD_LIBRARY_PATH DYLD_FALLBACK_LIBRARY_PATH \
+            CFLAGS CXXFLAGS CPPFLAGS LDFLAGS SDKROOT MACOSX_DEPLOYMENT_TARGET
+          export PATH=/usr/bin:/bin:/usr/sbin:/sbin
+          CXX="$(xcrun --sdk macosx --find clang++)"
+          SDK="$(xcrun --sdk macosx --show-sdk-path)"
+          OUT="$RUNNER_TEMP/logging-float"
+          mkdir -p "$OUT"
+          echo "compiler: $CXX"; "$CXX" --version
+          echo "sdk: $SDK ($(xcrun --sdk macosx --show-sdk-version))"
+          echo "host: $(sw_vers -productVersion), deployment target: 13.0"
+          FLAGS=(-stdlib=libc++ -mmacosx-version-min=13.0 -isysroot "$SDK" -O1
+            -Wall -Wextra -Werror=unguarded-availability
+            -Werror=unguarded-availability-new
+            -I. "-I$BUILD_DIR")
+          "$CXX" -std=c++17 "${FLAGS[@]}" -c dart/common/Logging.cpp \
+            -o "$OUT/Logging.o"
+          "$CXX" -std=c++17 "${FLAGS[@]}" -c dart/common/Console.cpp \
+            -o "$OUT/Console.o"
+          "$CXX" -std=c++14 "${FLAGS[@]}" \
+            -DDART_CHECK_LOGGING_FLOAT_ALLOCATION_FAILURES=1 \
+            -c scripts/check_logging_float.cpp \
+            -o "$OUT/check_logging_float.o"
+          "$CXX" -stdlib=libc++ -mmacosx-version-min=13.0 -isysroot "$SDK" \
+            "$OUT/check_logging_float.o" "$OUT/Logging.o" "$OUT/Console.o" \
+            -o "$OUT/check_logging_float"
+
+          # No floating-point to_chars/from_chars may be linked; integer is fine.
+          for binary in "$OUT/Logging.o" "$OUT/check_logging_float"; do
+            nm -u "$binary" > "$binary.undefined"
+            c++filt < "$binary.undefined" > "$binary.demangled"
+            if grep -E '(to|from)_chars' "$binary.demangled" \
+              | grep -E 'float|double|chars_format'; then
+              echo "::error::$binary references floating-point charconv"
+              exit 1
+            fi
+          done
+          otool -L "$OUT/check_logging_float"
+          otool -L "$OUT/check_logging_float" | grep -q '/usr/lib/libc++.1.dylib'
+          if otool -L "$OUT/check_logging_float" | grep -Ei 'conda|pixi|miniforge'; then
+            echo "::error::executable links a non-system runtime"
+            exit 1
+          fi
+          otool -l "$OUT/check_logging_float" | grep -A4 -E 'LC_BUILD_VERSION|LC_VERSION_MIN_MACOSX'
+          otool -l "$OUT/check_logging_float" \
+            | grep -E '^ +(minos|version) 13\.0$'
+
+          "$OUT/check_logging_float" | tee "$OUT/result.txt"
+          grep -Eq 'fixed_checks=[1-9][0-9]* oracle_checks=0 failures=0 oracle=off' \
+            "$OUT/result.txt"
+
       - name: Install
         # Nightly only: install rebuilds a separate Release tree; CI
         # gz-physics installs DART and builds against it on every PR.
@@ -91,7 +153,7 @@ jobs:
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=${{ matrix.build_type }} \
-          pixi run install
+          pixi run -e system-imgui install
 
       - name: Compiler cache stats
         if: always()

@@ -32,6 +32,7 @@
 
 #include "dart/utils/mjcf/detail/Joint.hpp"
 
+#include "dart/math/Helpers.hpp"
 #include "dart/utils/XmlHelpers.hpp"
 #include "dart/utils/mjcf/detail/Body.hpp"
 
@@ -47,6 +48,19 @@ Errors Joint::read(
     const JointAttributes& defaultAttributes)
 {
   Errors errors;
+
+  if (std::string(element->Name()) == "freejoint") {
+    // Free joints bypass joint defaults, including the body's childclass.
+    mAttributes = JointAttributes();
+    mAttributes.mType = JointType::FREE;
+    if (hasAttribute(element, "name")) {
+      mAttributes.mName = getAttributeString(element, "name");
+    }
+    if (hasAttribute(element, "group")) {
+      mAttributes.mGroup = getAttributeInt(element, "group");
+    }
+    return errors;
+  }
 
   if (std::string(element->Name()) != "joint") {
     errors.emplace_back(
@@ -78,7 +92,7 @@ Errors Joint::read(
 }
 
 //==============================================================================
-Errors Joint::preprocess(const Compiler& /*compiler*/)
+Errors Joint::preprocess(const Compiler& compiler)
 {
   Errors errors;
 
@@ -90,7 +104,46 @@ Errors Joint::preprocess(const Compiler& /*compiler*/)
   mPos = mAttributes.mPos;
   mAxis = mAttributes.mAxis;
   mRange = mAttributes.mRange;
+  mLimited = false;
+  if (mType != JointType::FREE) {
+    const std::string jointName = mName.empty() ? "(noname)" : mName;
+    const bool hasRange = !(mRange[0] == 0 && mRange[1] == 0);
+    if (!mAttributes.mLimited && hasRange && !compiler.getAutoLimits()) {
+      errors.emplace_back(
+          ErrorCode::ATTRIBUTE_INVALID,
+          "Joint '" + jointName
+              + "' has a range with limited='auto' but autolimits is false.");
+      return errors;
+    }
+    mLimited = mAttributes.mLimited.value_or(mRange[0] < mRange[1]);
+    if (mLimited && !mRange.allFinite()) {
+      errors.emplace_back(
+          ErrorCode::ATTRIBUTE_INVALID,
+          "Non-finite range in joint '" + jointName + "'.");
+      return errors;
+    }
+    if (mLimited && mType != JointType::BALL && mRange[0] >= mRange[1]) {
+      errors.emplace_back(
+          ErrorCode::ATTRIBUTE_INVALID,
+          "range[0] should be smaller than range[1] in joint '" + jointName
+              + "'.");
+      return errors;
+    }
+    if (mLimited && mType == JointType::BALL && mRange[0] != 0) {
+      errors.emplace_back(
+          ErrorCode::ATTRIBUTE_INVALID,
+          "range[0] should be 0 in ball joint '" + jointName + "'.");
+      return errors;
+    }
+    if (mLimited && (mType == JointType::HINGE || mType == JointType::BALL)
+        && compiler.getAngle() == Angle::DEGREE) {
+      mRange *= math::toRadian(1.0);
+    }
+  }
   mSpringRef = mAttributes.mSpringRef;
+  if (mType == JointType::HINGE && compiler.getAngle() == Angle::DEGREE) {
+    mSpringRef = math::toRadian(mSpringRef);
+  }
   mDamping = mAttributes.mDamping;
 
   return errors;

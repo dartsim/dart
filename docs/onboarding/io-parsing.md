@@ -7,17 +7,38 @@ headers as compatibility surfaces.
 Run focused IO tests when touching parser code, model-loading dependencies, or
 package metadata used by IO components.
 
+## URDF Loading
+
+Use `dart/utils/urdf/DartLoader.hpp` and `dart::utils::DartLoader` to load
+URDF skeletons and worlds. `DartLoader::parseWorld` loads a world file;
+`DartLoader::parseWorldString` loads world XML from a string.
+
+`IncludeUrdf.hpp` and `urdf_world_parser.hpp`, including
+`dart::utils::urdf_parsing::parseWorldURDF`, are private implementation
+headers under `dart/utils/urdf/detail/` and are no longer installed. Shared
+DART consumers do not need urdfdom development packages; building DART or
+consuming a static installation still requires urdfdom.
+
 ## SDF Loading
 
 `SdfParser` uses sdformat for schema validation, version conversion and frame
-resolution. IO requires sdformat 14.8 or newer; supported library majors are
-14, 15 and 16. The accepted document versions follow the selected library.
+resolution. SDF support in `dart-io` is optional and requires sdformat 14.8
+or newer; supported library majors are 14, 15 and 16. Missing sdformat warns
+and builds IO without SDF, leaving URDF, SKEL and MJCF available. Set
+`DART_SKIP_SDFORMAT=ON` to disable SDF deliberately. Standalone builds do not
+fetch sdformat. Consumers requiring SDF should request the `io-sdf` CMake
+component, which is not found on an SDF-off install. `HAVE_SDFORMAT` in
+`dart/config.hpp` identifies SDF support. Shared consumers do not need
+sdformat development files; static consumers require the selected major.
+On an SDF-off build, Python `SdfParser.readWorld()` and `readSkeleton()` raise
+`RuntimeError` explaining how to enable SDF. The accepted document versions
+on SDF-on builds follow the selected library.
 Standard Pixi environments use sdformat 16.1 or newer within major 16 and
 urdfdom 6. SDFormat 16 [shares schema descriptions](https://github.com/gazebosim/sdformat/pull/1589),
 avoiding repeated schema copies when loading large worlds. The Ionic
 environment uses sdformat 16 for DART and 15 for Gazebo; the isolated Harmonic
 and Jetty lanes use 14 and 16 respectively.
-Public `dart::utils::SdfParser` entrypoints and options remain available.
+SDF-on builds retain the public `dart::utils::SdfParser` entrypoints and options.
 Authored world gravity, physics timestep and joint limits, including effort and
 velocity, are honored. Existing controllers that relied on ignored limits must
 configure their intended limits explicitly after loading.
@@ -58,8 +79,11 @@ pixi run agent-capture -- --factory python.examples.sdf_pose.main:make_world \
 The optional `utils-assets` component supplies `ModelResourceRetriever` in C++
 and dartpy. Normal Pixi builds enable it; native CMake builds opt in with
 `-DDART_BUILD_UTILS_ASSETS=ON` and require libcurl 7.85 or newer and OpenSSL
-Crypto 1.1.1 or newer. Existing
-components and parser defaults do not acquire networking dependencies.
+Crypto 1.1.1 or newer at build time. Shared installs link them privately, so
+consumers do not need their development packages, only their runtime
+libraries; static installs also require the development packages from
+consumers.
+Existing components and parser defaults do not acquire networking dependencies.
 
 The catalog and source pins live in [`data/robot_models`](../../data/robot_models/).
 Manifests enumerate every model, mesh, texture, license, and metadata file with
@@ -88,7 +112,21 @@ checks with inspected Filament captures. The default C++/Python retriever tests
 use deterministic local fixtures rather than online vendor availability.
 
 The Hubo puppet scene and installed `dart://sample/urdf/drchubo/` resources
-have been retired. The Fetch demo is retired, while its model remains a parser
-fixture. Atlas v3 control and soft-foot examples retain their tuned models.
-KR5, WAM, synthetic skeletons, and historical MJCF files remain useful teaching
-or regression fixtures; model age alone is not a removal criterion.
+have been retired. The Fetch demo and its noncommercial MJCF assets are
+retired. Include, mesh and multi-root parser coverage uses the DART-authored
+BSD fixture at
+`dart://sample/mjcf/test/manipulation/scene.xml`. The former Roboti-derived
+MJCF samples are replaced by pinned Apache-2.0
+[DeepMind Control Suite models](../../data/mjcf/deepmind/README.md), for example
+`dart://sample/mjcf/deepmind/cartpole.xml`. That README records source revisions,
+hashes, adaptations and test mappings. Atlas v3 control and soft-foot examples
+retain their tuned models. The DART-authored six-axis arm, WAM and synthetic
+skeletons remain useful teaching or regression fixtures; model age alone is
+not a removal criterion.
+
+The bundled [Atlas v3 model](../../data/sdf/atlas/README.md) retains its
+Apache-2.0 meshes and textures with attribution and DART modification notices.
+The [WAM model](../../data/urdf/wam/README.md) uses the upstream BSD-3-Clause
+visual STLs in place of the removed GPL COLLADA meshes and JPEG textures.
+The WAM model URI and kinematics stay the same; visuals lose textures and have
+small geometry differences (up to 12.09 mm in link-frame bounds).

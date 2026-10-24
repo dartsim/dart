@@ -38,12 +38,14 @@
 
 #include "gui/ownership.hpp"
 
+#include <dart/common/Logging.hpp>
 #include <dart/common/Observer.hpp>
 
 namespace dart::python {
 void bind_gui_probe(nb::module_& m)
 {
   auto sm = m.def_submodule("_probe");
+  sm.def("has_custom_log_sink", &dart::common::detail::hasCustomLogSink);
   sm.def(
       "base_subject",
       [](dart::common::Subject* subject) -> dart::common::Subject* {

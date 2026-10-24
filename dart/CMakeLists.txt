@@ -33,7 +33,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #===============================================================================
 # dart - common, math, lcpsolver, optimizer, dynamics, collision,
 #        collision/dart, collision/fcl, optional collision/bullet and
-#        collision/ode, constraint, simulation, [assimp, eigen3, fcl, fmt]
+#        collision/ode, constraint, simulation, [assimp, eigen3, fcl]
 # dart-collision-bullet, dart-collision-ode - forwarding interfaces to dart
 # dart-io - {dart}, utils, utils/mjcf, utils/sdf, utils/urdf, [tinyxml2, urdfdom]
 # dart-utils, dart-utils-urdf - forwarding interfaces to dart-io
@@ -149,7 +149,13 @@ target_include_directories(
 get_property(dart_core_link_libraries GLOBAL PROPERTY DART_CORE_LINK_LIBRARIES)
 target_link_libraries(
   dart
-  PUBLIC ${CMAKE_DL_LIBS} Eigen3::Eigen fcl assimp ${dart_core_link_libraries}
+  PUBLIC
+    ${CMAKE_DL_LIBS}
+    Threads::Threads
+    Eigen3::Eigen
+    fcl
+    assimp
+    ${dart_core_link_libraries}
 )
 
 # assimp version detection for conditional compilation
@@ -159,37 +165,6 @@ if(ASSIMP_VERSION_MAJOR)
     PUBLIC DART_ASSIMP_VERSION_MAJOR=${ASSIMP_VERSION_MAJOR}
   )
 endif()
-
-if(TARGET fmt::fmt-header-only)
-  target_link_libraries(dart PUBLIC fmt::fmt-header-only)
-elseif(TARGET fmt::fmt)
-  target_link_libraries(dart PUBLIC fmt::fmt)
-else()
-  message(FATAL_ERROR "Failed to find fmt targets")
-endif()
-
-# spdlog settings
-if(spdlog_FOUND)
-  # Prefer header only target
-  if(TARGET spdlog::spdlog_header_only)
-    target_link_libraries(dart PUBLIC spdlog::spdlog_header_only)
-    target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=1)
-  elseif(TARGET spdlog::spdlog)
-    target_link_libraries(dart PUBLIC spdlog::spdlog)
-    target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=1)
-  else()
-    message(
-      WARNING
-      "spdlog found, but no target is found. Expected spdlog::spdlog or target_link_library_public spdlog::spdlog_header_only"
-    )
-    target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=0)
-  endif()
-else()
-  target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=0)
-endif()
-
-# Boost gdb helper scripts embed inline asm that breaks GCC with our flags.
-target_compile_definitions(dart PUBLIC BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS)
 
 # octomap settings
 if(TARGET octomap)
@@ -219,9 +194,6 @@ if(DART_ENABLE_SIMD)
     # depending on the architectures.
   elseif(CMAKE_COMPILER_IS_GNUCXX)
     target_compile_options(dart PUBLIC -march=native)
-    if(GCC_VERSION VERSION_GREATER 7.0)
-      target_compile_options(dart PUBLIC -faligned-new)
-    endif()
   elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     target_compile_options(dart PUBLIC -march=native -faligned-new)
   endif()
@@ -237,25 +209,6 @@ else()
   endif()
 endif()
 
-# Active log level
-if(DART_ACTIVE_LOG_LEVEL STREQUAL "TRACE")
-  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=0)
-elseif(DART_ACTIVE_LOG_LEVEL STREQUAL "DEBUG")
-  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=1)
-elseif(DART_ACTIVE_LOG_LEVEL STREQUAL "INFO")
-  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=2)
-elseif(DART_ACTIVE_LOG_LEVEL STREQUAL "WARN")
-  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=3)
-elseif(DART_ACTIVE_LOG_LEVEL STREQUAL "ERROR")
-  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=4)
-elseif(DART_ACTIVE_LOG_LEVEL STREQUAL "FATAL")
-  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=5)
-elseif(DART_ACTIVE_LOG_LEVEL STREQUAL "OFF")
-  target_compile_definitions(dart PUBLIC -DDART_ACTIVE_LOG_LEVEL=6)
-else()
-  message(FATAL_ERROR "Invalid active log level: ${DART_ACTIVE_LOG_LEVEL}")
-endif()
-
 # Default component
 add_component_targets(${PROJECT_NAME} dart dart)
 get_property(
@@ -264,13 +217,10 @@ get_property(
   PROPERTY DART_CORE_DEPENDENCY_PACKAGES
 )
 add_component_dependency_packages(${PROJECT_NAME} dart
-  assimp Eigen3 fcl fmt ${dart_core_dependency_packages}
+  assimp Eigen3 fcl Threads ${dart_core_dependency_packages}
 )
 if(TARGET octomap)
   add_component_dependency_packages(${PROJECT_NAME} dart octomap)
-endif()
-if(spdlog_FOUND)
-  add_component_dependency_packages(${PROJECT_NAME} dart spdlog)
 endif()
 
 if(MSVC AND NOT DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION)
@@ -298,4 +248,8 @@ endif()
 
 install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
 
-dart_format_add(${dart_core_headers} ${dart_core_sources})
+dart_format_add(
+  ${dart_core_headers}
+  ${dart_core_sources}
+  ${PROJECT_SOURCE_DIR}/scripts/check_logging_float.cpp
+)

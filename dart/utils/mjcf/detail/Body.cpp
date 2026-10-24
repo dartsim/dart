@@ -86,14 +86,17 @@ Errors Body::read(
     errors.insert(errors.end(), inertialErrors.begin(), inertialErrors.end());
   }
 
-  // Read multiple <joint>
-  ElementEnumerator jointElements(element, "joint");
-  while (jointElements.next()) {
-    Joint joint = Joint();
-    const Errors jointErrors = joint.read(
-        jointElements.get(), defaults, currentDefault->getJointAttributes());
-    errors.insert(errors.end(), jointErrors.begin(), jointErrors.end());
-    mJoints.emplace_back(std::move(joint));
+  // Read <joint> and <freejoint>. MuJoCo forbids stacking a free joint with
+  // other joints, so reading the two tags separately keeps any valid order.
+  for (const auto* jointTag : {"joint", "freejoint"}) {
+    ElementEnumerator jointElements(element, jointTag);
+    while (jointElements.next()) {
+      Joint joint = Joint();
+      const Errors jointErrors = joint.read(
+          jointElements.get(), defaults, currentDefault->getJointAttributes());
+      errors.insert(errors.end(), jointErrors.begin(), jointErrors.end());
+      mJoints.emplace_back(std::move(joint));
+    }
   }
 
   // Read multiple <geom>
@@ -222,9 +225,10 @@ Errors Body::postprocess(const Body* parent, const Compiler& compiler)
 {
   Errors errors;
 
-  if (mAttributes.mPos) {
+  if (mAttributes.mPos || compiler.getCoordinate() == Coordinate::LOCAL) {
     if (compiler.getCoordinate() == Coordinate::LOCAL) {
-      mRelativeTransform.translation() = *mAttributes.mPos;
+      mRelativeTransform.translation()
+          = mAttributes.mPos.value_or(Eigen::Vector3d::Zero());
       mRelativeTransform.linear() = compileRotation(
           mAttributes.mQuat,
           mAttributes.mAxisAngle,
@@ -259,38 +263,27 @@ Errors Body::postprocess(const Body* parent, const Compiler& compiler)
       }
     }
   } else {
-    if (compiler.getCoordinate() == Coordinate::LOCAL) {
-      mRelativeTransform = mInertial.getRelativeTransform();
+    mWorldTransform = mInertial.getWorldTransform();
+    if (!math::verifyTransform(mWorldTransform)) {
+      DART_WARN(
+          "[MjcfBody] Non-finite transform detected while parsing MJCF body. "
+          "The model file may contain extreme or invalid pose values.");
+      mWorldTransform = Eigen::Isometry3d::Identity();
+    }
+    if (parent != nullptr) {
+      mRelativeTransform
+          = parent->getWorldTransform().inverse() * mWorldTransform;
       if (!math::verifyTransform(mRelativeTransform)) {
         DART_WARN(
-            "[MjcfBody] Non-finite transform detected while parsing MJCF body. "
+            "[MjcfBody] Non-finite transform detected while parsing MJCF "
+            "body. "
             "The model file may contain extreme or invalid pose values.");
         mRelativeTransform = Eigen::Isometry3d::Identity();
-        mInertial.setRelativeTransform(Eigen::Isometry3d::Identity());
       }
     } else {
-      mWorldTransform = mInertial.getWorldTransform();
-      if (!math::verifyTransform(mWorldTransform)) {
-        DART_WARN(
-            "[MjcfBody] Non-finite transform detected while parsing MJCF body. "
-            "The model file may contain extreme or invalid pose values.");
-        mWorldTransform = Eigen::Isometry3d::Identity();
-      }
-      if (parent != nullptr) {
-        mRelativeTransform
-            = parent->getWorldTransform().inverse() * mWorldTransform;
-        if (!math::verifyTransform(mRelativeTransform)) {
-          DART_WARN(
-              "[MjcfBody] Non-finite transform detected while parsing MJCF "
-              "body. "
-              "The model file may contain extreme or invalid pose values.");
-          mRelativeTransform = Eigen::Isometry3d::Identity();
-        }
-      } else {
-        mRelativeTransform = mWorldTransform;
-      }
-      mInertial.setRelativeTransform(Eigen::Isometry3d::Identity());
+      mRelativeTransform = mWorldTransform;
     }
+    mInertial.setRelativeTransform(Eigen::Isometry3d::Identity());
   }
 
   for (Geom& geom : mGeoms) {
@@ -332,6 +325,12 @@ bool Body::getMocap() const
 const Inertial& Body::getInertial() const
 {
   return mInertial;
+}
+
+//==============================================================================
+bool Body::hasInertial() const
+{
+  return mAttributes.mInertial.has_value();
 }
 
 //==============================================================================

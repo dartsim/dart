@@ -1,4 +1,60 @@
 #===============================================================================
+# Fail when a disconnected fetch silently leaves a missing or empty source tree.
+# Call it immediately after FetchContent_MakeAvailable(name) so a registered
+# dependency provider gets its one chance to fulfill the request first; a
+# completed request with no recorded source directory was fulfilled by a
+# provider (or find_package) and needs no source tree.
+# Usage:
+#   dart_check_fetchcontent(name system_option [source_dir])
+#===============================================================================
+function(dart_check_fetchcontent name system_option)
+  string(TOUPPER "${name}" upper_name)
+  string(TOLOWER "${name}" lower_name)
+  set(source_dir "${FETCHCONTENT_BASE_DIR}/${lower_name}-src")
+  if(ARGC GREATER 2)
+    set(source_dir "${ARGV2}")
+  endif()
+  set(recorded_dir "")
+  set(populated FALSE)
+  FetchContent_GetProperties(
+    ${name}
+    SOURCE_DIR recorded_dir
+    POPULATED populated
+  )
+  if(NOT "${recorded_dir}" STREQUAL "")
+    set(source_dir "${recorded_dir}")
+  endif()
+  if(NOT "${FETCHCONTENT_SOURCE_DIR_${upper_name}}" STREQUAL "")
+    set(source_dir "${FETCHCONTENT_SOURCE_DIR_${upper_name}}")
+  elseif(populated AND "${recorded_dir}" STREQUAL "")
+    return()
+  endif()
+  if(FETCHCONTENT_FULLY_DISCONNECTED)
+    file(GLOB source_entries "${source_dir}/*")
+    if(NOT IS_DIRECTORY "${source_dir}" OR NOT source_entries)
+      message(
+        FATAL_ERROR
+        "Cannot fetch ${name} with FETCHCONTENT_FULLY_DISCONNECTED=ON: pre-seed FETCHCONTENT_SOURCE_DIR_${upper_name}, or set ${system_option}=ON to use an installed package."
+      )
+    endif()
+  endif()
+endfunction()
+
+# Keep compatibility with old dependency projects local to their configure.
+function(dart_fetchcontent_makeavailable_legacy name)
+  if(
+    NOT DEFINED CMAKE_POLICY_VERSION_MINIMUM
+    OR CMAKE_POLICY_VERSION_MINIMUM VERSION_LESS 3.5
+  )
+    set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+  endif()
+  FetchContent_MakeAvailable(${name})
+  # Only <name>_SOURCE_DIR and <name>_BINARY_DIR reach the caller.
+  set(${name}_SOURCE_DIR "${${name}_SOURCE_DIR}" PARENT_SCOPE)
+  set(${name}_BINARY_DIR "${${name}_BINARY_DIR}" PARENT_SCOPE)
+endfunction()
+
+#===============================================================================
 # Appends items to a cached list.
 # Usage:
 #   dart_append_to_cached_string(_string _cacheDesc [items...])
@@ -158,7 +214,21 @@ macro(dart_check_optional_package variable component dependency)
   else()
     set(HAVE_${variable} FALSE CACHE BOOL "Check if ${variable} found." FORCE)
     if(NOT ${variable}_FOUND)
-      if(ARGV3) # version
+      if(DART_REQUIRE_OPTIONAL_DEPENDENCIES AND NOT DART_SKIP_${variable})
+        # Macro arguments are not variables, so test the count, not ARGV3.
+        set(_dart_optional_version "")
+        if(${ARGC} GREATER 3)
+          set(_dart_optional_version " (>= ${ARGV3})")
+        endif()
+        message(
+          FATAL_ERROR
+          "Looking for ${dependency}${_dart_optional_version} - NOT found, but "
+          "DART_REQUIRE_OPTIONAL_DEPENDENCIES is ON and ${component} needs it."
+          " Install ${dependency}, or set DART_SKIP_${variable}=ON to build"
+          " without ${component}."
+        )
+      endif()
+      if(${ARGC} GREATER 3) # version
         message(
           WARNING
           "Looking for ${dependency} - NOT found, to use"

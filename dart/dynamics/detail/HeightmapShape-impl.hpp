@@ -205,7 +205,7 @@ std::size_t HeightmapShape<S>::getDepth() const
 template <typename S>
 void HeightmapShape<S>::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
 {
-  incrementVersion();
+  incrementVisualVersion();
 }
 
 //==============================================================================

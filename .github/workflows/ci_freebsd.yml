@@ -84,9 +84,8 @@ jobs:
             # Install build dependencies from pkg.
             sudo pkg update -f
             sudo pkg install -y \
-              assimp boost-libs cmake eigen libfmt git gmake googletest \
-              ninja octomap ode-double pkgconf spdlog tinyxml2 \
-              ros-urdfdom ros-urdfdom_headers
+              assimp cmake eigen git gmake googletest \
+              ninja octomap ode-double pkgconf tinyxml2
             # FreeBSD's libccd package keeps libccd's single-precision default,
             # so the package's FCL runs GJK/EPA in float. DART's FCL detector
             # routes primitive pairs that FCL has no dedicated algorithm for,
@@ -125,8 +124,9 @@ jobs:
               patch -p0 -N -i "${patch}"
             done
             # FreeBSD ports ship sdformat 8, below dart-io's supported
-            # 14.8+/15/16 range, so keep this lane on the core libraries
-            # until ports provide a supported sdformat.
+            # 14.8+/15/16 range, and ros-urdfdom 3.0, below its 4.0.0 floor,
+            # so keep this lane on the core libraries until ports provide
+            # supported versions.
             cmake -G Ninja -S . -B build/freebsd/cpp/Release \
               -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_CXX_FLAGS=-O2 \

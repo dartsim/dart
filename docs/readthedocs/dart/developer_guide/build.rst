@@ -13,8 +13,9 @@ Recommended Pixi build
 ----------------------
 
 The reproducible developer path is the Pixi environment tracked in
-``pixi.toml``. It supplies the compiler tools, CMake, Ninja, Python, Doxygen,
-Sphinx, test tools, and the C++ dependencies used by the branch.
+``pixi.toml``. Its default environment supplies the compiler tools, CMake,
+Ninja, Python, test tools, and the C++ dependencies used by the branch; the
+``docs`` environment adds Doxygen and Sphinx for the documentation tasks.
 
 .. code-block:: bash
 
@@ -29,7 +30,7 @@ Run the relevant verification gates from the same environment:
    pixi run lint
    pixi run test
    pixi run test-py
-   pixi run docs-build
+   pixi run -e docs docs-build
 
 ``pixi run test-all`` builds the default aggregate CMake target. The default
 configuration enables testing, so that aggregate also runs CTest and the
@@ -56,25 +57,25 @@ The development branch requires C++17 and the following source-build baselines:
      - OS baseline
      - Compiler minimum
    * - Ubuntu
-     - 22.04 LTS; also tested on 24.04 LTS
-     - GCC 11.2 or upstream LLVM Clang 13
+     - 24.04 LTS (the DART 6.20 maintenance line keeps 22.04 LTS)
+     - GCC 13.2 or upstream LLVM Clang 18
    * - macOS
-     - 13 Ventura
-     - Apple Clang 14 from Xcode 14.1
+     - 15.2 Sequoia (the minimum host for Xcode 16.3)
+     - Apple Clang 17 from Xcode 16.3
    * - Windows
      - Windows Server 2022 CI baseline
-     - Visual Studio 2022, v143 toolset (``MSVC_VERSION >= 1930``)
+     - Visual Studio 2022, v143 toolset 17.2 (``MSVC_VERSION >= 1932``)
 
 Apple Clang and upstream LLVM Clang use different version numbers. The
 upstream Clang minimum also applies to clang-cl. The Windows CI runner
 baseline does not establish a minimum supported Windows desktop version.
 CMake checks the Xcode version when the Xcode generator reports it; other
-generators check the Apple Clang version. Use Xcode 14.1 or newer for the
+generators check the Apple Clang version. Use Xcode 16.3 or newer for the
 macOS source-build baseline.
-Hosted CI uses newer macOS runners because macOS 13 runners have been retired;
-the macOS 13/Xcode 14.1 source baseline has no current native CI lane.
+The ``release-6.20`` maintenance branch keeps its own, older baseline,
+including Ubuntu 22.04.
 
-Manual builds require CMake 3.22.1 or newer and pkg-config 0.29.2 or newer.
+Manual builds require CMake 3.28 or newer and pkg-config 0.29.2 or newer.
 Ninja is the Pixi default; other CMake generators can work. Pixi supplies
 newer tool and dependency versions than these minimum source requirements.
 Isolated Python package builds use ``setuptools >= 84.0.0``,
@@ -95,17 +96,14 @@ Optional components remain optional.
      - Minimum version
      - Used by
    * - Assimp
-     - 5.2.0
+     - 5.3 (Ubuntu 24.04's 5.3.1 reports 5.3.0)
      - Core mesh loading
    * - Eigen
-     - 3.4.0
-     - Core mathematics
+     - 3.4.0 (supported range: >= 3.4.0, < 6)
+     - Core mathematics; consumers must use the major DART was built with
    * - FCL
      - 0.7.0
      - Core collision detection
-   * - fmt
-     - 8.1.1
-     - Core formatting
    * - Bullet
      - 3.05
      - Bullet collision backend
@@ -116,17 +114,14 @@ Optional components remain optional.
      - 0.16.2
      - ODE collision backend
    * - tinyxml2
-     - 9.0.0
+     - 10.0.0
      - XML parsers
    * - sdformat
      - 14.8 (supported majors: 14, 15, 16)
      - SDF parser
    * - urdfdom
-     - 3.0.0
+     - 4.0.0
      - URDF parser
-   * - spdlog
-     - 1.9.2
-     - Logging support
    * - Filament
      - 1.77.3 (pinned SDK)
      - GUI rendering
@@ -143,21 +138,40 @@ Optional components remain optional.
      - 1.92.8
      - GUI controls (bundled by default)
    * - Python
-     - 3.10
+     - 3.12
      - dartpy
    * - NumPy
-     - 1.21.5
+     - 1.26.4
      - dartpy
    * - nanobind
-     - 3.1
+     - 3.1.x
      - dartpy (bundled by default)
    * - Tracy
      - 0.11.1
      - Optional profiling backend
 
+The installed CMake package enforces the same Eigen major for DART and its
+consumers; pkg-config consumers must match majors themselves. Eigen 3.4.90
+development snapshots are treated as Eigen 3.
+
 FCL's libccd dependency must be built in double precision
 (``-DENABLE_DOUBLE_PRECISION=ON``), with FCL built against it; otherwise the
 build stops. ``-DDART_ALLOW_SINGLE_PRECISION_LIBCCD=ON`` builds anyway.
+
+Single-precision Bullet loses contacts of centimeter-scale shapes, so with
+Bullet 3.17 or newer DART links the double-precision ``-float64`` libraries
+that Ubuntu and conda-forge install beside the single-precision ones.
+``-DDART_BULLET_FLOAT64=OFF`` keeps single precision.
+
+Touching convex pairs in FCL 0.7.0's libccd GJK distance can abort with
+assertions (as on Ubuntu 24.04), or return -1 and zero nearest points. DART's
+Linux wheels carry a fix, demonstrated for ellipsoid, ellipsoid-sphere and
+box pairs. Discrete collision queries are unaffected. Every other build,
+including the macOS and Windows wheels, pixi and conda-forge builds, and source
+builds using system FCL, remains affected.
+The patch is in
+``docker/wheels/patches/fcl-0.7.0-gjk-zero-direction.patch`` and is intended for
+upstream submission (not yet reported).
 
 On Linux, an installed Filament SDK must use libstdc++, as the conda-forge
 ``filament`` package does. With ``DART_USE_SYSTEM_FILAMENT=OFF``, Linux builds
@@ -184,9 +198,7 @@ environment as the dependency prefix. Then configure and build:
        -DCMAKE_BUILD_TYPE=Release \
        -DDART_BUILD_DARTPY=ON \
        -DDART_BUILD_PROFILE=ON \
-       -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-       -DDART_USE_SYSTEM_GOOGLETEST=ON \
-       -DDART_USE_SYSTEM_TRACY=ON
+       -DDART_USE_SYSTEM_DEPENDENCIES=ON
    cmake --build build/default/cpp/Release -j
 
 Use ``-DCMAKE_PREFIX_PATH=<prefix>`` when dependencies are installed outside the
@@ -252,7 +264,7 @@ include:
        release. A vanilla system ImGui builds the GUI without docking.
    * - ``DART_USE_SYSTEM_NANOBIND``
      - ``OFF``
-     - Use an installed nanobind 3.1 or newer instead of fetching nanobind
+     - Use an installed nanobind 3.1.x instead of fetching nanobind
        3.1.0. CMake uses ``nanobind_DIR`` when set, and otherwise
        ``python -m nanobind --cmake_dir``.
 

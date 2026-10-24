@@ -35,6 +35,7 @@ CONFIG_ONLY_CACHE_VARIABLES = {
     "DART_BUILD_UTILS_ASSETS",
     "DART_DISABLE_COMPILER_CACHE",
     "DART_MSVC_FORCE_RELEASE_RUNTIME",
+    "DART_USE_SYSTEM_DEPENDENCIES",
     "DART_USE_SYSTEM_GOOGLEBENCHMARK",
     "DART_USE_SYSTEM_GOOGLETEST",
     "DART_USE_SYSTEM_IMGUI",
@@ -104,24 +105,6 @@ APPROVED_INACTIVE_CPP_TESTS = {
         "command": "dart_add_test",
         "scopes": ("if:TARGET dart-utils-assets",),
         "cache": {"DART_BUILD_UTILS_ASSETS": "OFF"},
-    },
-    "tests/regression/test_Issue2516.cpp": {
-        "owner": "tests/regression/CMakeLists.txt",
-        "command": "dart_add_test",
-        "scopes": (
-            "if:TARGET dart-external-imgui",
-            "if:NOT DART_USE_SYSTEM_IMGUI",
-        ),
-        "cache": {"DART_USE_SYSTEM_IMGUI": "ON"},
-    },
-    "tests/regression/test_Issue2668.cpp": {
-        "owner": "tests/regression/CMakeLists.txt",
-        "command": "dart_add_test",
-        "scopes": (
-            "if:TARGET dart-external-imgui",
-            "if:NOT DART_USE_SYSTEM_IMGUI",
-        ),
-        "cache": {"DART_USE_SYSTEM_IMGUI": "ON"},
     },
     "tests/integration/test_VskParser.cpp": {
         "owner": "tests/integration/CMakeLists.txt",
@@ -243,7 +226,6 @@ DEPENDENCY_NAMES = (
     "OpenSceneGraph",
     "OSG",
     "Filament",
-    "spdlog",
     "fmt",
     "urdfdom",
     "tinyxml2",
@@ -1783,6 +1765,8 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
                 "tests/test_install_git_hooks.py",
                 "tests/test_check_local_paths.py",
                 "tests/test_lint_cmake.py",
+                "tests/test_changelog_fragments.py",
+                "tests/test_third_party_notices.py",
                 "-q",
             ],
             "depends-on": [],
@@ -3529,7 +3513,7 @@ def check_cmake_test_target_trace(
             )
 
     pytest_arguments = target_arguments("pytest")
-    python_executable = cache.get("_Python3_EXECUTABLE") or cache.get(
+    python_executable = cache.get("Python_EXECUTABLE") or cache.get(
         "Python3_EXECUTABLE"
     )
     if not isinstance(python_executable, str):

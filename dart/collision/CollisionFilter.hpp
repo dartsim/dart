@@ -57,6 +57,7 @@ class CollisionObject;
 
 namespace detail {
 class BodyNodeCollisionFilterAccessor;
+struct CompositeCollisionFilterAccessor;
 } // namespace detail
 
 class CollisionFilter
@@ -82,6 +83,8 @@ public:
 
 class CompositeCollisionFilter : public CollisionFilter
 {
+  friend struct detail::CompositeCollisionFilterAccessor;
+
 public:
   /// Adds a collision filter to this CompositeCollisionFilter.
   void addCollisionFilter(const CollisionFilter* filter);

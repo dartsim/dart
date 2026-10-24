@@ -324,6 +324,24 @@ BodyNode::AllNodeStates BodyNode::getAllNodeStates() const
 //==============================================================================
 void BodyNode::setAllNodeProperties(const AllNodeProperties& properties)
 {
+  for (const auto& [type, data] : properties.getMap()) {
+    if (!common::detail::hasGuardedModels())
+      break;
+    const auto nodes = mNodeMap.find(type);
+    if (nodes == mNodeMap.end() || !data)
+      continue;
+
+    const auto& values = data->getVector();
+    const std::size_t count = std::min(nodes->second.size(), values.size());
+    for (std::size_t i = 0; i < count; ++i) {
+      const auto* object
+          = dynamic_cast<const common::Composite*>(nodes->second[i]);
+      const auto* value
+          = dynamic_cast<const common::Composite::Properties*>(values[i].get());
+      if (object && value)
+        common::detail::checkTopologyProperties(object, *value);
+    }
+  }
   setNodesFromDataTypeMap<Node::Properties, &Node::setNodeProperties>(
       mNodeMap, properties.getMap());
 }
@@ -420,6 +438,7 @@ void BodyNode::duplicateNodes(const BodyNode* otherBodyNode)
     return;
   }
 
+  common::detail::checkTopologyMutation(this);
   const NodeMap& otherMap = otherBodyNode->mNodeMap;
   for (const auto& vec : otherMap) {
     for (const auto& node : vec.second)
@@ -437,6 +456,7 @@ void BodyNode::matchNodes(const BodyNode* otherBodyNode)
     return;
   }
 
+  common::detail::checkTopologyMutation(this);
   for (auto& cleaner : mNodeDestructors)
     cleaner->getNode()->stageForRemoval();
 
@@ -515,9 +535,12 @@ void BodyNode::setGravityMode(bool _gravityMode)
   SKEL_SET_FLAGS(mCoriolisAndGravityForces);
 
   incrementVersion();
+
+  common::detail::notifyParameterMutation(this);
   // Gravity acts on resting bodies too, so they must wake.
-  if (auto* skeleton = getSkeletonRawPtr())
+  if (auto* skeleton = getSkeletonRawPtr()) {
     skeleton->incrementDeactivationStateVersion();
+  }
 }
 
 //==============================================================================
@@ -536,6 +559,7 @@ bool BodyNode::isCollidable() const
 void BodyNode::setCollidable(bool _isCollidable)
 {
   if (mAspectProperties.mIsCollidable != _isCollidable) {
+    common::detail::notifyParameterMutation(this);
     if (auto* skeleton = getSkeletonRawPtr())
       skeleton->incrementDeactivationStateVersion();
   }
@@ -557,6 +581,7 @@ void BodyNode::handleCollisionShapeStateChange(
   if (!shape)
     return;
 
+  common::detail::notifyParameterMutation(this);
   if (auto* skeleton = getSkeletonRawPtr())
     skeleton->incrementDeactivationStateVersion();
 
@@ -611,6 +636,7 @@ void BodyNode::handleCollisionShapeGeometryUpdated(const ShapeNode* shapeNode)
   if (!shapeNode->has<CollisionAspect>())
     return;
 
+  common::detail::notifyParameterMutation(this);
   if (auto* skeleton = getSkeletonRawPtr())
     skeleton->incrementDeactivationStateVersion();
 }
@@ -629,6 +655,7 @@ void BodyNode::handleCollisionShapeDynamicsUpdated(const ShapeNode* shapeNode)
   if (!shapeNode->has<CollisionAspect>())
     return;
 
+  common::detail::notifyParameterMutation(this);
   if (auto* skeleton = getSkeletonRawPtr())
     skeleton->incrementDeactivationStateVersion();
 }
@@ -662,6 +689,8 @@ void BodyNode::setMass(const double mass)
   }
 
   incrementVersion();
+
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
@@ -685,10 +714,13 @@ void BodyNode::setMomentOfInertia(
     return;
 
   dirtyArticulatedInertia();
-  if (auto* skeleton = getSkeletonRawPtr())
+  if (auto* skeleton = getSkeletonRawPtr()) {
     skeleton->incrementDeactivationStateVersion();
+  }
 
   incrementVersion();
+
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
@@ -733,6 +765,8 @@ void BodyNode::setInertia(const Inertia& inertia)
   }
 
   incrementVersion();
+
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
@@ -773,10 +807,13 @@ void BodyNode::setLocalCOM(const Eigen::Vector3d& _com)
     return;
 
   dirtyArticulatedInertia();
-  if (auto* skeleton = getSkeletonRawPtr())
+  if (auto* skeleton = getSkeletonRawPtr()) {
     skeleton->incrementDeactivationStateVersion();
+  }
 
   incrementVersion();
+
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
@@ -850,6 +887,8 @@ void BodyNode::setFrictionCoeff(double coeff)
   mAspectProperties.mFrictionCoeff = coeff;
 
   incrementVersion();
+
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
@@ -878,6 +917,8 @@ void BodyNode::setRestitutionCoeff(double coeff)
   mAspectProperties.mRestitutionCoeff = coeff;
 
   incrementVersion();
+
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
