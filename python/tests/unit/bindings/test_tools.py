@@ -3,6 +3,7 @@
 import enum
 import importlib
 import json
+import re
 import subprocess
 import sys
 import types
@@ -194,6 +195,189 @@ def test_api_budget_uses_canonical_snapshot_identities(api_surface, monkeypatch)
     }
     assert len(surface) == 2
     assert surface == api_surface.budget_surface(api_surface.snapshot())
+
+
+@pytest.mark.parametrize("optional_absent", [False, True])
+def test_api_budget_update_removes_all_exports_of_absent_owner(
+    api_surface, tmp_path, optional_absent
+):
+    path = tmp_path / "budget.json"
+    rows = {
+        "dartpy.collision": {"kind": "module", "runtime": {"name": "dartpy.collision"}},
+        **{
+            f"dartpy.collision.{name}": {
+                "kind": "class",
+                "runtime": {"module": "dartpy.collision", "qualname": owner},
+            }
+            for name, owner in (("Core", "Core"), ("Alias", "Core"), ("Kept", "Kept"))
+        },
+    }
+    if optional_absent:
+        for suffix in ("Detector", "Group"):
+            owner = f"BulletCollision{suffix}"
+            rows[f"dartpy.collision.{owner}"] = {
+                "kind": "class",
+                "runtime": {"module": "dartpy.collision", "qualname": owner},
+            }
+        rows["dartpy.collision.OptionalAlias"] = rows[
+            "dartpy.collision.BulletCollisionDetector"
+        ]
+    api_surface.update_budget(path, api_surface.budget_surface(rows), allow_growth=True)
+    removed = api_surface.budget_surface(
+        {
+            name: row
+            for name, row in rows.items()
+            if name in {"dartpy.collision", "dartpy.collision.Kept"}
+        }
+    )
+    api_surface.update_budget(path, removed)
+    lowered = path.read_text()
+    expected = ["Kept"]
+    if optional_absent:
+        expected = [
+            "BulletCollisionDetector",
+            "BulletCollisionGroup",
+            "Kept",
+            "OptionalAlias",
+        ]
+    assert json.loads(lowered)["dartpy.collision"]["containers"] == expected
+    assert not api_surface.budget_growth(removed, json.loads(lowered), check_stale=True)
+    api_surface.update_budget(path, removed)
+    assert path.read_text() == lowered
+
+
+def test_api_budget_tracks_public_export_of_private_class(
+    api_surface, monkeypatch, tmp_path
+):
+    module = types.ModuleType("dartpy")
+    module.__version__ = "test"
+    module.Public = type("_Impl", (), {"__module__": "dartpy"})
+    monkeypatch.setitem(sys.modules, "dartpy", module)
+    path = tmp_path / "budget.json"
+    api_surface.update_budget(
+        path, api_surface.budget_surface(api_surface.snapshot()), allow_growth=True
+    )
+    module.Public.method = lambda self: None
+    surface = api_surface.budget_surface(api_surface.snapshot())
+    assert any(
+        "dartpy._Impl: public budget 0 -> 1" in failure
+        for failure in api_surface.budget_growth(surface, json.loads(path.read_text()))
+    )
+    assert surface["dartpy"]["classes"]["_Impl"]["public"] == ["method"]
+
+
+@pytest.mark.parametrize("kind", ["callable", "property"])
+def test_api_budget_counts_shared_member_on_unrelated_class(
+    api_surface, monkeypatch, tmp_path, kind
+):
+    module = types.ModuleType("dartpy")
+    module.__version__ = "test"
+    member = lambda self: None
+    if kind == "property":
+        member = property(member)
+    module.A = type("A", (), {"__module__": "dartpy", "foo": member})
+    module.B = type("B", (), {"__module__": "dartpy"})
+    # Walk inherited access before B's defining row.
+    module.ADerived = type("C", (module.B,), {"__module__": "dartpy"})
+    monkeypatch.setitem(sys.modules, "dartpy", module)
+    path = tmp_path / "budget.json"
+    api_surface.update_budget(
+        path, api_surface.budget_surface(api_surface.snapshot()), allow_growth=True
+    )
+    module.B.foo = member
+    surface = api_surface.budget_surface(api_surface.snapshot())
+    assert any(
+        "dartpy.B: public budget 0 -> 1" in failure
+        for failure in api_surface.budget_growth(surface, json.loads(path.read_text()))
+    )
+    classes = surface["dartpy"]["classes"]
+    assert classes["A"]["public"] == classes["B"]["public"] == ["foo"]
+    assert classes["C"]["public"] == []
+
+
+def test_api_budget_optional_collision_groups_match_registration_guards(api_surface):
+    source = (TOOLS.parents[1] / "python/dartpy/collision/module.cpp").read_text()
+    guarded = {}
+    for guard, block in re.findall(
+        r"^\s*#\s*if(?:def)?\s+(?:defined\s*\(?\s*)?(HAVE_\w+)\b[^\n]*\n"
+        r"(.*?)^\s*#\s*endif\b",
+        source,
+        re.MULTILINE | re.DOTALL,
+    ):
+        classes = re.findall(r"\b(\w+)\s*\(\s*sm\s*\)\s*;", block)
+        if classes:
+            guarded.setdefault(guard, set()).update(
+                f"dartpy.collision.{name}" for name in classes
+            )
+    assert guarded, "No optional collision registrations found"
+    assert {frozenset(group) for group in guarded.values()} == {
+        frozenset(group)
+        for group in api_surface.OPTIONAL_OWNER_GROUPS
+        if any(owner.startswith("dartpy.collision.") for owner in group)
+    }
+
+
+@pytest.mark.parametrize("backend", ["Bullet", "Ode"])
+def test_api_budget_rejects_partially_missing_optional_group(
+    api_surface, tmp_path, backend
+):
+    rows = {
+        "dartpy.collision": {"kind": "module", "runtime": {"name": "dartpy.collision"}},
+        **{
+            f"dartpy.collision.{backend}Collision{suffix}": {
+                "kind": "class",
+                "runtime": {
+                    "module": "dartpy.collision",
+                    "qualname": f"{backend}Collision{suffix}",
+                },
+            }
+            for suffix in ("Detector", "Group")
+        },
+    }
+    path = tmp_path / "budget.json"
+    api_surface.update_budget(path, api_surface.budget_surface(rows), allow_growth=True)
+    budget = json.loads(path.read_text())
+    for suffix in ("Detector", "Group"):
+        missing = f"dartpy.collision.{backend}Collision{suffix}"
+        partial = api_surface.budget_surface(
+            {name: row for name, row in rows.items() if name != missing}
+        )
+        assert any(
+            f"{missing}: budgeted class missing" in failure
+            for failure in api_surface.budget_growth(partial, budget, check_stale=True)
+        )
+    absent = api_surface.budget_surface({"dartpy.collision": rows["dartpy.collision"]})
+    assert not api_surface.budget_growth(absent, budget, check_stale=True)
+    original = path.read_text()
+    api_surface.update_budget(path, absent)
+    assert path.read_text() == original
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["__init__", "__GUIEventHandler__", "__str__", "__repr__", "__mul__", "__eq__"],
+)
+def test_api_budget_counts_tracked_special_methods(
+    api_surface, monkeypatch, tmp_path, name
+):
+    module = types.ModuleType("dartpy")
+    module.__version__ = "test"
+    module.Example = type("Example", (), {"__module__": "dartpy"})
+    monkeypatch.setitem(sys.modules, "dartpy", module)
+    path = tmp_path / "budget.json"
+    api_surface.update_budget(
+        path, api_surface.budget_surface(api_surface.snapshot()), allow_growth=True
+    )
+    setattr(module.Example, name, lambda self: None)
+    module.Example._private = lambda self: None
+    rows = api_surface.snapshot()
+    assert f"dartpy.Example.{name}" in rows
+    surface = api_surface.budget_surface(rows)
+    assert any(
+        "dartpy.Example: public budget 0 -> 1" in failure
+        for failure in api_surface.budget_growth(surface, json.loads(path.read_text()))
+    )
+    assert surface["dartpy"]["classes"]["Example"]["public"] == [name]
 
 
 def test_api_budget_counts_same_name_reexport_in_its_module(api_surface):

@@ -3,7 +3,7 @@
 Select a built `dartpy` with `PYTHONPATH` before running runtime probes. The
 surface snapshot imports every public pure-Python subpackage first, so its
 result does not depend on what was imported before it.
-Snapshot runtime identities attribute inherited members to their walked defining class, use `identity_path: null` for members with unwalked owners, and match bound classmethod aliases by function and receiver; members of a class are recorded under the first path the walk reaches it by, so a nested class reached first through an alias may have no rows at `<identity_path>.member`, and a class reached first at module level keeps its member rows there even when a defining class's path becomes its `identity_path`.
+Snapshot runtime identities attribute inherited members to their walked defining class, use `identity_path: null` for members with unwalked owners, and match bound classmethod aliases by function and receiver. The separate `owner_path` records the defining class for budget attribution when unrelated classes export the same object. Members of a class are recorded under the first path the walk reaches it by, so a nested class reached first through an alias may have no rows at `<identity_path>.member`, and a class reached first at module level keeps its member rows there even when a defining class's path becomes its `identity_path`.
 
 - `api_surface.py --pb <pybind11-module-dir> --nb <nanobind-module-dir>
   --output <output-dir>` snapshots and compares the public API, including `dartpy.gui`: names, overloads, keywords, defaults, and enums.
@@ -19,11 +19,14 @@ Snapshot runtime identities attribute inherited members to their walked defining
   enum values, properties, and descriptors. Each exported name counts once where
   it is exported, so aliases and same-name re-exports into another module count
   there; class members count on their defining class, so inherited members are
-  not counted twice. The JSON key `containers` is a
+  not counted twice. An identical callable or property exported by unrelated
+  classes counts in each class. The JSON key `containers` is a
   sorted list of the public exported container names per module -- classes,
   enums, and submodules -- per exported path and not deduplicated by
   identity, so an alias or re-export in a second module is listed in that
   module; nested classes count as members of their defining class instead.
+  `container_owners` maps these names to canonical owners, so removing an owner
+  also removes all its aliases while absent optional owners keep theirs.
   Any current container name missing from the budget fails as growth on every
   build, with the name in the message. A new module or class that appears
   with empty counters is also reported as growth.
@@ -35,20 +38,26 @@ Snapshot runtime identities attribute inherited members to their walked defining
   unchanged, so the counts-only ratchet cannot detect that rename.
   Canonical module
   and class names and snapshot object identities avoid re-export and inherited
-  duplicates; private and untracked external members are excluded. Enums count
+  duplicates; privacy follows exported paths, so a publicly exported class with
+  a private implementation name is tracked. Ordinary private and untracked
+  external members are excluded; the snapshot's tracked special methods
+  (`__init__`, `__GUIEventHandler__`, `__str__`, `__repr__`, `__mul__`, `__eq__`)
+  count in the budget too. Enums count
   their declared names, excluding Python-version-dependent enum machinery.
   Class constants, exported enum values, and descriptors count only at the first
   class in the MRO whose `__dict__` defines the name, including when subclasses
   are visited first. Data names are not deduplicated by value identity.
-  Only owners that build options guard (`OPTIONAL_OWNERS` in `api_surface.py`:
+  Only owners that build options guard (`OPTIONAL_OWNER_GROUPS` in `api_surface.py`:
   Bullet, ODE and Octomap classes, the model-asset retriever and the viewer) may
-  be absent; any other missing budgeted owner fails, and `--update-budget`
-  removes it from the budget. Absent optional owners are
-  ignored by the test and retained by the updater: a module that lacks one
-  skips container staleness, and `--update-budget` without `--prune` keeps the
-  budgeted container names of such modules; only `--update-budget --prune`
-  rewrites container lists from the build and deletes absent owners, so after
-  removing or renaming a class, run it on a full-feature build. For present
+  be absent, and only when their entire feature group is absent. Bullet and ODE
+  each guard a detector/group pair; a partially missing pair fails staleness.
+  Any other missing budgeted owner fails, and `--update-budget`
+  removes it from the budget. Absent optional owners and their exported container
+  names are ignored by the test and retained by the updater; `--update-budget
+  --prune` deletes those absent allowances too. Legacy budgets without
+  `container_owners` retain module-wide container allowances when optional
+  owners are absent until an update on a full-feature build records ownership.
+  For present
   owners and complete modules, removals require lowering budgets with
   `--update-budget`, without `--allow-growth`. Growth requires reverting the
   change or deliberately raising budgets with `--update-budget --allow-growth`.

@@ -24,10 +24,13 @@ BUDGET_PATH = (
     Path(__file__).resolve().parents[2] / "python/tests/unit/bindings/api_budget.json"
 )
 BUDGET_UPDATE = "pixi run dartpy scripts/nanobind/api_surface.py --update-budget"
+TRACKED_SPECIAL_NAMES = frozenset(
+    {"__init__", "__GUIEventHandler__", "__str__", "__repr__", "__mul__", "__eq__"}
+)
 
 # Owners registered only when an optional dependency or component is present.
-# Reduced builds omit them without failing the ratchet; any other absent
-# budgeted owner is a staleness failure. Guards:
+# Reduced builds omit whole groups without failing the ratchet; a partial
+# group or any other absent budgeted owner is a staleness failure. Guards:
 # - HAVE_BULLET / HAVE_ODE: python/dartpy/collision/module.cpp (from
 #   dart/config.hpp via cmake/DARTFindDependencies.cmake)
 # - HAVE_SDFORMAT: python/dartpy/utils/SdfParser.cpp (Options and RootJointType)
@@ -37,18 +40,22 @@ BUDGET_UPDATE = "pixi run dartpy scripts/nanobind/api_surface.py --update-budget
 # - DARTPY_HAS_VIEWER: python/dartpy/module.cpp (defined in
 #   python/dartpy/CMakeLists.txt when dart-gui-app exists, which needs
 #   IMGUI_HAS_DOCK per dart/gui/CMakeLists.txt)
-OPTIONAL_OWNERS = frozenset(
+OPTIONAL_OWNER_GROUPS = (
     {
         "dartpy.collision.BulletCollisionDetector",
         "dartpy.collision.BulletCollisionGroup",
+    },
+    {
         "dartpy.collision.OdeCollisionDetector",
         "dartpy.collision.OdeCollisionGroup",
-        "dartpy.dynamics.VoxelGridShape",
-        "dartpy.utils.ModelResourceRetriever",
+    },
+    {"dartpy.dynamics.VoxelGridShape"},
+    {"dartpy.utils.ModelResourceRetriever"},
+    {
         "dartpy.utils.SdfParser.Options",
         "dartpy.utils.SdfParser.RootJointType",
-        "dartpy.viewer",
-    }
+    },
+    {"dartpy.viewer"},
 )
 
 
@@ -234,14 +241,7 @@ def snapshot():
             return
         seen[id(value)] = path
         for name in dir(value):
-            if name.startswith("_") and name not in {
-                "__init__",
-                "__GUIEventHandler__",
-                "__str__",
-                "__repr__",
-                "__mul__",
-                "__eq__",
-            }:
+            if name.startswith("_") and name not in TRACKED_SPECIAL_NAMES:
                 continue
             child_path = path + "." + name
             child = getattr(value, name)
@@ -327,7 +327,8 @@ def snapshot():
         if owner is not None:
             if id(owner) not in seen:
                 continue
-            # The first walked owner wins when unrelated classes share an object.
+            # Identity stays shared, but unrelated class exports count separately.
+            metadata["owner_path"] = seen[id(owner)]
             metadata["identity_path"] = identities[identity(value)][0]
             continue
         metadata["identity_path"], _ = identities.setdefault(
@@ -348,7 +349,11 @@ def snapshot():
 
 def name_counters(names):
     """Sort public names into the budget's counters."""
-    names = sorted(name for name in names if not name.startswith("_"))
+    names = sorted(
+        name
+        for name in names
+        if not name.startswith("_") or name in TRACKED_SPECIAL_NAMES
+    )
     return {
         "public": names,
         "camel_case": [name for name in names if re.search(r"[a-z0-9][A-Z]|^m_", name)],
@@ -368,7 +373,7 @@ def budget_surface(rows):
             module, cls = runtime["name"], None
         elif row["kind"] in {"class", "enum"}:
             module, cls = runtime["module"], runtime["qualname"]
-            if any(part.startswith("_") for part in cls.split(".")):
+            if any(part.startswith("_") for part in path.split(".")):
                 continue
         else:
             continue
@@ -396,6 +401,10 @@ def budget_surface(rows):
         scope = surface.get(parent_module)
         if scope is not None:
             scope["containers"].add(name)
+            module, cls = owners[path]
+            scope.setdefault("container_owners", {})[name] = (
+                module + "." + cls if cls is not None else module
+            )
 
     seen = set()
     for path, row in rows.items():
@@ -429,7 +438,7 @@ def budget_surface(rows):
                 names.add(exported_name)
             continue
         exported_parent, _, exported_name = path.rpartition(".")
-        if exported_name.startswith("_"):
+        if exported_name.startswith("_") and exported_name not in TRACKED_SPECIAL_NAMES:
             continue
         # Module-level names count where they are exported, so a same-name
         # re-export into another module counts there too; class members count
@@ -437,7 +446,9 @@ def budget_surface(rows):
         if exported_parent in owners and owners[exported_parent][1] is None:
             owner_path = exported_parent
         else:
-            owner_path = identity.rpartition(".")[0]
+            owner_path = row.get("runtime", {}).get(
+                "owner_path", identity.rpartition(".")[0]
+            )
         key = (owner_path, exported_name)
         if key in seen:
             continue
@@ -455,6 +466,7 @@ def budget_surface(rows):
         module: {
             "functions": name_counters(scope["functions"]),
             "containers": name_counters(scope["containers"]),
+            "container_owners": dict(sorted(scope.get("container_owners", {}).items())),
             "classes": {
                 cls: name_counters(names)
                 for cls, names in sorted(scope["classes"].items())
@@ -478,21 +490,37 @@ def _budgeted_containers(previous):
     return sorted(raw)
 
 
+def _absent_optional_owners(surface):
+    """Only a wholly absent feature group can explain missing exports."""
+    present = set(surface) | {
+        name + "." + cls
+        for name, current in surface.items()
+        for cls in current.get("classes", {})
+    }
+    return {
+        owner
+        for group in OPTIONAL_OWNER_GROUPS
+        if group.isdisjoint(present)
+        for owner in group
+    }
+
+
 def _absent_owners(module, scope, surface, budget):
     """Partition budgeted-but-absent owners into optional and unconditional."""
+    optional_owners = _absent_optional_owners(surface)
     previous = budget.get(module, {})
     current_classes = scope.get("classes", {})
     optional, unconditional = [], []
     for cls in previous.get("classes", {}):
         if cls not in current_classes:
             owner = module + "." + cls
-            (optional if owner in OPTIONAL_OWNERS else unconditional).append(owner)
+            (optional if owner in optional_owners else unconditional).append(owner)
     for child in budget:
         if child == module or child in surface:
             continue
         if child.rpartition(".")[0] != module:
             continue
-        (optional if child in OPTIONAL_OWNERS else unconditional).append(child)
+        (optional if child in optional_owners else unconditional).append(child)
     return sorted(optional), sorted(unconditional)
 
 
@@ -510,6 +538,7 @@ def _container_name_for_owner(owner, module):
 def budget_growth(surface, budget, *, check_stale=False):
     """Describe growth and optionally stale ceilings for present owners."""
     failures = []
+    absent_optional = _absent_optional_owners(surface)
     for module, scope in surface.items():
         previous = budget.get(module, {})
         current_containers = _surface_containers(scope)
@@ -529,20 +558,28 @@ def budget_growth(surface, budget, *, check_stale=False):
                     f"{owner}: budgeted {kind} missing from build; "
                     f"run {BUDGET_UPDATE} to lower it (no --allow-growth needed)"
                 )
-            if not (optional and not unconditional):
+            if "container_owners" in previous:
+                absent_names = {
+                    name
+                    for name, owner in previous["container_owners"].items()
+                    if owner in absent_optional
+                }
+            elif optional and not unconditional:
+                absent_names = set(budgeted_containers)
+            else:
                 absent_names = {
                     _container_name_for_owner(owner, module)
                     for owner in (*optional, *unconditional)
                 } - {None}
-                missing = sorted(
-                    set(budgeted_containers) - set(current_containers) - absent_names
+            missing = sorted(
+                set(budgeted_containers) - set(current_containers) - absent_names
+            )
+            if missing:
+                failures.append(
+                    f"{module} (containers): budgeted containers missing "
+                    f"from build: {', '.join(missing)}; run {BUDGET_UPDATE} "
+                    "to lower it (no --allow-growth needed)"
                 )
-                if missing:
-                    failures.append(
-                        f"{module} (containers): budgeted containers missing "
-                        f"from build: {', '.join(missing)}; run {BUDGET_UPDATE} "
-                        "to lower it (no --allow-growth needed)"
-                    )
         owners = [
             (
                 module + " (functions)",
@@ -599,6 +636,7 @@ def budget_growth(surface, budget, *, check_stale=False):
 
 def update_budget(path, surface, allow_growth=False, *, prune=False):
     previous = json.loads(path.read_text()) if path.exists() else {}
+    absent_optional = _absent_optional_owners(surface)
     failures = budget_growth(surface, previous)
     if failures and not allow_growth:
         raise ValueError(
@@ -635,14 +673,20 @@ def update_budget(path, surface, allow_growth=False, *, prune=False):
             }
         if "containers" in scope:
             current = _surface_containers(scope)
+            optional, unconditional = _absent_owners(module, scope, surface, previous)
+            previous_owners = previous.get(module, {}).get("container_owners")
+            retained = {
+                name: owner
+                for name, owner in (previous_owners or {}).items()
+                if owner in absent_optional
+            }
             if prune:
                 target["containers"] = current
+            elif previous_owners is not None:
+                target["containers"] = sorted(set(current) | retained.keys())
             else:
                 budgeted = _budgeted_containers(previous.get(module, {}))
-                optional, unconditional = _absent_owners(
-                    module, scope, surface, previous
-                )
-                if not optional and not unconditional:
+                if not optional:
                     target["containers"] = current
                 elif not unconditional:
                     target["containers"] = sorted(set(current) | set(budgeted))
@@ -652,6 +696,14 @@ def update_budget(path, surface, allow_growth=False, *, prune=False):
                         for owner in unconditional
                     } - {None}
                     target["containers"] = sorted(set(current) | (set(budgeted) - drop))
+            # shortcut: legacy budgets lack alias provenance, refresh on a full build.
+            if "container_owners" in scope and (
+                prune or previous_owners is not None or not optional
+            ):
+                target["container_owners"] = {
+                    **({} if prune else retained),
+                    **scope["container_owners"],
+                }
         target.setdefault("classes", {}).update(
             {
                 cls: {key: len(names) for key, names in counters.items()}
