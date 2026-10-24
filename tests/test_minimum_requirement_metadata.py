@@ -162,11 +162,18 @@ def test_windows_matrix_preserves_required_checks_and_selects_vs2022():
         assert rows[name]["runner"] == "windows-2025-vs2026"
         assert rows[name]["task"] == task
         assert rows[name]["vsversion"] == ""
-    baseline = rows["windows-2022-Release-cpp"]
+    # The VS 2022 baseline runs nightly, with the build job's env and steps.
+    nightly = workflow_job("ci_windows.yml", "build-vs2022")
+    assert nightly["if"] == "inputs.nightly"
+    assert nightly["env"] == job["env"]
+    assert nightly["steps"] == job["steps"]
+    (baseline,) = nightly["strategy"]["matrix"]["include"]
+    rows[baseline["name"]] = baseline
+    assert baseline["name"] == "windows-2022-Release-cpp"
     assert baseline["runner"] == "windows-2022"
     assert baseline["vsversion"] == "2022"
     assert baseline["task"] == "test"
-    assert job["runs-on"] == "${{ matrix.runner }}"
+    assert job["runs-on"] == nightly["runs-on"] == "${{ matrix.runner }}"
     msvc = next(step for step in job["steps"] if step["name"] == "Setup MSVC")
     assert msvc["with"]["vsversion"] == "${{ matrix.vsversion }}"
     cache = next(step for step in job["steps"] if step["name"] == "Initialize sccache")
