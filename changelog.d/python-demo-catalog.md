@@ -14,4 +14,5 @@ Section: Examples
     `pixi run demos -- --scene soft_bodies`, with `--collision-detector` and
     `--threads` as before.
     [#3762](https://github.com/dartsim/dart/pull/3762),
-    [#3780](https://github.com/dartsim/dart/pull/3780)
+    [#3780](https://github.com/dartsim/dart/pull/3780),
+    [#3928](https://github.com/dartsim/dart/pull/3928)

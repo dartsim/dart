@@ -18,4 +18,5 @@ Section: Simulation
     rejected before any state changes.
     [#3816](https://github.com/dartsim/dart/pull/3816),
     [#3817](https://github.com/dartsim/dart/pull/3817),
-    [#3827](https://github.com/dartsim/dart/pull/3827)
+    [#3827](https://github.com/dartsim/dart/pull/3827),
+    [#3928](https://github.com/dartsim/dart/pull/3928)

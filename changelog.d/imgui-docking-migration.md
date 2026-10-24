@@ -6,4 +6,5 @@ Section: Breaking Changes
     lacks docking, dart-gui still builds, but
     dartpy omits `dartpy.viewer`.
     [#3745](https://github.com/dartsim/dart/pull/3745),
-    [#3761](https://github.com/dartsim/dart/pull/3761)
+    [#3761](https://github.com/dartsim/dart/pull/3761),
+    [#3928](https://github.com/dartsim/dart/pull/3928)

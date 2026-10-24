@@ -8,4 +8,5 @@ Section: Breaking Changes
     Implement `InverseKinematics::Analytical` for a C++ analytical solver, which
     can load a generated solver through `dart::common::SharedLibrary`, or pass a
     Python solver such as ssik to `InverseKinematics.setPythonAnalytical`.
-    [#3824](https://github.com/dartsim/dart/pull/3824)
+    [#3824](https://github.com/dartsim/dart/pull/3824),
+    [#3928](https://github.com/dartsim/dart/pull/3928)
