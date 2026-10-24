@@ -8,3 +8,4 @@ Section: Python
     samples. Linux pip source builds now require libcurl >= 8.5 and OpenSSL
     Crypto >= 3.0.13 development packages. macOS and Windows wheels keep the
     retriever disabled.
+    [#3931](https://github.com/dartsim/dart/pull/3931)
