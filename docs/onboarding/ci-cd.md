@@ -18,7 +18,7 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | `ci_ubuntu.yml`                   | CI Linux                     | PR, push, nightly               | AI checks, build-requirement checks, lint, Release build + test, nanobind Python tests, GUI-disabled assertions build + test; nightly adds install, ASan, coverage (the Debug build), Eigen 64-byte alignment, and a unity name-clash check |
 | `ci_macos.yml`                    | CI macOS                     | PR, push, nightly               | arm64 Release build + test and nanobind Python tests; nightly adds install |
 | `ci_windows.yml`                  | CI Windows                   | PR, push, nightly               | MSVC Release C++ tests and nanobind Python tests on VS 2026; unity builds; nightly adds the build-requirement checks and the VS 2022 (v143) baseline C++ leg |
-| `ci_filament.yml`                 | CI Filament                  | PR, push, nightly, dispatch     | GUI test lane: `ubuntu-24.04-Filament-functional` and `macos-15-Filament-functional`, plus `windows-2022-Filament-functional` nightly, configure with `pixi run -e gui-ci config -- -DDART_ENABLE_GUI_SMOKE_TESTS=ON` and run the Filament C++ tests (display-free Vulkan and Xvfb native-window tests on Linux, native tests on Windows and macOS), the Python GUI and integration tests, and a relocated C++17 consumer check. The CI Linux, macOS, and Windows Release jobs build the GUI but skip the `gui-device`-labeled CTest tests and the Python rendering modules; device-free GUI tests still run. CI Linux also runs the display-free agent-capture smoke and `test-agent-debug-overlay` on Lavapipe |
+| `ci_filament.yml`                 | CI Filament                  | PR, push, nightly, dispatch     | GUI test lane: `ubuntu-24.04-Filament-functional` and `macos-15-Filament-functional`, plus `windows-2022-Filament-functional` nightly, configure with `pixi run -e gui-ci config -- -DDART_ENABLE_GUI_SMOKE_TESTS=ON` and run the Filament C++ tests (display-free Vulkan and Xvfb native-window tests on Linux, native tests on Windows and macOS), the Python GUI and integration tests, and a relocated C++17 consumer check. The CI Linux, macOS, and Windows Release jobs build the GUI but skip the `gui-device`-labeled CTest tests and the Python rendering modules; device-free GUI tests still run. CI Linux also runs the display-free agent-capture smoke and `test-agent-debug-overlay` on Lavapipe. The `nvidia-Filament-hardware` job runs only on `main` pushes and manual dispatch; see [Hardware GPU job](#hardware-gpu-job) |
 | `ci_gz_physics.yml`               | CI gz-physics                | PR, push, nightly               | Gazebo/gz-physics downstream integration |
 | `api_doc.yml`                     | API Documentation            | PR, push, nightly               | Doxygen API docs build (validation only; not published) |
 | `ci_simd.yml`                     | CI SIMD Multi-Arch           | PR/push touching SIMD or DART collision sources, nightly | SIMD instruction-level matrix (scalar/SSE4.2/AVX/AVX2) on x86_64; NEON is covered by `ci_macos.yml` arm64 jobs |
@@ -332,6 +332,39 @@ CTest runs in parallel (`CTEST_PARALLEL_LEVEL`). Nightly-only configurations
 never save, so they build cold. Pixi build tasks pin `BUILD_TYPE=Release`, so
 a job that needs another build type configures CMake itself, as the assertions
 gate does.
+
+## Hardware GPU job
+
+The hosted Linux `CI Filament` job uses software Vulkan (Lavapipe), and Windows
+uses software WGL; macOS runs native GUI tests. The
+`nvidia-Filament-hardware` job adds real NVIDIA Vulkan on
+one self-hosted runner: the headless `test_FilamentBackend`, `test_GuiParity`,
+and `test_GuiMesh` CTests, plus a `box_on_ground` `agent-capture` (250 steps,
+contacts, collision bounds, auto-view focused on the box) accepted by
+`image-verdict`. The
+job asserts that `nvidia-smi` lists exactly one GPU and that the capture
+sidecar reports `graphics_backend` `vulkan` with a `graphics_device` equal to
+that GPU's name, so a silent software fallback fails. This adds NVIDIA driver
+coverage; hosted jobs stay the broad-platform and PR gate.
+
+- **Trigger**: `push` to `main` and `workflow_dispatch` on `main` in
+  `dartsim/dart`. Pull requests, forks, and release branches never reach it,
+  so it cannot be exercised from a PR branch before merge.
+- **Server-side restriction**: the runner group `dart-gpu-trusted` must stay
+  limited to this repository and to the workflow
+  `.github/workflows/ci_filament.yml@refs/heads/main`. The job's `if` is
+  defense in depth; labels are not a trust boundary. Keep the restriction when
+  renaming or moving the workflow.
+- **Label**: `dart-gpu-nvidia` selects the runner and exists only on this
+  hardware. One runner means one GPU job at a time; a job-level concurrency
+  group retains the newest pending run without interrupting a running GPU job.
+- **Limits**: the runner container is unprivileged with 4 CPUs, 16 GiB of
+  memory, and 512 PIDs, so the build uses `--parallel 4`. It has no host
+  credentials, Docker socket, or desktop session, and the job must not need
+  `sudo` or `apt`.
+- **Diagnostics**: the `filament-nvidia` artifact holds the
+  `nvidia-smi` report, Vulkan environment, capture PNG and sidecar, verdicts,
+  and `LastTest.log`.
 
 ## Nightly
 
