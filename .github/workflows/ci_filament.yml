@@ -5,6 +5,17 @@ on:
     branches: [main, "release-*"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      nightly:
+        description: "Also run the nightly-only Windows leg"
+        type: boolean
+        default: false
+  # Nightly (nightly.yml) calls this with `nightly: true` every night.
+  workflow_call:
+    inputs:
+      nightly:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -22,6 +33,10 @@ jobs:
       fail-fast: false
       matrix:
         runner: [ubuntu-24.04, windows-2022, macos-15]
+        exclude:
+          # Nightly only: the Windows leg compiles without a compiler cache for
+          # 20-30 minutes, and CI Windows builds the GUI on every PR.
+          - runner: ${{ !inputs.nightly && 'windows-2022' || '' }}
     env:
       CMAKE_GENERATOR: Ninja
       # MSVC single-config builds otherwise default to Debug.

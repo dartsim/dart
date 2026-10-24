@@ -188,6 +188,48 @@ RUN curl -fsSL https://bitbucket.org/odedevs/ode/downloads/ode-0.16.6.tar.gz -o 
     && cmake --build ode-0.16.6/build --target install -j${NUM_CORES} \
     && rm -rf ode-0.16.6 ode.tar.gz
 
+# OpenSSL 3.5 is the current LTS line (supported through April 2030).
+# Shared libraries let auditwheel bundle and relocate curl's TLS dependencies.
+RUN yum install -y perl-core \
+    && curl -fsSL https://github.com/openssl/openssl/releases/download/openssl-3.5.9/openssl-3.5.9.tar.gz -o openssl.tar.gz \
+    && echo "603f5602e2eef00d77fbd429d34dcd5822bb301757a1bc9cdb24c670f1eb859a  openssl.tar.gz" | sha256sum -c - \
+    && mkdir openssl && tar -xf openssl.tar.gz -C openssl --strip-components=1 \
+    && cd openssl \
+    && CFLAGS="-O2 -fstack-protector-strong -D_FORTIFY_SOURCE=2" \
+    LDFLAGS="-Wl,-z,relro,-z,now" ./Configure --prefix=/usr/local --libdir=lib --openssldir=/etc/dartpy/openssl \
+    shared no-tests no-legacy no-quic no-engine no-comp no-srp no-dtls \
+    no-ct no-ts no-cms no-docs no-ssl3 no-weak-ssl-ciphers no-ui-console \
+    no-aria no-camellia no-sm2 no-sm3 no-sm4 no-seed no-idea no-mdc2 \
+    no-rc2 no-rc4 no-rc5 no-bf no-cast no-des \
+    && make -j${NUM_CORES} MODULESDIR=/usr/local/lib/dartpy/ossl-modules \
+    && make install_sw MODULESDIR=/usr/local/lib/dartpy/ossl-modules \
+    && strip --strip-unneeded /usr/local/lib/libssl.so.3 /usr/local/lib/libcrypto.so.3 \
+    && cd .. && rm -rf openssl openssl.tar.gz
+
+# HTTPS uses curl's HTTP implementation; all other transfer protocols are off.
+# Keep proxy support, but no optional compression, SSH, IDN, PSL or HTTP/2 deps.
+RUN curl -fsSL https://curl.se/download/curl-8.23.0.tar.bz2 -o curl.tar.bz2 \
+    && echo "95b22eb32bf6d1fa6e3e9463bdb61cece3efc56d86576a9b3cbd428246a6d854  curl.tar.bz2" | sha256sum -c - \
+    && mkdir curl && tar -xf curl.tar.bz2 -C curl --strip-components=1 \
+    && cmake curl -B curl/build -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_C_FLAGS="-fstack-protector-strong -D_FORTIFY_SOURCE=2" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,relro,-z,now" \
+    -DBUILD_SHARED_LIBS=ON -DBUILD_STATIC_LIBS=OFF \
+    -DBUILD_CURL_EXE=OFF -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF \
+    -DBUILD_LIBCURL_DOCS=OFF -DBUILD_MISC_DOCS=OFF -DENABLE_CURL_MANUAL=OFF \
+    -DCURL_USE_OPENSSL=ON -DOPENSSL_ROOT_DIR=/usr/local \
+    -DCURL_CA_BUNDLE=/etc/pki/tls/certs/ca-bundle.crt -DCURL_CA_PATH=none \
+    -DCURL_USE_LIBPSL=OFF -DCURL_USE_LIBSSH2=OFF -DUSE_LIBIDN2=OFF \
+    -DUSE_NGHTTP2=OFF -DCURL_ZLIB=OFF -DCURL_BROTLI=OFF -DCURL_ZSTD=OFF \
+    -DCURL_DISABLE_DICT=ON -DCURL_DISABLE_FILE=ON -DCURL_DISABLE_FTP=ON \
+    -DCURL_DISABLE_GOPHER=ON -DCURL_DISABLE_IMAP=ON -DCURL_DISABLE_LDAP=ON \
+    -DCURL_DISABLE_LDAPS=ON -DCURL_DISABLE_MQTT=ON -DCURL_DISABLE_POP3=ON \
+    -DCURL_DISABLE_RTSP=ON -DCURL_DISABLE_SMTP=ON -DCURL_DISABLE_TELNET=ON \
+    -DCURL_DISABLE_TFTP=ON -DCURL_DISABLE_WEBSOCKETS=ON -DCURL_DISABLE_IPFS=ON \
+    && cmake --build curl/build --target install -j${NUM_CORES} \
+    && strip --strip-unneeded /usr/local/lib64/libcurl.so.4 \
+    && rm -rf curl curl.tar.bz2
+
 # Use the pinned CMake for wheel builds, including the other Python rows.
 ENV PATH=/opt/python/cp313-cp313/bin:$PATH
 

@@ -15,18 +15,18 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 
 | Workflow file                     | Workflow name                | Runs                            | Purpose |
 | --------------------------------- | ---------------------------- | ------------------------------- | ------- |
-| `ci_ubuntu.yml`                   | CI Linux                     | PR, push, nightly               | AI checks, lint, Release build + test, nanobind Python tests, GUI-disabled assertions build + test; nightly adds install, ASan, coverage (the Debug build), Eigen 64-byte alignment, and a unity name-clash check |
+| `ci_ubuntu.yml`                   | CI Linux                     | PR, push, nightly               | AI checks, build-requirement checks, lint, Release build + test, nanobind Python tests, GUI-disabled assertions build + test; nightly adds install, ASan, coverage (the Debug build), Eigen 64-byte alignment, and a unity name-clash check |
 | `ci_macos.yml`                    | CI macOS                     | PR, push, nightly               | arm64 Release build + test and nanobind Python tests; nightly adds install |
-| `ci_windows.yml`                  | CI Windows                   | PR, push, nightly               | MSVC Release C++ tests and nanobind Python tests; unity builds |
-| `ci_filament.yml`                 | CI Filament                  | PR, push, dispatch              | GUI test lane: `ubuntu-24.04-Filament-functional`, `windows-2022-Filament-functional`, and `macos-15-Filament-functional` configure with `pixi run -e gui-ci config -- -DDART_ENABLE_GUI_SMOKE_TESTS=ON` and run the Filament C++ tests (display-free Vulkan and Xvfb native-window tests on Linux, native tests on Windows and macOS), the Python GUI and integration tests, and a relocated C++17 consumer check. The CI Linux, macOS, and Windows Release jobs build the GUI but skip the `gui-device`-labeled CTest tests and the Python rendering modules; device-free GUI tests still run. CI Linux also runs the display-free agent-capture smoke and `test-agent-debug-overlay` on Lavapipe. The `nvidia-Filament-hardware` job runs only on `main` pushes and manual dispatch; see [Hardware GPU job](#hardware-gpu-job) |
+| `ci_windows.yml`                  | CI Windows                   | PR, push, nightly               | MSVC Release C++ tests and nanobind Python tests on VS 2026; unity builds; nightly adds the build-requirement checks and the VS 2022 (v143) baseline C++ leg |
+| `ci_filament.yml`                 | CI Filament                  | PR, push, nightly, dispatch     | GUI test lane: `ubuntu-24.04-Filament-functional` and `macos-15-Filament-functional`, plus `windows-2022-Filament-functional` nightly, configure with `pixi run -e gui-ci config -- -DDART_ENABLE_GUI_SMOKE_TESTS=ON` and run the Filament C++ tests (display-free Vulkan and Xvfb native-window tests on Linux, native tests on Windows and macOS), the Python GUI and integration tests, and a relocated C++17 consumer check. The CI Linux, macOS, and Windows Release jobs build the GUI but skip the `gui-device`-labeled CTest tests and the Python rendering modules; device-free GUI tests still run. CI Linux also runs the display-free agent-capture smoke and `test-agent-debug-overlay` on Lavapipe. The `nvidia-Filament-hardware` job runs only on `main` pushes and manual dispatch; see [Hardware GPU job](#hardware-gpu-job) |
 | `ci_gz_physics.yml`               | CI gz-physics                | PR, push, nightly               | Gazebo/gz-physics downstream integration |
 | `api_doc.yml`                     | API Documentation            | PR, push, nightly               | Doxygen API docs build (validation only; not published) |
-| `ci_simd.yml`                     | CI SIMD Multi-Arch           | PR/push touching SIMD, nightly  | SIMD instruction-level matrix (scalar/SSE4.2/AVX/AVX2) on x86_64; NEON is covered by `ci_macos.yml` arm64 jobs |
+| `ci_simd.yml`                     | CI SIMD Multi-Arch           | PR/push touching SIMD or DART collision sources, nightly | SIMD instruction-level matrix (scalar/SSE4.2/AVX/AVX2) on x86_64; NEON is covered by `ci_macos.yml` arm64 jobs |
 | `ci_freebsd.yml`                  | CI FreeBSD (VM)              | nightly, dispatch               | FreeBSD build + test in a VM |
 | `ci_toolchain.yml`                | CI Toolchain (Linux)         | nightly, dispatch               | Ubuntu 24.04 floor (gcc 13, clang 18) and newest (gcc 16, clang 19) build + test |
 | `codeql.yml`                      | CodeQL                       | nightly, dispatch               | Static security analysis |
 | `publish_dartpy.yml`              | Publish dartpy               | nightly, version tags, dispatch | Build, repair, verify, and test wheels; publish from version tags |
-| `nightly.yml`                     | Nightly                      | daily, on demand                | Everything above except CI Filament, on `main`; files `nightly-failure` issues |
+| `nightly.yml`                     | Nightly                      | daily, on demand                | Everything above, on `main`; files `nightly-failure` issues |
 | `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | push, dispatch                  | Advisory `release-6.*` wall-time dashboard on `ubuntu-24.04`, profiler and alerts off |
 | `perf.yml`                        | Performance regression       | PR/push to main touching perf paths, nightly, dispatch | Advisory `Perf A/B` counts and guards; merge records and Ir/allocation chart; nightly absolute values and generated S1–S7 guards; release records per tag |
 | `update_lockfiles.yml`            | Update Lock Files            | weekly                          | Pixi lockfile refresh PRs against `main`; an update removes their `maintainer-approved` label |
@@ -368,7 +368,7 @@ coverage; hosted jobs stay the broad-platform and PR gate.
 
 ## Nightly
 
-`nightly.yml` runs every workflow in the index except CI Filament, the
+`nightly.yml` runs every workflow in the index except the
 wall-time performance dashboard, lockfile refresh, maintainer approval, and PR
 text against `main` each night at 08:17 UTC, including the nightly-only jobs.
 It is scheduled directly on `main`, the default branch, with no dispatcher. Run
@@ -384,6 +384,11 @@ checks; to try a CI change against it, run
 `gh workflow run nightly.yml --ref <branch>` (off `main` the report only
 dry-runs). Test the reporter with
 `pixi run python -I scripts/run_pytest.py tests/test_nightly_ci_report.py`.
+
+CI for a PR push or a `main` commit should finish within 30 minutes. A job
+that would push it past that, without catching failures the per-PR jobs miss,
+runs nightly instead: the VS 2022 baseline, the Filament Windows leg, and the
+Windows build-requirement checks (CI Linux runs those on every PR).
 
 Useful commands:
 

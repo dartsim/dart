@@ -165,9 +165,18 @@ Versioned humanoid models
 
 The optional ``utils-assets`` component provides
 ``dart.utils.ModelResourceRetriever`` for Atlas v5 and Unitree G1. Pixi source
-builds enable it. Native builds require ``-DDART_BUILD_UTILS_ASSETS=ON``,
-libcurl 8.5 or newer, and OpenSSL Crypto 3.0.13 or newer; published wheels may
-omit this optional component.
+builds and published Linux wheels enable it. macOS and Windows wheels currently
+omit it. Native builds require ``-DDART_BUILD_UTILS_ASSETS=ON``, libcurl 8.5 or
+newer, and OpenSSL Crypto 3.0.13 or newer.
+
+Linux wheels carry no sample model manifests. For the ``model://`` example
+below, set ``DART_DATA_PATH`` to the ``data/`` directory of a DART checkout,
+which contains ``robot_models/unitree-g1.xml``. Missing-sample warnings from
+the constructor are expected without it. Alternatively, register your own local
+manifest with ``models.addManifest(Path("model.xml").resolve().as_uri())`` and
+use its model ID, revision and file path in the URI; this works without
+``DART_DATA_PATH``. An online download also requires system CA certificates or
+an explicit ``CURL_CA_BUNDLE`` / ``SSL_CERT_FILE`` PEM bundle.
 
 From a DART checkout, download the pinned catalog once and open a model demo:
 

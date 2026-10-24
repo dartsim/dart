@@ -53,7 +53,14 @@ The package requires Python 3.12 or newer and NumPy 1.26.4 or newer.
 requires a matching C++ toolchain, CMake 3.28 or newer, Ninja, and the DART
 dependencies described in the
 :doc:`DART build guide </dart/developer_guide/build>`. Isolated ``pip`` builds
-install the tool requirements from ``pyproject.toml``.
+install the tool requirements from ``pyproject.toml``. Linux source installs also
+enable ``utils-assets`` and require the libcurl >= 8.5 and OpenSSL Crypto
+>= 3.0.13 development packages (for example, ``libcurl4-openssl-dev`` and
+``libssl-dev`` on Debian/Ubuntu). macOS and Windows source installs need those
+libraries when explicitly enabling ``DART_BUILD_UTILS_ASSETS``. Stock packages
+meet these floors on Ubuntu 24.04 or newer; Debian 12 (libcurl 7.88.1) and
+Ubuntu 22.04 (libcurl 7.81, OpenSSL 3.0.2) are too old. To omit the retriever and these development
+packages, use ``CMAKE_ARGS=-DDART_BUILD_UTILS_ASSETS=OFF pip install .``.
 
 dartpy always includes ``dartpy.gui``. The wheel build uses DART's
 pinned private Filament SDK on Linux, macOS arm64, and 64-bit Windows.

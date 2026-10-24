@@ -8,6 +8,11 @@ import sys
 import zipfile
 from pathlib import Path
 
+# Compressed baselines: Linux x86_64 21,303,502 B; macOS arm64 14,083,197 B;
+# Windows x64 12,597,754 B. Linux aarch64 shares the Linux budget.
+WHEEL_SIZE_LIMITS = {"linux": 23_000_000, "macosx": 16_000_000, "win": 14_500_000}
+TLS_NOTICES = ("curl.txt", "openssl.txt")
+
 
 def _expand_wheels(patterns: list[str]) -> list[Path]:
     wheel_paths: list[Path] = []
@@ -27,8 +32,41 @@ def verify_wheel(wheel_path: Path) -> bool:
         print(f"ERROR: Wheel file not found: {wheel_path}")
         return False
 
+    platform_tag = wheel_path.stem.rsplit("-", 1)[-1]
+    if platform_tag.startswith(("manylinux_", "linux_")):
+        platform = "linux"
+    elif platform_tag.startswith("macosx_"):
+        platform = "macosx"
+    elif platform_tag.startswith("win_"):
+        platform = "win"
+    else:
+        print(f"ERROR: No wheel size budget for platform {platform_tag}.")
+        return False
+    limit = WHEEL_SIZE_LIMITS[platform]
     with zipfile.ZipFile(wheel_path, "r") as wheel:
         file_list = wheel.namelist()
+        members = wheel.infolist()
+    print(
+        f"Wheel size: {wheel_path.stat().st_size:,} bytes compressed; "
+        f"{sum(member.file_size for member in members):,} bytes unpacked."
+    )
+    for member in members:
+        if not member.is_dir() and member.filename.startswith(
+            ("dartpy.libs/", "dartpy/.dylibs/")
+        ):
+            print(
+                f"Bundled library: {member.filename} "
+                f"({member.compress_size:,} bytes compressed; "
+                f"{member.file_size:,} bytes unpacked)"
+            )
+    ok = True
+    if wheel_path.stat().st_size > limit:
+        print(
+            f"ERROR: {platform} wheel size {wheel_path.stat().st_size:,} bytes "
+            f"exceeds the {limit:,}-byte compressed budget."
+        )
+        ok = False
+
     names = set(file_list)
     extensions = [
         name
@@ -45,20 +83,29 @@ def verify_wheel(wheel_path: Path) -> bool:
         "",
     )
 
-    ok = True
     if "-cp312-abi3-" not in wheel_path.name:
         print("ERROR: Expected a cp312-abi3 wheel (DART_DARTPY_STABLE_ABI).")
         ok = False
     if not extensions:
         print("ERROR: No dartpy._core extension module found in wheel.")
         ok = False
-    for required in (
+    required_files = (
         "dartpy/__init__.py",
         "dartpy/py.typed",
         "dartpy/experimental/__init__.py",
         f"{dist_info}/licenses/LICENSE",
+        f"{dist_info}/licenses/NOTICE",
         f"{dist_info}/licenses/filament/LICENSE",
+    )
+    # macOS/Windows keep utils-assets off until its dependency cost is approved.
+    if platform == "linux" or any(
+        "curl" in name.lower() for name in file_list if ".dist-info/" not in name
     ):
+        required_files += tuple(
+            f"{dist_info}/licenses/python/dartpy/licenses/{name}"
+            for name in TLS_NOTICES
+        )
+    for required in required_files:
         if required not in names:
             print(f"ERROR: Wheel is missing {required}.")
             ok = False
