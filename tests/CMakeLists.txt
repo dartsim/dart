@@ -168,6 +168,17 @@ add_test(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test_HeadersComponent.cmake"
 )
 
+add_test(
+  NAME test_StandaloneHeaders
+  COMMAND
+    "${CMAKE_COMMAND}" "-DDART_BINARY_DIR=${DART_BINARY_DIR}"
+    "-DTEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/cmake/StandaloneHeaders"
+    "-DTEST_CONFIG=$<CONFIG>" -P
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test_StandaloneHeaders.cmake"
+)
+# It compiles on every core, so CTest must not run other tests beside it.
+set_tests_properties(test_StandaloneHeaders PROPERTIES RUN_SERIAL TRUE)
+
 if(TARGET dart-collision-ode)
   add_test(
     NAME test_DARTConfigODE

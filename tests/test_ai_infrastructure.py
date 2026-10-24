@@ -3805,6 +3805,7 @@ add_test(
 """
 
 
+@pytest.mark.parametrize("name", ("HeadersComponent", "StandaloneHeaders"))
 @pytest.mark.parametrize(
     ("registration", "expected"),
     (
@@ -3817,15 +3818,17 @@ add_test(
     ),
 )
 def test_cmake_semantic_graph_checks_headers_script_test(
-    tmp_path, registration, expected
+    tmp_path, name, registration, expected
 ):
     build = _configure_semantic_graph_fixture(tmp_path)
-    (tmp_path / "tests/cmake/test_HeadersComponent.cmake").write_text(
+    (tmp_path / f"tests/cmake/test_{name}.cmake").write_text(
         'message(STATUS "headers fixture executed")\n', encoding="utf-8"
     )
     cmake_file = tmp_path / "tests/CMakeLists.txt"
     cmake_file.write_text(
-        cmake_file.read_text(encoding="utf-8") + registration, encoding="utf-8"
+        cmake_file.read_text(encoding="utf-8")
+        + registration.replace("HeadersComponent", name),
+        encoding="utf-8",
     )
     result = subprocess.run(
         ["cmake", "-S", str(tmp_path), "-B", str(build)],
@@ -3840,6 +3843,7 @@ def test_cmake_semantic_graph_checks_headers_script_test(
     if expected is None:
         assert errors == []
     else:
+        expected = expected.replace("HeadersComponent", name)
         assert any(expected in error for error in errors), errors
 
 

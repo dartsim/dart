@@ -3198,16 +3198,18 @@ def check_cmake_ctest_inventory(
             "-P",
             ode_source.as_posix(),
         )
-    headers_source = root / "tests/cmake/test_HeadersComponent.cmake"
-    if headers_source.is_file():
-        headers_test = "test_HeadersComponent"
+    for name in ("HeadersComponent", "StandaloneHeaders"):
+        headers_source = root / f"tests/cmake/test_{name}.cmake"
+        if not headers_source.is_file():
+            continue
+        headers_test = f"test_{name}"
         if headers_test not in generated_names:
             errors.append(
                 f"{prefix}: required CMake script test `{headers_test}` is missing"
             )
         script_arguments[headers_test] = (
             f"-DDART_BINARY_DIR={build_dir.as_posix()}",
-            f"-DTEST_BINARY_DIR={build_dir.as_posix()}/tests/cmake/HeadersComponent",
+            f"-DTEST_BINARY_DIR={build_dir.as_posix()}/tests/cmake/{name}",
             f"-DTEST_CONFIG={configuration}",
             "-P",
             headers_source.as_posix(),
