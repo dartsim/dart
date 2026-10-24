@@ -641,14 +641,25 @@ public:
   std::vector<const void*> mSolverKeys;
   std::vector<const void*> mHandlerKeys;
   // Hooks on other threads read these under the registry mutex; the World's
-  // own thread writes them. mStepping is set while step() or compile() runs.
+  // own thread writes them. mOperation reserves lifecycle entry points.
   std::atomic<bool> mCompiled{false};
   std::atomic<std::size_t> mEditDepth{0u};
   std::atomic<bool> mTopologyDirty{false};
   std::atomic<std::size_t> mTopologyRevision{0u};
   std::size_t mCompiledTopologyRevision = 0u;
   std::atomic<std::size_t> mParameterRevision{0u};
-  std::atomic<bool> mStepping{false};
+  enum class Operation
+  {
+    Idle,
+    Stepping,
+    Compiling,
+    Editing,
+    Capturing,
+    Restoring
+  };
+  std::atomic<Operation> mOperation{Operation::Idle};
+  std::mutex mEditMutex;
+  std::thread::id mEditOwner;
   // Set by compile() and cleared at destruction or a failed rebuild. Only
   // indexed Worlds have registry entries, model-object hooks and revisions.
   bool mIndexed = false;
@@ -822,22 +833,41 @@ void engageSameThreadMarker(WorldDeactivationState& state)
   gGuardedWorlds.fetch_add(1u, std::memory_order_release);
 }
 
-// Ends a step() or compile() that set mStepping: releases the same-thread
-// marker if a callback stage engaged it, then the flag, also on exceptions.
-struct BusyScope
+void reserveWorldOperation(
+    WorldDeactivationState& state, WorldDeactivationState::Operation operation)
+{
+  auto expected = WorldDeactivationState::Operation::Idle;
+  if (!state.mOperation.compare_exchange_strong(
+          expected, operation, std::memory_order_acq_rel))
+    throw std::runtime_error(
+        "WorldBusyError: another World operation is active");
+}
+
+struct ReleaseWorldOperation
+{
+  std::atomic<WorldDeactivationState::Operation>& operation;
+
+  ~ReleaseWorldOperation()
+  {
+    operation.store(
+        WorldDeactivationState::Operation::Idle, std::memory_order_release);
+  }
+};
+
+// Callback stages engage lazily; release once, including on exceptions.
+struct SameThreadMarker
 {
   WorldDeactivationState& mState;
-  ~BusyScope()
+  ~SameThreadMarker()
   {
-    if (mState.mSteppingSlot) {
-      // Every callback stage engages first, so markers unwind in LIFO order.
-      DART_ASSERT(*mState.mSteppingSlot == &mState);
-      gGuardedWorlds.fetch_sub(1u, std::memory_order_release);
-      *mState.mSteppingSlot = mState.mOuterSteppingWorld;
-      mState.mOuterSteppingWorld = nullptr;
-      mState.mSteppingSlot = nullptr;
-    }
-    mState.mStepping.store(false, std::memory_order_release);
+    if (!mState.mSteppingSlot)
+      return;
+    // Every callback stage engages first, so markers unwind in LIFO order.
+    DART_ASSERT(*mState.mSteppingSlot == &mState);
+    gGuardedWorlds.fetch_sub(1u, std::memory_order_release);
+    *mState.mSteppingSlot = mState.mOuterSteppingWorld;
+    mState.mOuterSteppingWorld = nullptr;
+    mState.mSteppingSlot = nullptr;
   }
 };
 
@@ -1579,7 +1609,11 @@ enum class Rejection
 
 Rejection rejection(const WorldDeactivationState& state)
 {
-  if (state.mStepping.load(std::memory_order_acquire))
+  const auto operation = state.mOperation.load(std::memory_order_acquire);
+  if (operation == WorldDeactivationState::Operation::Stepping
+      || operation == WorldDeactivationState::Operation::Compiling
+      || operation == WorldDeactivationState::Operation::Capturing
+      || operation == WorldDeactivationState::Operation::Restoring)
     return Rejection::Busy;
   if (state.mCompiled.load(std::memory_order_relaxed)
       && state.mEditDepth.load(std::memory_order_relaxed) == 0u)
@@ -1593,7 +1627,8 @@ void throwRejection(Rejection reason)
     case Rejection::None:
       return;
     case Rejection::Busy:
-      throw std::runtime_error("WorldBusyError: model mutation during step");
+      throw std::runtime_error(
+          "WorldBusyError: model mutation during an active World operation");
     case Rejection::Frozen:
       throw std::runtime_error(
           "ModelFrozenError: use World::edit() for topology changes");
@@ -2244,7 +2279,8 @@ void World::validateCompiledModel() const
     // A raw pointer keeps typeid's operand free of side effects.
     const auto* meta = source.get();
     if (meta && typeid(*meta) != typeid(dynamics::Skeleton)
-        && state.mStepping.load(std::memory_order_acquire))
+        && (state.mOperation.load(std::memory_order_acquire)
+            == WorldDeactivationState::Operation::Stepping))
       engageSameThreadMarker(*mDeactivationState);
     changed
         = !source || source->getNumBodyNodes() != subscription.mBodies.size();
@@ -2311,13 +2347,18 @@ void World::validateCompiledModel() const
 //==============================================================================
 void World::compile()
 {
+  reserveWorldOperation(
+      *mDeactivationState, WorldDeactivationState::Operation::Compiling);
+  const ReleaseWorldOperation release{mDeactivationState->mOperation};
+  compileOwned();
+}
+
+//==============================================================================
+void World::compileOwned()
+{
   auto& state = *mDeactivationState;
-  // Compilation runs user extension points (collision filters and detectors,
-  // solver and dynamics overrides), so it is busy as a step is: its callbacks
-  // may not compile, edit or step this World or change its model's topology.
-  if (state.mStepping.exchange(true, std::memory_order_acq_rel))
-    throw std::runtime_error("WorldBusyError: compile during step or compile");
-  const BusyScope busy{state};
+  // Preparation runs user extension points, including during edit scope exit.
+  const SameThreadMarker marker{state};
   engageSameThreadMarker(state);
   if (state.mEditDepth)
     throw std::runtime_error("Cannot compile inside a World::edit() scope");
@@ -2513,8 +2554,18 @@ World::EditScope::EditScope(World& world)
   : mWorld(world), mUncaughtExceptions(std::uncaught_exceptions())
 {
   auto& state = *mWorld.mDeactivationState;
-  if (state.mStepping.load(std::memory_order_acquire))
-    throw std::runtime_error("WorldBusyError: edit during step or compile");
+  const std::lock_guard<std::mutex> lock(state.mEditMutex);
+  const auto owner = std::this_thread::get_id();
+  auto expected = WorldDeactivationState::Operation::Idle;
+  if (!state.mOperation.compare_exchange_strong(
+          expected,
+          WorldDeactivationState::Operation::Editing,
+          std::memory_order_acq_rel)
+      && (expected != WorldDeactivationState::Operation::Editing
+          || state.mEditOwner != owner))
+    throw std::runtime_error(
+        "WorldBusyError: another World operation is active");
+  state.mEditOwner = owner;
   // Lazy Worlds stay lazy. Compiled ones, and ones whose last recompile
   // failed, recompile at scope exit.
   mRecompile = state.mCompiled.load(std::memory_order_relaxed)
@@ -2526,8 +2577,16 @@ World::EditScope::EditScope(World& world)
 World::EditScope::~EditScope()
 {
   auto& state = *mWorld.mDeactivationState;
+  std::unique_lock<std::mutex> lock(state.mEditMutex);
   if (state.mEditDepth.fetch_sub(1u, std::memory_order_relaxed) != 1u)
     return;
+  const ReleaseWorldOperation release{state.mOperation};
+  state.mEditOwner = std::thread::id{};
+  if (mRecompile)
+    state.mOperation.store(
+        WorldDeactivationState::Operation::Compiling,
+        std::memory_order_relaxed);
+  lock.unlock();
   if (!mRecompile) {
     mWorld.invalidateSimulationMode();
     return;
@@ -2542,7 +2601,7 @@ World::EditScope::~EditScope()
   // rethrowing it.
   state.mPendingRecompileError = nullptr;
   try {
-    mWorld.compile();
+    mWorld.compileOwned();
   } catch (...) {
     // Scope exit never throws; the next step() or compile() reports this.
     state.mPendingRecompileError = std::current_exception();
@@ -2626,7 +2685,8 @@ bool World::isInSimulationMode() const
     // Synchronize subscriptions before trusting their contents, including an
     // external subscription that had no collision shapes at preparation.
     if (collisionGroup && collisionGroup->getAutomaticUpdate()) {
-      if (state.mStepping.load(std::memory_order_acquire))
+      if (state.mOperation.load(std::memory_order_acquire)
+          == WorldDeactivationState::Operation::Stepping)
         engageSameThreadMarker(state);
       collisionGroup->update();
       if (collisionGroup->getContentVersion()
@@ -2918,6 +2978,49 @@ WorldPtr World::clone() const
 }
 
 //==============================================================================
+void World::captureState(WorldState& output) const
+{
+  reserveWorldOperation(
+      *mDeactivationState, WorldDeactivationState::Operation::Capturing);
+  const ReleaseWorldOperation release{mDeactivationState->mOperation};
+  const SameThreadMarker marker{*mDeactivationState};
+  engageSameThreadMarker(*mDeactivationState);
+  captureStateOwned(output);
+}
+
+//==============================================================================
+void World::restoreState(const WorldState& state)
+{
+  reserveWorldOperation(
+      *mDeactivationState, WorldDeactivationState::Operation::Restoring);
+  const ReleaseWorldOperation release{mDeactivationState->mOperation};
+  const SameThreadMarker marker{*mDeactivationState};
+  engageSameThreadMarker(*mDeactivationState);
+  restoreStateOwned(state);
+}
+
+//==============================================================================
+void World::synchronizeCollisionSources()
+{
+  const auto group = mConstraintSolver->getCollisionGroup();
+  // Match the backends whose history clearing refreshes collision sources.
+  bool refreshesBroadphase
+      = dynamic_cast<collision::FCLCollisionGroup*>(group.get()) != nullptr;
+#if HAVE_BULLET
+  refreshesBroadphase
+      = refreshesBroadphase
+        || dynamic_cast<collision::BulletCollisionGroup*>(group.get());
+#endif
+  if (refreshesBroadphase
+      && !dynamic_cast<collision::DARTCollisionDetector*>(
+          group->getCollisionDetector().get())
+      && group->getAutomaticUpdate()
+      && collision::detail::CollisionGroupOwnershipAccessor::hasPendingUpdates(
+          *group))
+    collision::detail::CollisionGroupOwnershipAccessor::update(*group, this);
+}
+
+//==============================================================================
 void World::setTimeStep(double _timeStep)
 {
   if (!std::isfinite(_timeStep) || _timeStep <= 0.0) {
@@ -3029,13 +3132,11 @@ struct World::StepContext
 };
 
 //==============================================================================
-void World::step(bool _resetCommand)
+// Keep the lifecycle reservation and ordinary step in one single-step frame.
+DART_FORCEINLINE void World::stepOwned(bool _resetCommand)
 {
   auto& state = *mDeactivationState;
-  if (state.mStepping.exchange(true, std::memory_order_acq_rel))
-    throw std::runtime_error("WorldBusyError: reentrant World::step()");
-  // Callback stages engage the marker lazily.
-  const BusyScope busy{state};
+  const SameThreadMarker marker{state};
   if (state.mEditDepth)
     throw std::runtime_error("Cannot step inside a World::edit() scope");
   if (state.mPendingRecompileError)
@@ -3062,6 +3163,28 @@ void World::step(bool _resetCommand)
     advancePositions(context);
     finishDeactivationStep(context);
   }
+}
+
+//==============================================================================
+void World::step(bool _resetCommand)
+{
+  reserveWorldOperation(
+      *mDeactivationState, WorldDeactivationState::Operation::Stepping);
+  const ReleaseWorldOperation release{mDeactivationState->mOperation};
+  stepOwned(_resetCommand);
+}
+
+//==============================================================================
+void World::stepMultiple(std::size_t count, bool resetCommand)
+{
+  reserveWorldOperation(
+      *mDeactivationState, WorldDeactivationState::Operation::Stepping);
+  const ReleaseWorldOperation release{mDeactivationState->mOperation};
+  if (count
+      > static_cast<std::size_t>(std::numeric_limits<int>::max() - mFrame))
+    throw std::overflow_error("World::stepMultiple frame count would overflow");
+  for (std::size_t i = 0u; i < count; ++i)
+    stepOwned(resetCommand);
 }
 
 //==============================================================================
@@ -4326,7 +4449,8 @@ std::size_t World::getCollisionFilterSnapshotRevision(
       = dynamic_cast<const collision::detail::CollisionFilterSnapshotTracker*>(
           filter);
   if (snapshotTracker != nullptr) {
-    if (mDeactivationState->mStepping.load(std::memory_order_acquire))
+    if (mDeactivationState->mOperation.load(std::memory_order_acquire)
+        == WorldDeactivationState::Operation::Stepping)
       engageSameThreadMarker(*mDeactivationState);
     return snapshotTracker->getCollisionFilterSnapshotRevision();
   }
@@ -5695,7 +5819,7 @@ void checkWorldGroupUpdate(
   }
   if (simulation::noIndexedWorlds())
     return;
-  // Only a stepping owner rejects: an idle compiled World reports raw group
+  // Only a busy owner rejects: an idle compiled World reports raw group
   // edits at its next step() or compile().
   bool busy = false;
   {
@@ -5704,7 +5828,8 @@ void checkWorldGroupUpdate(
         group, [&](const simulation::WorldDeactivationState& owner) {
           busy = busy
                  || (owner.mWorld != requester
-                     && owner.mStepping.load(std::memory_order_acquire));
+                     && simulation::rejection(owner)
+                            == simulation::Rejection::Busy);
         });
   }
   if (busy)
