@@ -88,7 +88,9 @@
 
 // Workaround for the fact that Bullet does not add the definition to
 // BULLET_DEFINITIONS or generate a #cmakedefine header.
+#ifndef BT_USE_DOUBLE_PRECISION
 #cmakedefine BT_USE_DOUBLE_PRECISION
+#endif
 
 #cmakedefine01 DART_USE_SYSTEM_IMGUI
 

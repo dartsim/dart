@@ -140,6 +140,13 @@ FCL's libccd dependency must be built in double precision
 (``-DENABLE_DOUBLE_PRECISION=ON``), with FCL built against it; otherwise the
 build stops. ``-DDART_ALLOW_SINGLE_PRECISION_LIBCCD=ON`` builds anyway.
 
+Single-precision Bullet can lose contacts of centimeter-scale shapes on
+heightmaps. DART 6.20 preserves its existing Bullet selection by default;
+``-DDART_BULLET_FLOAT64=ON`` prefers the double-precision ``-float64`` libraries
+when installed with Bullet 3.17 or newer. Rebuild consumers of DART's Bullet
+headers, conversion functions, or native object accessors when changing
+precision. A process must load only one Bullet precision.
+
 These source-build requirements differ from the runtime requirements of
 published :doc:`dartpy wheels </dartpy/user_guide/installation>`.
 
