@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-filament-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'push' && github.run_id || '' }}
-  cancel-in-progress: ${{ github.event_name != 'push' }}
+  group: ci-filament-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name != 'pull_request' && github.run_id || '' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   functional:
@@ -112,3 +112,94 @@ jobs:
             ${{ env.BUILD_DIR }}/CMakeCache.txt
             ${{ env.BUILD_DIR }}/dart/gui/filament_generated/*.filamat
             ${{ runner.temp }}/filament-parity
+
+  # Real NVIDIA Vulkan coverage on one resource-capped self-hosted runner. The
+  # runner group is restricted server-side to this file on main; the `if` is
+  # defense in depth and never lets PR or fork code reach the runner.
+  hardware:
+    name: nvidia-Filament-hardware
+    if: >-
+      github.repository == 'dartsim/dart' && github.ref == 'refs/heads/main'
+      && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on:
+      group: dart-gpu-trusted
+      labels: dart-gpu-nvidia
+    timeout-minutes: 240
+    # Per-job group: workflow-level cancellation never interrupts GPU work.
+    concurrency:
+      group: ci-filament-gpu
+      cancel-in-progress: false
+    env:
+      CMAKE_GENERATOR: Ninja
+      CMAKE_BUILD_TYPE: Release
+      BUILD_DIR: build/gui-ci/cpp/Release
+      GPU_OUT: ${{ github.workspace }}/build/gpu-evidence
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Select the NVIDIA GPU
+        run: |
+          set -euo pipefail
+          mkdir -p "$GPU_OUT"
+          unset DISPLAY WAYLAND_DISPLAY LIBGL_ALWAYS_SOFTWARE VK_ICD_FILENAMES VK_LOADER_DRIVERS_SELECT
+          nvidia-smi -q > "$GPU_OUT/nvidia-smi.txt"
+          env | grep -E '^(VK_|NVIDIA_|LIBGL_|DISPLAY|WAYLAND_DISPLAY)' > "$GPU_OUT/env.txt" || true
+          nvidia-smi --query-gpu=name --format=csv,noheader > "$GPU_OUT/gpu_name.txt"
+          test "$(wc -l < "$GPU_OUT/gpu_name.txt")" -eq 1 || { echo "expected exactly one NVIDIA GPU" >&2; exit 1; }
+          test -r "${VK_DRIVER_FILES:-}" || { echo "NVIDIA Vulkan driver file is not readable" >&2; exit 1; }
+      - name: Install Pixi environment
+        run: pixi install -e gui-ci --locked
+      - name: Configure Filament
+        run: >-
+          env -u DISPLAY -u WAYLAND_DISPLAY -u LIBGL_ALWAYS_SOFTWARE
+          pixi run -e gui-ci config -- -DDART_ENABLE_GUI_SMOKE_TESTS=ON
+      - name: Build hardware tests and bindings
+        run: >-
+          pixi run -e gui-ci cmake --build ${{ env.BUILD_DIR }} --parallel 4
+          --target test_FilamentBackend test_GuiParity test_GuiMesh dartpy
+      - name: NVIDIA headless Vulkan tests
+        run: >-
+          env -u DISPLAY -u WAYLAND_DISPLAY -u LIBGL_ALWAYS_SOFTWARE
+          -u VK_ICD_FILENAMES -u VK_LOADER_DRIVERS_SELECT
+          pixi run -e gui-ci ctest --test-dir ${{ env.BUILD_DIR }}
+          --output-on-failure --no-tests=error -R '^(test_FilamentBackend|test_GuiParity|test_GuiMesh)$'
+      - name: NVIDIA agent capture
+        # Direct python (not `pixi run agent-capture`) avoids its build-py-dev rebuild.
+        run: |
+          set -euo pipefail
+          unset DISPLAY WAYLAND_DISPLAY LIBGL_ALWAYS_SOFTWARE VK_ICD_FILENAMES VK_LOADER_DRIVERS_SELECT
+          export PYTHONPATH="$PWD/$BUILD_DIR/python:$PWD/scripts:$PWD/python"
+          pixi run -e gui-ci python scripts/agent_capture.py --scene box_on_ground --steps 250 \
+            --focus box --layers contacts collision_bounds --auto-views 1 \
+            --out "$GPU_OUT/capture" --prefix gpu
+          shopt -s nullglob
+          pngs=("$GPU_OUT"/capture/gpu_*.png)
+          test "${#pngs[@]}" -ge 1 || { echo "capture wrote no PNG" >&2; exit 1; }
+          for png in "${pngs[@]}"; do
+            pixi run -e gui-ci python scripts/image_verdict.py "$png" | tee "$png.verdict.json"
+          done
+      - name: Verify the renderer is the NVIDIA GPU
+        run: |
+          pixi run -e gui-ci python -I - "$GPU_OUT/capture/gpu_capture.json" "$GPU_OUT/gpu_name.txt" "$GPU_OUT/capture"/gpu_*.png.verdict.json <<'PY'
+          import json, sys
+          from pathlib import Path
+          capture = json.loads(Path(sys.argv[1]).read_text())
+          expected = Path(sys.argv[2]).read_text().strip()
+          if capture["graphics_backend"].lower() != "vulkan":
+              raise SystemExit(f"backend is {capture['graphics_backend']!r}, expected vulkan")
+          if capture["graphics_device"] != expected:
+              raise SystemExit(f"renderer {capture['graphics_device']!r} != nvidia-smi {expected!r}")
+          for path in sys.argv[3:]:
+              if not json.loads(Path(path).read_text())["pass"]:
+                  raise SystemExit(f"image-verdict failed: {path}")
+          print(f"verified {expected}")
+          PY
+      - name: Preserve hardware diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: filament-nvidia
+          path: |
+            ${{ env.GPU_OUT }}
+            ${{ env.BUILD_DIR }}/Testing/Temporary/LastTest.log
