@@ -7,6 +7,7 @@
 
 #include <dart/utils/PackageResourceRetriever.hpp>
 #include <dart/utils/assets/ModelResourceRetriever.hpp>
+#include <dart/utils/assets/detail/CaBundle.hpp>
 
 #include <dart/common/Uri.hpp>
 
@@ -23,6 +24,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace {
 
@@ -131,6 +133,58 @@ protected:
       {"meshes/link.mtl", "newmtl body\nmap_Kd textures/body.png\n"},
       {"meshes/textures/body.png", "test-only-texture"}};
 };
+
+TEST_F(
+    ModelResourceRetrieverTest, CaBundleSearchPreservesExplicitAndDefaultTrust)
+{
+  using dart::utils::detail::findCaBundle;
+  const auto first = directory / "first.pem";
+  const auto second = directory / "second.pem";
+  const auto missing = directory / "missing.pem";
+  writeFile(first, "first CA bundle");
+  writeFile(second, "second CA bundle");
+  const auto defaultBundle = second.string();
+  const auto missingBundle = missing.string();
+
+  EXPECT_EQ(
+      findCaBundle("explicit-curl.pem", "explicit-ssl.pem", nullptr, {first}),
+      "explicit-curl.pem");
+  EXPECT_EQ(
+      findCaBundle("", "explicit-ssl.pem", nullptr, {first}),
+      "explicit-ssl.pem");
+  EXPECT_EQ(
+      findCaBundle(nullptr, "", defaultBundle.c_str(), {first}), defaultBundle);
+  const auto invalidDefault = directory.string();
+  EXPECT_EQ(
+      findCaBundle(nullptr, nullptr, invalidDefault.c_str(), {first}),
+      invalidDefault);
+  EXPECT_EQ(
+      findCaBundle(
+          nullptr, nullptr, missingBundle.c_str(), {missing, first, second}),
+      first.string());
+  EXPECT_EQ(
+      findCaBundle(nullptr, nullptr, nullptr, {directory, second, first}),
+      second.string());
+  EXPECT_TRUE(findCaBundle(nullptr, nullptr, nullptr, {missing}).empty());
+#ifndef _WIN32
+  const std::string uninspectable(5000, 'x');
+  EXPECT_EQ(
+      findCaBundle(nullptr, nullptr, uninspectable.c_str(), {first}),
+      uninspectable);
+#endif
+}
+
+TEST(ModelResourceRetriever, CaBundleCandidatesMatchDocumentedOrder)
+{
+  const std::initializer_list<fs::path> expected{
+      "/etc/ssl/certs/ca-certificates.crt",
+      "/etc/pki/tls/certs/ca-bundle.crt",
+      "/etc/ssl/ca-bundle.pem",
+      "/etc/ssl/cert.pem"};
+  EXPECT_EQ(
+      std::vector<fs::path>(dart::utils::detail::caBundleCandidates),
+      std::vector<fs::path>(expected));
+}
 
 TEST_F(ModelResourceRetrieverTest, VerifiedOfflineBundlePreservesRelativeFiles)
 {

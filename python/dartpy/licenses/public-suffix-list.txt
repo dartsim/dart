@@ -1,0 +1,7 @@
+Public Suffix List
+==================
+
+libpsl's built-in Public Suffix List is distributed under the Mozilla Public
+License, v. 2.0. The list's source is available at
+https://publicsuffix.org/list/public_suffix_list.dat and the license at
+https://mozilla.org/MPL/2.0/.

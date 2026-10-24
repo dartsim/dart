@@ -124,6 +124,12 @@ The maintainer answers these one question at a time.
   advisories, and the PR measures the wheel-size cost (estimated at about
   2 MB compressed).
 
+  Note (2026-10-24): measured, the locked conda-forge libcurl closure adds
+  about 18.2 MB (macOS) and 16.5 MB (Windows) compressed, not 2 MB, and
+  Linux adds about 2.6 MB. Pending the maintainer's choice between that cost and
+  a minimal source-built curl, DEP-19 enables the retriever in Linux wheels
+  only, with per-platform size budgets.
+
 - **DD-14. The Dear ImGui compatibility patch is dropped (Q5(a)).** Once
   #3861 (DEP-31) lands, DEP-30 fetches ImGui as a hash-pinned,
   TLS-verified tag archive with no patch, deletes `dart-compat.patch`, its

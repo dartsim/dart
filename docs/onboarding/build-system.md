@@ -226,7 +226,15 @@ is not installed.
 
 The installed DART finder requires only Bullet's headers, `BulletCollision`
 and `LinearMath`, so this collision-only SDK also supports DART consumers
-without BulletDynamics or BulletSoftBody installed.
+without BulletDynamics or BulletSoftBody installed. It looks for them, and
+their Debug libraries, in the include and library directories where DART
+installed them before the consumer's search paths, so a consumer that finds
+DART through `DART_DIR`, lists another Bullet first, or finds one itself before
+DART, still links the Bullet that DART was built with; the consumer's own
+Bullet variables stay as it found them. It uses them only when the headers and
+both Release or both Debug libraries are all there, and a Debug-only
+installation serves every configuration. Otherwise it finds Bullet as it would
+without them, instead of completing DART's files with another Bullet's.
 
 Run `pixi run test-package-core` for a core-only build, isolated installation,
 and external world/factory consumers. See the

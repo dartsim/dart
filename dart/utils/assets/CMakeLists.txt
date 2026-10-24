@@ -9,11 +9,18 @@ if(NOT OPENSSL_FOUND OR NOT TARGET OpenSSL::Crypto)
 endif()
 
 set(hdrs ModelResourceRetriever.hpp)
-set(srcs ModelResourceRetriever.cpp)
+set(srcs ModelResourceRetriever.cpp detail/CaBundle.hpp)
 set(target_name ${PROJECT_NAME}-utils-assets)
 set(component_name utils-assets)
 
 target_sources(dart-io PRIVATE ${hdrs} ${srcs})
+if(DART_BUILD_WHEELS AND APPLE)
+  set_property(
+    SOURCE ModelResourceRetriever.cpp TARGET_DIRECTORY dart-io
+    APPEND
+    PROPERTY COMPILE_DEFINITIONS DART_APPLE_WHEEL_TLS
+  )
+endif()
 # Other dart-io unity sources leave Windows' far macro undefined, which breaks
 # the winsock headers that curl includes.
 set_source_files_properties(

@@ -2,6 +2,8 @@
 
 import importlib.util
 import subprocess
+import sys
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -78,6 +80,7 @@ def test_linux_driver_repairs_and_tests_in_clean_base(monkeypatch, tmp_path):
         assert "quay.io/pypa/manylinux_2_28_aarch64" in smoke
         assert "dartpy-manylinux-2-28-aarch64" not in smoke
         assert "LD_LIBRARY_PATH" in smoke
+        assert "--test-ca-fallback" in smoke
         assert f"/opt/python/{tag}-{tag}/bin/python" in smoke
         assert smoke[-1].endswith(f"{python_tag}-*-manylinux_2_28_aarch64.whl")
     assert all(kwargs == {"check": True} for _, kwargs in calls)
@@ -116,6 +119,78 @@ def test_native_dependency_image_preserves_collision_backends():
 def test_dependency_image_fetches_archives_without_git_clones():
     dockerfile = (ROOT / "docker/wheels/Dockerfile.manylinux_2_28").read_text()
     assert "git clone" not in dockerfile
+
+
+def test_wheels_enable_the_model_retriever_only_on_linux():
+    config = tomllib.loads((ROOT / "pyproject.toml").read_text())
+    assert (
+        config["tool"]["scikit-build"]["cmake"]["define"]["DART_BUILD_UTILS_ASSETS"]
+        == "OFF"
+    )
+    overrides = config["tool"]["scikit-build"]["overrides"]
+    assert [
+        rule["if"]["platform-system"]
+        for rule in overrides
+        if rule.get("cmake", {}).get("define", {}).get("DART_BUILD_UTILS_ASSETS")
+        == "ON"
+    ] == ["^linux"]
+    # Keep conda-forge dependencies available for source builds and future wheels.
+    pixi = tomllib.loads((ROOT / "pixi.toml").read_text())
+    assert "libcurl" in pixi["dependencies"]
+    assert "openssl" in pixi["dependencies"]
+    dockerfile = (ROOT / "docker/wheels/Dockerfile.manylinux_2_28").read_text()
+    for setting in (
+        "-DCURL_USE_OPENSSL=ON",
+        "-DCURL_USE_LIBPSL=OFF",
+        "-DCURL_DISABLE_LDAP=ON",
+        "-DCURL_CA_BUNDLE=/etc/pki/tls/certs/ca-bundle.crt",
+        "-DCURL_CA_PATH=none",
+        "-fstack-protector-strong -D_FORTIFY_SOURCE=2",
+        "-Wl,-z,relro,-z,now",
+    ):
+        assert setting in dockerfile
+    spec = importlib.util.spec_from_file_location(
+        "wheel_tls", ROOT / "scripts/test_wheel_tls.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert f"-DCURL_CA_BUNDLE={module.DEFAULT_CA_BUNDLE.as_posix()}" in dockerfile
+    assert "--openssldir=/etc/dartpy/openssl" in dockerfile
+    assert dockerfile.count("MODULESDIR=/usr/local/lib/dartpy/ossl-modules") == 2
+    assert (
+        "strip --strip-unneeded /usr/local/lib/libssl.so.3 /usr/local/lib/libcrypto.so.3"
+        in dockerfile
+    )
+    assert "strip --strip-unneeded /usr/local/lib64/libcurl.so.4" in dockerfile
+
+
+def test_model_retriever_wheel_smoke_runs_in_the_clean_environment(
+    monkeypatch, tmp_path
+):
+    spec = importlib.util.spec_from_file_location(
+        "test_wheel", ROOT / "scripts/test_wheel.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    calls = []
+    monkeypatch.setattr(
+        module, "run_command", lambda cmd, **kwargs: calls.append((cmd, kwargs))
+    )
+    monkeypatch.setattr(module.sys, "platform", "linux")
+    monkeypatch.setenv("CURL_CA_BUNDLE", "build-machine-ca.pem")
+    monkeypatch.setenv("SSL_CERT_FILE", "build-machine-ca.pem")
+    wheel = tmp_path / "dartpy.whl"
+    wheel.touch()
+    module.test_wheel(wheel)
+    cmd, options = calls[-1]
+    assert options["stage"] == "local HTTPS smoke"
+    assert Path(cmd[-1]).name == "test_wheel_tls.py"
+    assert Path(cmd[-1]).is_file()
+    assert "CURL_CA_BUNDLE" not in options["env"]
+    assert "SSL_CERT_FILE" not in options["env"]
+    assert options["timeout"] == 180
+    module.test_wheel(wheel, test_ca_fallback=True)
+    assert calls[-1][0][-1] == "--test-ca-fallback"
 
 
 def test_dependency_image_builds_sdformat_against_urdfdom_6():
@@ -360,3 +435,181 @@ def test_smoke_helper_does_not_require_python_on_path(monkeypatch, tmp_path):
     monkeypatch.setattr(module, "test_wheel", tested.append)
     assert module.main(["test_wheel.py", str(wheel)]) == 0
     assert tested == [wheel]
+
+
+@pytest.mark.parametrize("platform", ["darwin", "win32"])
+def test_disabled_retriever_skips_tls_smoke(monkeypatch, tmp_path, platform):
+    spec = importlib.util.spec_from_file_location(
+        "test_wheel", ROOT / "scripts/test_wheel.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    calls = []
+    monkeypatch.setattr(module.sys, "platform", platform)
+    monkeypatch.setattr(
+        module, "run_command", lambda cmd, **kwargs: calls.append(kwargs["stage"])
+    )
+    wheel = tmp_path / "dartpy.whl"
+    wheel.touch()
+    module.test_wheel(wheel)
+    assert "native smoke" in calls
+    assert "local HTTPS smoke" not in calls
+
+
+@pytest.mark.skipif(
+    sys.platform not in {"linux", "darwin"}, reason="POSIX C++ toolchain"
+)
+@pytest.mark.parametrize("apple_wheel", [False, True])
+@pytest.mark.parametrize("init_succeeds", [False, True])
+def test_apple_wheel_ignores_compiled_ca_and_config(
+    tmp_path, apple_wheel, init_succeeds
+):
+    openssl = tmp_path / "openssl"
+    openssl.mkdir()
+    (openssl / "crypto.h").write_text(
+        "#pragma once\n#include <cassert>\n"
+        "#define OPENSSL_INIT_NO_LOAD_CONFIG 128ULL\n"
+        "inline int calls = 0;\n"
+        "inline int OPENSSL_init_crypto(unsigned long long options, const void* config) {\n"
+        "  assert(options == OPENSSL_INIT_NO_LOAD_CONFIG && config == nullptr);\n"
+        "  ++calls;\n"
+        f"  return {int(init_succeeds)};\n"
+        "}\n"
+    )
+    source = tmp_path / "ca.cpp"
+    initialization = (
+        (
+            f"  assert(dart::utils::detail::initializeWheelCrypto() == {str(init_succeeds).lower()});\n"
+            * 2
+            + "  assert(calls == 1);\n"
+        )
+        if apple_wheel
+        else "  assert(calls == 0);\n"
+    )
+    source.write_text(
+        "#include <openssl/crypto.h>\n"
+        '#include "dart/utils/assets/detail/CaBundle.hpp"\n'
+        "#include <cassert>\n"
+        "int main() {\n"
+        '  const char* bundle = "build-environment.pem";\n'
+        f'  assert(dart::utils::detail::defaultCaBundle(bundle) == {"nullptr" if apple_wheel else "bundle"});\n'
+        + initialization
+        + "}\n"
+    )
+    import shutil
+
+    compiler = shutil.which("c++")
+    if not compiler:
+        pytest.skip("C++ compiler unavailable")
+    executable = tmp_path / "ca"
+    subprocess.run(
+        [
+            compiler,
+            "-std=c++17",
+            f"-I{tmp_path}",
+            f"-I{ROOT}",
+            *(["-DDART_APPLE_WHEEL_TLS"] if apple_wheel else []),
+            str(source),
+            "-o",
+            str(executable),
+        ],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run([str(executable)], check=True)
+
+
+def test_linux_prs_run_wheel_tooling_and_failures_upload_artifacts():
+    config = tomllib.loads((ROOT / "pixi.toml").read_text())
+    tooling = config["tasks"]["test-wheel-tooling"]["cmd"]
+    requirements = config["tasks"]["test-build-requirements"]["cmd"]
+    for name in (
+        "verify_wheel",
+        "wheel_linux",
+        "wheel_tls",
+        "wheel_runtime_environment",
+    ):
+        assert f"tests/test_{name}.py" in tooling
+        assert f"tests/test_{name}.py" in requirements
+    workflow = yaml.load(
+        (ROOT / ".github/workflows/ci_ubuntu.yml").read_text(), Loader=yaml.BaseLoader
+    )
+    assert "pull_request" in workflow["on"]
+    assert any(
+        step.get("run") == "pixi run test-wheel-tooling"
+        for job in workflow["jobs"].values()
+        for step in job["steps"]
+    )
+    publish = yaml.load(
+        (ROOT / ".github/workflows/publish_dartpy.yml").read_text(),
+        Loader=yaml.BaseLoader,
+    )
+    upload = next(
+        step
+        for step in publish["jobs"]["build_wheels"]["steps"]
+        if step.get("uses", "").startswith("actions/upload-artifact@")
+    )
+    assert "!cancelled()" in upload["if"]
+    assert "steps.wheel_gate.outputs.enabled == 'true'" in upload["if"]
+
+
+def test_apple_crypto_guard_is_wired_to_cmake_and_constructor():
+    import re
+
+    cmake = (ROOT / "dart/utils/assets/CMakeLists.txt").read_text()
+    assert re.search(
+        r"if\(DART_BUILD_WHEELS AND APPLE\)\s+set_property\(\s+"
+        r"SOURCE ModelResourceRetriever.cpp TARGET_DIRECTORY dart-io\s+"
+        r"APPEND\s+PROPERTY COMPILE_DEFINITIONS DART_APPLE_WHEEL_TLS\s+\)\s+endif\(\)",
+        cmake,
+    )
+    source = (ROOT / "dart/utils/assets/ModelResourceRetriever.cpp").read_text()
+    constructor = source.split("ModelResourceRetriever::ModelResourceRetriever(", 1)[1]
+    assert re.search(
+        r"#ifdef DART_APPLE_WHEEL_TLS\s+if \(!detail::initializeWheelCrypto\(\)\)\s+"
+        r'throw std::runtime_error\("OpenSSL initialization failed"\);\s+#endif',
+        constructor,
+    )
+
+
+@pytest.mark.skipif(
+    sys.platform not in {"linux", "darwin"}, reason="POSIX C++ toolchain"
+)
+def test_only_proxy_options_tolerate_unknown_option(tmp_path):
+    import shutil
+
+    compiler = shutil.which("c++")
+    if not compiler:
+        pytest.skip("C++ compiler unavailable")
+    source = (ROOT / "dart/utils/assets/ModelResourceRetriever.cpp").read_text()
+    options = source.split("  const auto setOption =", 1)[1].split(
+        "  setOption(CURLOPT_URL", 1
+    )[0]
+    program = tmp_path / "options.cpp"
+    program.write_text(
+        "#include <cassert>\n#include <stdexcept>\n"
+        "enum CURLcode { CURLE_OK, CURLE_UNKNOWN_OPTION, CURLE_FAILED_INIT };\n"
+        "using CURLoption = int;\nCURLcode result;\n"
+        "struct { void* get() { return nullptr; } } handle;\n"
+        "CURLcode curl_easy_setopt(void*, CURLoption, long) { return result; }\n"
+        "int main() {\n  const auto setOption ="
+        + options
+        + "  for (auto code : {CURLE_OK, CURLE_UNKNOWN_OPTION, CURLE_FAILED_INIT}) {\n"
+        "    result = code;\n"
+        "    bool failed = false;\n"
+        "    try { setOption(0, 1L); } catch (const std::runtime_error&) { failed = true; }\n"
+        "    assert(failed == (code != CURLE_OK));\n"
+        "    failed = false;\n"
+        "    try { setProxyOption(0, 1L); } catch (const std::runtime_error&) { failed = true; }\n"
+        "    assert(failed == (code == CURLE_FAILED_INIT));\n"
+        "  }\n}\n"
+    )
+    executable = tmp_path / "options"
+    subprocess.run(
+        [compiler, "-std=c++17", str(program), "-o", str(executable)], check=True
+    )
+    subprocess.run([str(executable)], check=True)
+    import re
+
+    assert not re.search(r"setOption\(\s*CURLOPT_PROXY_", source)
+    assert not re.search(r"setProxyOption\(\s*CURLOPT_(?!PROXY_)", source)

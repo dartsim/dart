@@ -90,6 +90,7 @@ abi3audit --strict --report /output/dartpy-*-cp312-abi3-*.whl
                 "PYTHONPATH",
                 f"/opt/python/{tag}-{tag}/bin/python",
                 "/io/scripts/test_wheel.py",
+                "--test-ca-fallback",
                 f"/io/dist/dartpy-*-{args.python_tag}-*-manylinux_2_28_{arch}.whl",
             ],
             check=True,

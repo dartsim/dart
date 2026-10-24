@@ -19,7 +19,12 @@ description = "Python API of Dynamic Animation and Robotics Toolkit."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "BSD-2-Clause"
-license-files = ["LICENSE", "NOTICE"]
+license-files = [
+  "LICENSE",
+  "NOTICE",
+  "python/dartpy/licenses/curl.txt",
+  "python/dartpy/licenses/openssl.txt",
+]
 authors = [{ name = "Jeongseok Lee", email = "jslee02@gmail.com" }]
 keywords = ["dartsim", "robotics"]
 classifiers = [
@@ -68,6 +73,7 @@ regex = '<version>(?P<value>[^<]+)</version>'
 BUILD_SHARED_LIBS = "OFF"
 DART_BUILD_DARTPY = "ON"
 DART_BUILD_GUI = "ON"
+DART_BUILD_UTILS_ASSETS = "OFF"
 DART_BUILD_WHEELS = "ON"
 DART_DARTPY_STABLE_ABI = "ON"
 DART_ENABLE_SIMD = "OFF"
@@ -81,6 +87,7 @@ DART_VERBOSE = "ON"
 [[tool.scikit-build.overrides]]
 if.platform-system = "^linux"
 inherit.cmake.define = "append"
+cmake.define.DART_BUILD_UTILS_ASSETS = "ON"
 cmake.define.DART_USE_SYSTEM_FILAMENT = "OFF"
 
 [[tool.scikit-build.overrides]]
