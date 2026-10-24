@@ -141,6 +141,8 @@ void FCLCollisionObject::updateEngineData()
   if (shape->getType() == dynamics::SoftMeshShape::getStaticType()) {
     DART_ASSERT(dynamic_cast<const SoftMeshShape*>(shape));
     auto softMeshShape = static_cast<const SoftMeshShape*>(shape);
+    if (softMeshShape->getAssimpMesh()->mNumFaces == 0u)
+      return;
 
     auto collGeom = const_cast<dart::collision::fcl::CollisionGeometry*>(
         mFCLCollisionObject->collisionGeometry().get());
