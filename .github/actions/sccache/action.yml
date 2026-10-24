@@ -48,14 +48,20 @@ runs:
         echo "prefix=$prefix" >> "$GITHUB_OUTPUT"
         {
           echo "SCCACHE_PREFIX=$prefix"
-          echo "SCCACHE_DIR=$RUNNER_TEMP/sccache"
+          # Self-hosted runners keep compiler objects across jobs and runs.
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            echo "SCCACHE_DIR=$HOME/.cache/dart-sccache/$prefix"
+          else
+            echo "SCCACHE_DIR=$RUNNER_TEMP/sccache"
+          fi
           echo "SCCACHE_PR_DIR=$RUNNER_TEMP/sccache-pr"
           echo "SCCACHE_SNAPSHOT=$SNAPSHOT"
           echo "SCCACHE_IDLE_TIMEOUT=0"
         } >> "$GITHUB_ENV"
 
+    # Self-hosted runners keep a warm local cache that an older archive must not overwrite.
     - name: Restore sccache (main)
-      if: inputs.phase == 'restore'
+      if: inputs.phase == 'restore' && runner.environment == 'github-hosted'
       uses: actions/cache/restore@v6
       with:
         path: ${{ runner.temp }}/sccache
@@ -112,11 +118,24 @@ runs:
         tar -C "$SCCACHE_DIR" -cf "$RUNNER_TEMP/sccache-pr.tar" -T "$RUNNER_TEMP/sccache-pr.txt"
         tar -C "$SCCACHE_PR_DIR" -xf "$RUNNER_TEMP/sccache-pr.tar"
 
+    - name: Stage self-hosted main snapshot
+      if: >-
+        always() && inputs.phase == 'save' && runner.environment == 'self-hosted'
+        && env.SCCACHE_SNAPSHOT == 'main'
+      shell: bash
+      run: |
+        # Cache versions include paths; publish from the hosted runner layout.
+        rm -rf "$RUNNER_TEMP/sccache"
+        if [ -d "$SCCACHE_DIR" ]; then
+          mkdir -p "$RUNNER_TEMP/sccache"
+          cp -a "$SCCACHE_DIR/." "$RUNNER_TEMP/sccache/"
+        fi
+
     - name: Save sccache
       if: always() && inputs.phase == 'save' && env.SCCACHE_SNAPSHOT != ''
       uses: actions/cache/save@v6
       with:
-        path: ${{ env.SCCACHE_SNAPSHOT == 'pr' && env.SCCACHE_PR_DIR || env.SCCACHE_DIR }}
+        path: ${{ env.SCCACHE_SNAPSHOT == 'pr' && env.SCCACHE_PR_DIR || format('{0}/sccache', runner.temp) }}
         key: ${{ env.SCCACHE_PREFIX }}-${{ env.SCCACHE_SNAPSHOT }}-${{ github.run_id }}-${{ github.run_attempt }}
 
     # The calling job needs actions: write.
