@@ -2,6 +2,8 @@
 
 ## DART 6
 
+### [DART 6.20.4 (Unreleased)](https://github.com/dartsim/dart/milestone/109)
+
 ### [DART 6.20.3 (2026-10-24)](https://github.com/dartsim/dart/milestone/108?closed=1)
 
 DART 6.20.3 is a patch release on the DART 6 line. It fixes contacts for small
