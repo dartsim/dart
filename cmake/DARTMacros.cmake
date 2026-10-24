@@ -74,11 +74,9 @@ macro(dart_get_filename_components _var _cacheDesc)
   set(${_var} "")
   foreach(header ${ARGN})
     get_filename_component(header ${header} NAME)
-    dart_append_to_cached_string(
-      ${_var}
-      ${_cacheDesc}"_HEADER_NAMES"
-      "${header}\;"
-    )
+    # Not a "\;"-joined string passed to another macro: CMake 4.4 warns
+    # (CMP0219) about backslashes in macro arguments.
+    list(APPEND ${_var} "${header}")
   endforeach()
 endmacro()
 
