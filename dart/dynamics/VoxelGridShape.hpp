@@ -42,7 +42,21 @@
   #include <dart/dynamics/Frame.hpp>
   #include <dart/dynamics/Shape.hpp>
 
+  // octomap 1.10.0 and older include <ciso646>, which libstdc++ 15 flags with
+  // a #warning under C++20; silence it for this include only.
+  #if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-W#warnings"
+  #elif defined(__GNUC__)
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wcpp"
+  #endif
   #include <octomap/octomap.h>
+  #if defined(__clang__)
+    #pragma clang diagnostic pop
+  #elif defined(__GNUC__)
+    #pragma GCC diagnostic pop
+  #endif
 
 namespace dart {
 namespace dynamics {

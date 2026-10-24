@@ -195,6 +195,8 @@ void SoftMeshShape::_buildMesh()
     itAIFace->mIndices[1] = itFace[1];
     itAIFace->mIndices[2] = itFace[2];
   }
+
+  incrementVersion();
 }
 
 void SoftMeshShape::update()

@@ -2695,17 +2695,9 @@ void parallelForIndexRange(
   }
 
   // Lazy Worlds reject callback mutations through the calling thread's chain.
-  auto* steppingWorld = tlsSteppingWorld;
+  auto* steppingWorld = common::detail::getWorldStepContext();
   threadPool->parallelFor(count, numThreads, [&](std::size_t i) {
-    struct RestoreSteppingWorld
-    {
-      WorldDeactivationState* mPrevious;
-      ~RestoreSteppingWorld()
-      {
-        tlsSteppingWorld = mPrevious;
-      }
-    } restore{tlsSteppingWorld};
-    tlsSteppingWorld = steppingWorld;
+    const common::detail::ScopedWorldStepContext context{steppingWorld};
     func(i);
   });
 }
@@ -5452,6 +5444,23 @@ void World::handleSimpleFrameNameChange(const dynamics::Entity* _entity)
 namespace dart {
 namespace common {
 namespace detail {
+
+simulation::WorldDeactivationState* getWorldStepContext()
+{
+  return simulation::tlsSteppingWorld;
+}
+
+ScopedWorldStepContext::ScopedWorldStepContext(
+    simulation::WorldDeactivationState* context)
+  : mPrevious(simulation::tlsSteppingWorld)
+{
+  simulation::tlsSteppingWorld = context;
+}
+
+ScopedWorldStepContext::~ScopedWorldStepContext()
+{
+  simulation::tlsSteppingWorld = mPrevious;
+}
 
 namespace {
 

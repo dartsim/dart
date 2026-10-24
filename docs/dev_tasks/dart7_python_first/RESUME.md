@@ -1,6 +1,6 @@
 # Resume
 
-## Current state (2026-10-19)
+## Current state (2026-10-24)
 
 M0 exited on 2026-10-14, when the scope artifacts
 ([#3728](https://github.com/dartsim/dart/pull/3728)) and the gz API inventory
@@ -18,13 +18,13 @@ agents (#3799, #3802) and lower SDF loading memory (#3803).
 portable and micro rows still compare. Milestone exits compare those rows
 against `812310ffb` instead (decided 2026-10-19).
 
-M1 is active. M1a merged in #3775. The first M1b, M1c and M1d packets,
-developed on unpublished branches, were re-cut from current `main` and
-published one per pull request; the rest of the native chain is still
-unpublished. Every merged M1 packet is C++ with no Python binding. The first
-Python 7.0 API on `main` is the package layout (#3847) with its empty
-`dartpy.experimental` namespace; none of the 44 target-shape tests has turned
-green yet.
+M1 is active. M1a merged in #3775 and M1b's compile and edit in #3869; the
+first M1c and M1d packets merged earlier, one per pull request, and counted
+stepping is next. The merged M1 packets are C++; of them, only the dynamic
+snapshots have a Python binding (#3842). The Python 7.0 API on `main` has the
+package layout (#3847), read-only arrays, `dartpy.errors` with the logging
+bridge, and `Transform` and `Rotation`. Three of the 44 target-shape tests
+pass: the logging bridge, transform composition and the rotation value.
 
 | Packet | Milestone | Pull request | State |
 | --- | --- | --- | --- |
@@ -87,40 +87,34 @@ parallel tracks, Python first:
    6.20.x. Building `dart-io` against each distribution's sdformat in those
    lanes is pending; the Ionic lane's DART still uses sdformat 16.
 
-Python packets in review:
+Merged since 2026-10-19:
 
-| Packet | Pull request |
-| --- | --- |
-| `capture_state()` / `restore_state()` with `WorldState` | [#3842](https://github.com/dartsim/dart/pull/3842) |
-| Read-only array returns | [#3843](https://github.com/dartsim/dart/pull/3843) |
-| `dartpy.errors` and the logging bridge | [#3844](https://github.com/dartsim/dart/pull/3844) |
-| Immutable `Transform` and `Rotation` | [#3845](https://github.com/dartsim/dart/pull/3845) |
-
-Once they merge, the transform, rotation and logging-bridge target-shape tests
-pass, 3 of 44.
+| Packet | Milestone | Pull request |
+| --- | --- | --- |
+| `capture_state()` / `restore_state()` with `WorldState` | M5a | [#3842](https://github.com/dartsim/dart/pull/3842); budget in [#3906](https://github.com/dartsim/dart/pull/3906) |
+| Read-only array returns | M5a | [#3843](https://github.com/dartsim/dart/pull/3843) |
+| `dartpy.errors` and the logging bridge | M5a | [#3844](https://github.com/dartsim/dart/pull/3844) |
+| Immutable `Transform` and `Rotation` | M5a | [#3845](https://github.com/dartsim/dart/pull/3845) |
+| Private extension renamed to `dartpy._core` | M5a | [#3873](https://github.com/dartsim/dart/pull/3873) |
+| API snapshot imports every public subpackage | M5a tooling | [#3872](https://github.com/dartsim/dart/pull/3872) |
+| Opt-in `World::compile()` and scoped `World::edit()` | M1b | [#3869](https://github.com/dartsim/dart/pull/3869) |
+| Changelog fragments on `main` | Process | [#3874](https://github.com/dartsim/dart/pull/3874) |
+| Project-home decisions of 2026-10-19 | Process | [#3867](https://github.com/dartsim/dart/pull/3867) |
 
 ## Next steps
 
-1. Land the Python packets still in review (#3842 to #3845). After the
-   changelog-fragment tooling ([#3874](https://github.com/dartsim/dart/pull/3874))
-   lands, each open PR moves its `CHANGELOG.md` hunk into a `changelog.d/`
-   fragment during its next base merge, and one follow-up turns
-   [the drafts](changelog-drafts.md) into fragments.
-2. Rename the private extension from `dartpy._dartpy`, which #3847 shipped, to
-   `dartpy._core` (decided 2026-10-19) in one mechanical follow-up: `NB_MODULE`
-   in `python/dartpy/module.cpp`, the CMake `OUTPUT_NAME`,
-   `python/dartpy/package/__init__.py`, the wheel scripts and their tests, the
-   binding tests that locate the extension,
-   and `docs/onboarding/python-bindings.md`. The design doc already names
-   `dartpy._core`.
-3. Compile and edit (M1b): its fix round keeps never-compiled C++ Worlds on
-   6.20 behavior and starts ownership tracking at `compile()`; then counted
-   stepping and the remapping clone. Each packet is re-qualified on current
-   `main`.
-4. The naming rulebook, then the facade slice.
-5. The typed solver policy with its per-solver parameters (M1e), and the
+1. Close the post-merge review findings: #3869's constraint-solver workers
+   must carry the stepping World's busy context, and a soft body's mesh
+   rebuild must bump its shape version so detectors refresh their geometry;
+   #3846's growth ratchet must count aliases, public exports of private
+   classes, members shared across unrelated classes, whole optional feature
+   groups and the tracked special methods.
+2. Counted stepping (M1d), re-qualified on current `main`, then the
+   remapping clone and `WorldBatch`.
+3. The naming rulebook, then the facade slice.
+4. The typed solver policy with its per-solver parameters (M1e), and the
    written `World` and solver contract.
-6. Add the macOS and Windows Python 3.15 wheels to 6.20.x once conda-forge's
+5. Add the macOS and Windows Python 3.15 wheels to 6.20.x once conda-forge's
    `bullet-cpp` builds for Python 3.15.
 
 ## Risks and recovery
@@ -128,6 +122,14 @@ pass, 3 of 44.
 - Main moves quickly. Before every approved push to a published branch, merge
   the latest `origin/main` (never rebase a published branch) and re-run the
   packet's gates.
+- Other sessions also merge `main` into program branches and merge program
+  pull requests. Fetch a branch's remote head before pushing to it, and push an
+  API-budget update together with the API it covers: #3842 merged without its
+  budget update, which #3906 then supplied.
+- `BodyNode` ids come from a process-wide counter that is not atomic, so
+  building models on several threads at once is a data race. Tests that build
+  models concurrently serialize construction; fixing the counter changes an
+  installed header and needs approval.
 - Gazebo lane results drift with the environment: after an update, gz-sim's
   `INTEGRATION_reset_sensors` failed for every DART version, including 6.20.0,
   because the test reads a freed component pointer. Classify failures against

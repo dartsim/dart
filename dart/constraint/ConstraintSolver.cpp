@@ -781,6 +781,16 @@ bool jointHasMimicReference(const dynamics::Joint* joint)
 //==============================================================================
 class ConstraintThreadPool : public common::detail::DeterministicExecutor
 {
+public:
+  template <typename Func>
+  void parallelFor(std::size_t count, std::size_t numThreads, Func&& func)
+  {
+    auto* steppingWorld = common::detail::getWorldStepContext();
+    DeterministicExecutor::parallelFor(count, numThreads, [&](std::size_t i) {
+      const common::detail::ScopedWorldStepContext context{steppingWorld};
+      func(i);
+    });
+  }
 };
 
 //==============================================================================
