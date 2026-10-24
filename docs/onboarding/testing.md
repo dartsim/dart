@@ -176,6 +176,36 @@ detection otherwise drops contact-surface customization without an error.
 These gates cover DART extension contracts. Continue to use the downstream
 Gazebo suites below for plugin and application compatibility.
 
+## Standalone installed headers in CTest
+
+`pixi run test` also runs `test_StandaloneHeaders`. It stages the build's
+default and `headers` install components, takes the header list from the
+`headers` component's install manifest, and compiles each header as the only
+include of its own translation unit. The consumer project finds the staged
+package with `find_package(DART)` and uses every installed component's flags.
+Headers compile as C++17 and, with GCC and Clang, also as C++20 with `-Werror`,
+so a header that no longer compiles on its own, or that gains a C++20
+diagnostic such as a deprecation, fails the test. MSVC compiles them with
+`/std:c++17` and the parsing options DART exports. DART's include directories
+are passed with `-I`, as pkg-config passes them, so warnings in DART headers
+are not hidden as system-header warnings.
+
+The script skips only the definition files that only their parent includes,
+which it lists, and the SIMD backend fragments that
+`dart/simd/detail/backend.hpp` selects for the target. It fails when a listed
+header is no longer installed. A cold run compiles about 900 translation units
+(about 100 seconds at 16 parallel jobs with GCC); with the compiler cache, a
+repeat run takes seconds. `CMAKE_BUILD_PARALLEL_LEVEL` caps the parallel
+compiles; the default is one per logical core. The test is registered when DART
+is the top-level project, except for static GUI builds with DART's private
+Filament SDK, whose installed package needs the consumer's own `Filament_ROOT`.
+To run it alone:
+
+```bash
+pixi run ctest --test-dir build/default/cpp/Release \
+  -R '^test_StandaloneHeaders$' --output-on-failure
+```
+
 ## GUI Visual Checks
 
 The Linux wheel C22 headless gate runs in the `Publish dartpy` workflow
