@@ -94,6 +94,7 @@ jobs:
             cmake -G Ninja -S . -B build/collision-fetch \
               -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX="$install_prefix" \
+              -DCMAKE_INSTALL_RPATH="$CONDA_PREFIX/lib" \
               -DDART_USE_SYSTEM_DEPENDENCIES=ON \
               -DDART_USE_SYSTEM_ODE=OFF -DDART_USE_SYSTEM_BULLET=OFF \
               -DDART_BUILD_GUI=OFF -DDART_BUILD_DARTPY=OFF -DDART_BUILD_PROFILE=OFF
@@ -112,7 +113,8 @@ jobs:
             cmake -G Ninja -S tools/package -B build/collision-fetch-consumer \
               -DDART_DIR="$install_prefix/share/dart/cmake" \
               -DCMAKE_PREFIX_PATH="$install_prefix;$CONDA_PREFIX" \
-              -DDART_TEST_COMPONENTS="collision-ode;collision-bullet"
+              -DDART_TEST_COMPONENTS="collision-ode;collision-bullet" \
+              -DDART_TEST_BULLET_DOUBLE=ON
             cmake --build build/collision-fetch-consumer -j 2
             export LD_LIBRARY_PATH="$install_prefix/lib:$CONDA_PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
             ctest --test-dir build/collision-fetch-consumer --output-on-failure -j 2
@@ -120,6 +122,18 @@ jobs:
             for library in BulletCollision LinearMath ode; do
               grep -F "=> $install_prefix/lib/lib${library}.so" build/collision-fetch-consumer/ldd.txt
             done
+            unset LD_LIBRARY_PATH
+            cmake -G Ninja -S tools/package -B build/collision-fetch-core-consumer \
+              -DDART_DIR="$install_prefix/share/dart/cmake" \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DDART_TEST_CORE_WITHOUT_COLLISION_PACKAGES=ON
+            cmake --build build/collision-fetch-core-consumer -j 2
+            ctest --test-dir build/collision-fetch-core-consumer --output-on-failure -j 2
+            export PKG_CONFIG_PATH="$install_prefix/lib/pkgconfig:$CONDA_PREFIX/lib/pkgconfig"
+            c++ tools/package/factory.cpp $(pkg-config --cflags --libs dart) \
+              -std=c++17 -Wl,-rpath,"$install_prefix/lib" \
+              -o build/collision-fetch-core-consumer/pkgconfig_factory
+            build/collision-fetch-core-consumer/pkgconfig_factory
             cmake --build build/collision-fetch --target dart-uninstall -j 2
             test -z "$(find "$install_prefix" \( -type f -o -type l \) -print -quit)"
             rm -rf "$install_prefix"

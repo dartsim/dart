@@ -33,6 +33,10 @@
 #include <dart/dart.hpp>
 #include <dart/simd/simd.hpp>
 
+#if defined(DART_PACKAGE_STATIC) && HAVE_BULLET
+  #include <dart/collision/bullet/BulletCollisionGroup.hpp>
+#endif
+
 #include <cmath>
 
 int main()
