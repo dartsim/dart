@@ -35,6 +35,8 @@
 #ifndef DART_COLLISION_TRITRIINTERSECTIONTEST_HPP_
 #define DART_COLLISION_TRITRIINTERSECTIONTEST_HPP_
 
+#include <iostream>
+
 #include <cmath>
 
 /* some macros */

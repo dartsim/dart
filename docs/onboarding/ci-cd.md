@@ -307,7 +307,8 @@ its changed guards or gated regressions; it does not block release by itself.
 ## Caching
 
 Build jobs save and restore per-run sccache snapshots, as described for
-Windows below; Linux, macOS and gz-physics share `.github/actions/sccache`.
+Windows below; Linux, macOS, gz-physics and the CI Filament Linux and macOS
+legs share `.github/actions/sccache`.
 After saving, each job runs `.github/actions/sccache/prune.sh`: in its ref it
 keeps its part's newest snapshot and deletes the rest, and on main pushes it
 also deletes its part's PR snapshots unused for a day. Pruning runs inside the

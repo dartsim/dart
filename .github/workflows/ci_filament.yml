@@ -29,6 +29,9 @@ jobs:
     name: ${{ matrix.runner }}-Filament-functional
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 360
+    permissions:
+      actions: write # Save compiler cache prunes superseded snapshots.
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -45,6 +48,11 @@ jobs:
       LIBGL_ALWAYS_SOFTWARE: "1"
       # `pixi run config` builds the GUI and dartpy; Windows uses its own task.
       BUILD_DIR: ${{ matrix.runner == 'windows-2022' && 'build/gui-ci/cpp' || 'build/gui-ci/cpp/Release' }}
+      # One build, preprocessor entries included, caches about 63 MiB (local
+      # Linux measurement); the cap holds about two.
+      SCCACHE_CACHE_SIZE: "128M"
+      # The compiler-cache action's OS field; Windows (nightly only) builds cold.
+      COMPILER_CACHE_OS: ${{ matrix.runner == 'macos-15' && 'macos' || 'linux' }}
     steps:
       - uses: actions/checkout@v7
       - name: Set parity output directory
@@ -68,6 +76,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb libgl1 libegl1
           echo "VK_DRIVER_FILES=$GITHUB_WORKSPACE/.pixi/envs/gui-ci/share/vulkan/icd.d/lvp_icd.x86_64.json" >> "$GITHUB_ENV"
+      - name: Restore compiler cache
+        if: runner.os != 'Windows'
+        uses: ./.github/actions/sccache
+        with:
+          phase: restore
+          os: ${{ env.COMPILER_CACHE_OS }}
+          part: Filament
+          pixi-environment: gui-ci
       # As in CI Windows, default MSVC options drop DART's /Zi so parallel
       # sccache compiles do not share a program database.
       - name: Configure Filament
@@ -75,6 +91,7 @@ jobs:
           pixi run -e gui-ci config -- -DDART_ENABLE_GUI_SMOKE_TESTS=ON
           ${{ runner.os == 'Windows' && '-DDART_MSVC_DEFAULT_OPTIONS=ON' || '' }}
       - name: Build GUI tests and bindings
+        id: build
         run: >-
           pixi run -e gui-ci cmake --build ${{ env.BUILD_DIR }} --parallel 4
           --target test_GuiDescriptors test_GuiInteractions test_GuiImageDecoders test_GuiViewer test_GuiParity test_GuiMesh test_FilamentBackend offscreen_capture_smoke dartpy
@@ -127,6 +144,19 @@ jobs:
             ${{ env.BUILD_DIR }}/CMakeCache.txt
             ${{ env.BUILD_DIR }}/dart/gui/filament_generated/*.filamat
             ${{ runner.temp }}/filament-parity
+      - name: Compiler cache stats
+        if: always() && runner.os != 'Windows'
+        run: pixi run -e gui-ci sccache --show-stats || true
+      - name: Save compiler cache
+        if: >-
+          always() && runner.os != 'Windows'
+          && contains(fromJSON('["success", "failure", "cancelled"]'), steps.build.outcome)
+        uses: ./.github/actions/sccache
+        with:
+          phase: save
+          os: ${{ env.COMPILER_CACHE_OS }}
+          part: Filament
+          pixi-environment: gui-ci
 
   # Real NVIDIA Vulkan coverage on one resource-capped self-hosted runner. The
   # runner group is restricted server-side to this file on main; the `if` is
