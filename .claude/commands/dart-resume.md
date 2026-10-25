@@ -84,6 +84,10 @@ evidence ledger first, not as cleanup inventory:
 - Do not call a dev task complete while `docs/dev_tasks/<task>/` still exists.
   If implementation is done but the folder remains, the remaining work is the
   durable-doc promotion plus folder cleanup.
+- Delegate by default under `docs/ai/orchestration.md`, honoring a per-task
+  `delegation=off` opt-out, and run its review loop before calling the work
+  done: at least two clean independent review passes on the post-fix state
+  (under `delegation=off`, a role-separated local review).
 - Run `pixi run lint` before committing.
 - Run relevant tests; use `pixi run test-all` before done when feasible, and
   `pixi run -e gazebo test-gz` when package or downstream Gazebo/gz-physics
