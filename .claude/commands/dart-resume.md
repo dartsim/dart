@@ -78,8 +78,9 @@ evidence ledger first, not as cleanup inventory:
   folder completely in the completing change.
 - If remaining work is real but blocked by a substantial design decision,
   maintainer direction, external dependency, or scope boundary that should not
-  be resolved in the current session, ask the human before retiring the folder
-  unless prior maintainer direction is already recorded. Record the parked or
+  be resolved in the current session, ask the human before retiring the folder.
+  Skip the question when prior maintainer direction is already recorded.
+  Record the parked or
   blocked work in the durable owner doc before deletion.
 - Do not call a dev task complete while `docs/dev_tasks/<task>/` still exists.
   If implementation is done but the folder remains, the remaining work is the
