@@ -82,7 +82,9 @@ private:
   common::ResourceRetrieverPtr mResourceRetriever;
 };
 
-class AssimpInputResourceAdaptor : public Assimp::IOStream
+class [[deprecated(
+    "Use MeshShape's TriMesh-based APIs; Assimp APIs will be removed in DART "
+    "8.")]] AssimpInputResourceAdaptor : public Assimp::IOStream
 {
 public:
   explicit AssimpInputResourceAdaptor(const common::ResourcePtr& _resource);
@@ -91,12 +93,12 @@ public:
   /// \brief Read from the file
   ///
   /// See fread() for more details
-  std::size_t Read(
-      void* pvBuffer, std::size_t pSize, std::size_t pCount) override;
+  std::size_t Read(void* pvBuffer, std::size_t pSize, std::size_t pCount)
+      override;
 
   /// \brief Not implemented. This is a read-only stream.
-  std::size_t Write(
-      const void* pvBuffer, std::size_t pSize, std::size_t pCount) override;
+  std::size_t Write(const void* pvBuffer, std::size_t pSize, std::size_t pCount)
+      override;
 
   /// \brief Set the read/write cursor of the file
   ///
@@ -121,7 +123,10 @@ private:
   common::ResourcePtr mResource;
 };
 
-aiFileIO createFileIO(Assimp::IOSystem* adaptor);
+[[deprecated(
+    "Use MeshShape's TriMesh-based APIs; Assimp APIs will be removed in DART "
+    "8.")]] aiFileIO
+createFileIO(Assimp::IOSystem* adaptor);
 
 } // namespace dynamics
 } // namespace dart

@@ -1020,7 +1020,9 @@ const aiScene* MeshShape::loadMesh(
   // the IOSystem in an aiFileIO from Assimp's C API. Yes, this API is
   // completely ridiculous...
   AssimpInputResourceRetrieverAdaptor systemIO(retriever);
+  DART_SUPPRESS_DEPRECATED_BEGIN
   aiFileIO fileIO = createFileIO(&systemIO);
+  DART_SUPPRESS_DEPRECATED_END
 
   // Import the file.
   const aiScene* scene = aiImportFileExWithProperties(
@@ -1092,7 +1094,9 @@ const aiScene* MeshShape::loadPolygonScene(
   }
 
   AssimpInputResourceRetrieverAdaptor systemIO(retriever);
+  DART_SUPPRESS_DEPRECATED_BEGIN
   aiFileIO fileIO = createFileIO(&systemIO);
+  DART_SUPPRESS_DEPRECATED_END
 
   const aiScene* scene = aiImportFileExWithProperties(
       uriString.c_str(),

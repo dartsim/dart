@@ -33,6 +33,7 @@
 #include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Deprecated.hpp"
 #include "dart/common/Macros.hpp"
 
 #include <assimp/IOStream.hpp>
@@ -87,10 +88,14 @@ Assimp::IOStream* AssimpInputResourceRetrieverAdaptor::Open(
     return nullptr;
   }
 
-  if (const common::ResourcePtr resource = mResourceRetriever->retrieve(pFile))
+  if (const common::ResourcePtr resource
+      = mResourceRetriever->retrieve(pFile)) {
+    DART_SUPPRESS_DEPRECATED_BEGIN
     return new AssimpInputResourceAdaptor(resource);
-  else
-    return nullptr;
+    DART_SUPPRESS_DEPRECATED_END
+  }
+
+  return nullptr;
 }
 
 //==============================================================================

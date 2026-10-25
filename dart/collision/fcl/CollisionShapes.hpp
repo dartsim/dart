@@ -47,7 +47,10 @@ namespace dart {
 namespace collision {
 
 template <class BV>
-::fcl::BVHModel<BV>* createMesh(
+[[deprecated(
+    "Use MeshShape::getTriMesh(); Assimp APIs will be removed in DART "
+    "8.")]] ::fcl::BVHModel<BV>*
+createMesh(
     float _scaleX,
     float _scaleY,
     float _scaleZ,

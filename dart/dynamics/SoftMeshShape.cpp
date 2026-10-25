@@ -77,6 +77,37 @@ const aiMesh* SoftMeshShape::getAssimpMesh() const
 }
 
 //==============================================================================
+std::shared_ptr<math::TriMesh<double>> SoftMeshShape::getTriMesh() const
+{
+  auto mesh = std::make_shared<math::TriMesh<double>>();
+
+  // Compute the positions as update() does. PointMass::getLocalPosition()
+  // refreshes the soft body's shared transform caches, which a const read
+  // must not do.
+  const auto numPointMasses = mSoftBodyNode->getNumPointMasses();
+  const auto& pointStates = mSoftBodyNode->mAspectState.mPointStates;
+  const auto& pointProperties = mSoftBodyNode->mAspectProperties.mPointProps;
+  mesh->reserveVertices(numPointMasses);
+  if (pointStates.size() == numPointMasses
+      && pointProperties.size() == numPointMasses) {
+    for (std::size_t i = 0u; i < numPointMasses; ++i)
+      mesh->addVertex(pointStates[i].mPositions + pointProperties[i].mX0);
+  } else {
+    for (const auto* pointMass : mSoftBodyNode->getPointMasses())
+      mesh->addVertex(pointMass->getLocalPosition());
+  }
+
+  const auto numFaces = mSoftBodyNode->getNumFaces();
+  mesh->reserveTriangles(numFaces);
+  for (std::size_t i = 0u; i < numFaces; ++i) {
+    mesh->addTriangle(
+        mSoftBodyNode->getFace(i).cast<math::TriMesh<double>::Index>());
+  }
+
+  return mesh;
+}
+
+//==============================================================================
 const SoftBodyNode* SoftMeshShape::getSoftBodyNode() const
 {
   return mSoftBodyNode;
