@@ -45,6 +45,8 @@ namespace detail {
 // with the core library but is deliberately excluded from installation.
 struct DARTCollisionDetectorAccessor
 {
+  static std::size_t manifoldId(const CollisionGroup& group, std::size_t index);
+
   static void clearHistory(
       DARTCollisionDetector& detector, CollisionGroup& group);
 

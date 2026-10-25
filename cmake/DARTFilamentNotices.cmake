@@ -8,6 +8,15 @@ function(dart_filament_validate_root_license filename expected_sha256)
   endif()
 endfunction()
 
+# Offline, a notice that is neither staged nor in the supplied tree cannot be
+# downloaded: name the ways to provide it, in dart_check_fetchcontent's style.
+function(dart_filament_offline_notice_error notice)
+  message(
+    FATAL_ERROR
+    "Cannot fetch the Filament runtime notice ${notice} with FETCHCONTENT_FULLY_DISCONNECTED=ON: pre-seed FETCHCONTENT_SOURCE_DIR_DART_FILAMENT_SDK with the Filament 1.77.3 source tree, or set DART_BUILD_GUI=OFF for a headless build."
+  )
+endfunction()
+
 function(dart_filament_stage_notices prefix)
   set(_source "${ARGV1}")
   set(
@@ -51,6 +60,9 @@ function(dart_filament_stage_notices prefix)
     get_filename_component(_notice_dir "${_target}" DIRECTORY)
     file(MAKE_DIRECTORY "${_notice_dir}")
     if(_source)
+      if(FETCHCONTENT_FULLY_DISCONNECTED AND NOT EXISTS "${_source}/${_notice}")
+        dart_filament_offline_notice_error("${_notice}")
+      endif()
       file(SHA256 "${_source}/${_notice}" _source_sha256)
       if(NOT _source_sha256 STREQUAL _sha256)
         message(
@@ -65,6 +77,9 @@ function(dart_filament_stage_notices prefix)
         file(SHA256 "${_target}" _cached_sha256)
       endif()
       if(NOT _cached_sha256 STREQUAL _sha256)
+        if(FETCHCONTENT_FULLY_DISCONNECTED)
+          dart_filament_offline_notice_error("${_notice}")
+        endif()
         file(
           DOWNLOAD
             "https://raw.githubusercontent.com/google/filament/v1.77.3/${_notice}"

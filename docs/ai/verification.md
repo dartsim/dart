@@ -116,7 +116,8 @@ DART renders off-screen through `dart::gui::Viewer` with
 `setUpViewForCapture`. Linux capture uses Vulkan without an X11 or Wayland
 display; a suitable Vulkan GPU driver or Mesa Lavapipe software driver is
 required. To force Lavapipe, set `VK_DRIVER_FILES` to the Pixi environment's
-`$CONDA_PREFIX/share/vulkan/icd.d/lvp_icd.x86_64.json`. Native-window tests
+`$CONDA_PREFIX/share/vulkan/icd.d/lvp_icd.x86_64.json`, or to apt's
+`/usr/share/vulkan/icd.d/lvp_icd.json`. Native-window tests
 (`ctest --test-dir build/<env>/cpp/Release -L filament-native`, or
 `ctest --test-dir build/<env>/cpp -C Release -L filament-native` on Windows)
 still need a desktop session or Xvfb on Linux, where windows use X11 (XWayland
@@ -167,8 +168,8 @@ engine-rendered overlay on/off pixel regression
 (`pixi run test-agent-debug-overlay`). A second A/B runs through
 `agent-capture` itself with identical cameras and requires the
 contact/bounds/label layers to change at least 128
-pixels; it also requires rendered contact-marker color pixels, while retaining
-the sidecar's count of any filtered DART sentinel contacts, then proves
+pixels. It also requires rendered contact-marker color pixels, while retaining
+the sidecar's count of any filtered DART sentinel contacts. It then proves
 contacts, collision bounds, and labels each change pixels independently. This
 keeps the camera assessment, Filament debug overlay, off-screen
 renderer, artifact write, overlay injection, and image-verdict path covered end
@@ -225,10 +226,16 @@ readable alongside their contact markers and collision bounds.
   `scripts/agent_debug_overlay.py` renders the debug layers *through the
   engine* via a `dart.gui.DebugOverlay` viewer attachment. These layers become
   always-on-top overlay lines:
-  a ground grid, the world frame, contacts (implausible sentinel contact points
-  are skipped and counted), body frames, velocity arrows, centers of mass,
-  inertia-equivalent boxes (eigendecomposed moment of inertia), collision
-  bounding boxes (world-transformed local AABBs), and trajectory polylines.
+  - a ground grid;
+  - the world frame;
+  - contacts (implausible sentinel contact points are skipped and counted);
+  - body frames;
+  - velocity arrows;
+  - centers of mass;
+  - inertia-equivalent boxes (eigendecomposed moment of inertia);
+  - collision bounding boxes (world-transformed local AABBs);
+  - trajectory polylines.
+
   Labels become world-anchored text. The engine draws all of them unlit, with
   depth testing disabled, after the scene. The debug primitives stay legible on
   top of the geometry they annotate instead of being buried in depth or

@@ -41,6 +41,7 @@
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/dart/DARTCollisionGroup.hpp"
 #include "dart/collision/dart/DARTCollisionObject.hpp"
+#include "dart/collision/dart/detail/DARTCollisionObjectEngineData.hpp"
 #include "dart/collision/fcl/fcl.hpp"
 #include "dart/common/Factory.hpp"
 #include "dart/common/Macros.hpp"
@@ -76,6 +77,7 @@
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include <array>
 #include <iostream>
 #include <memory>
 #include <ostream>
@@ -140,11 +142,29 @@ private:
   }
 };
 
-// Keep the pre-consolidation DART 6.20 object layout. The existing DART shape
-// and soft caches remain in place; only new consolidated-engine state may live
-// externally.
-class ReleasedDARTCollisionObjectLayout : public CollisionObject
+// release-6.20 keeps the DART 6.20 layout. Main retains its cache prefix and
+// adds the detector-local manifold id under the DART 7 ABI window for classes
+// outside the Gazebo API inventory.
+class DART7CollisionObjectLayout : public CollisionObject
 {
+public:
+  DART7CollisionObjectLayout(
+      CollisionDetector* detector, const ShapeFrame* frame)
+    : CollisionObject(detector, frame)
+  {
+  }
+
+  std::array<std::ptrdiff_t, 2> memberOffsets() const
+  {
+    const auto* start = reinterpret_cast<const char*>(this);
+    return {
+        {reinterpret_cast<const char*>(&mCachedShape) - start,
+         reinterpret_cast<const char*>(&mManifoldId) - start}};
+  }
+
+private:
+  void updateEngineData() override {}
+
 protected:
   dynamics::ConstShapePtr mCachedShape;
   const std::string* mCachedShapeType;
@@ -166,12 +186,13 @@ protected:
   std::vector<int> mCachedSoftFaceBvhIndices;
   bool mCachedSoftFacesDirty;
   bool mCachedSoftFaceTopologyDirty;
+  std::size_t mManifoldId;
 };
 
 static_assert(
-    sizeof(DARTCollisionObject) == sizeof(ReleasedDARTCollisionObjectLayout));
+    sizeof(DARTCollisionObject) == sizeof(DART7CollisionObjectLayout));
 static_assert(
-    alignof(DARTCollisionObject) == alignof(ReleasedDARTCollisionObjectLayout));
+    alignof(DARTCollisionObject) == alignof(DART7CollisionObjectLayout));
 
 class InspectableDARTCollisionGroup final : public DARTCollisionGroup
 {
@@ -196,6 +217,20 @@ static_assert(
     sizeof(DARTCollisionGroup) == sizeof(ReleasedDARTCollisionGroupLayout));
 static_assert(
     alignof(DARTCollisionGroup) == alignof(ReleasedDARTCollisionGroupLayout));
+
+TEST(CollisionLayout, DART7CollisionObjectMemberOffsets)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto frame = std::make_shared<SimpleFrame>();
+  frame->setShape(std::make_shared<SphereShape>(0.5));
+  InspectableDARTCollisionGroup group(detector);
+  group.addShapeFrame(frame.get());
+  DART7CollisionObjectLayout reference(detector.get(), frame.get());
+  EXPECT_EQ(
+      collision::detail::DARTCollisionObjectAccessor::memberOffsets(
+          group.getDARTCollisionObject(0)),
+      reference.memberOffsets());
+}
 
 class ToggleBodyNodeCollisionFilter : public BodyNodeCollisionFilter
 {

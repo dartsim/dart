@@ -186,9 +186,12 @@ download and compile the pinned Filament sources, which requires Clang 20 or
 newer and Ninja; macOS arm64 and 64-bit Windows builds download the pinned
 prebuilt SDK. An installed SDK without a ``notices`` directory, such as the
 conda-forge package, makes configuration download the Filament 1.77.3 license
-notices, so the first GUI configure needs network access. A static
-``dart-gui`` built with the private SDK does not install it; its consumers set
-``Filament_ROOT`` to that SDK.
+notices, so the first GUI configure needs network access. Pointing
+``FETCHCONTENT_SOURCE_DIR_DART_FILAMENT_SDK`` at the Filament 1.77.3 source
+tree supplies them instead, and with ``FETCHCONTENT_FULLY_DISCONNECTED=ON``
+configuration never downloads them. A static ``dart-gui`` built with the
+private SDK does not install it; its consumers set ``Filament_ROOT`` to that
+SDK.
 
 These source-build requirements differ from the runtime requirements of
 published :doc:`dartpy wheels </dartpy/user_guide/installation>`.

@@ -68,9 +68,14 @@ their own SDK and license requirements. Existing
 populated source directories in the build tree are accepted. The stable
 FetchContent names are `googletest`, `benchmark`, `tracy`, `nanobind`,
 `dart_imgui`, `dart_filament_sdk`, `glfw`, `ode`, `bullet`, `dart_libccd`, and
-`dart_fcl`. The umbrella
-does not select system nanobind, ImGui, or Filament; set those switches
-separately when needed. Pixi configure tasks use the umbrella, except
+`dart_fcl`. With
+`DART_USE_SYSTEM_FILAMENT=ON`, an installed SDK without Filament's `notices/`
+tree takes its license notices from the Filament source tree that
+`FETCHCONTENT_SOURCE_DIR_DART_FILAMENT_SDK` names. Without that tree,
+configure downloads them and an offline configure stops
+([Offline builds](building.md#offline-builds)). The umbrella does not select
+system nanobind, ImGui, or Filament; set those switches separately when
+needed. Pixi configure tasks use the umbrella, except
 `pixi run -e profile config-tracy`, which sets `DART_USE_SYSTEM_TRACY=OFF`:
 conda-forge's Tracy 0.14.1 client is built without `TRACY_ENABLE`, so its
 library is empty. A fetched Tracy is the 0.14.1 tag archive, downloaded
@@ -120,7 +125,7 @@ depends on how much of the dependency set it supplies:
 | Tier | Environment | What builds | Enforced by |
 | ---- | ----------- | ----------- | ----------- |
 | 1 | Stock Ubuntu 24.04: apt packages plus OSRF's sdformat | `dart` and `dart-io`, headless | The nightly `CI Stock Ubuntu 24.04 (apt)` lane |
-| 2 | Ubuntu 24.04 plus DART's fallbacks (network at configure, Clang 20, pip nanobind and scikit-build-core) | Adds `dart-gui` and dartpy | No lane yet |
+| 2 | Ubuntu 24.04 plus DART's fallbacks (network at configure, Clang 20 from noble-updates) | Adds `dart-gui` and dartpy | The nightly `CI Ubuntu 24.04 with fallbacks` lane |
 | 3 | Pixi, conda-forge and wheels | Everything | The Pixi lanes and the wheel builds |
 
 The Tier 1 lane is `.github/workflows/ci_stock_noble.yml`, which `nightly.yml`
@@ -149,6 +154,59 @@ and with `DART_USE_SYSTEM_FCL=OFF` (see the FCL note in
 `docs/readthedocs/dart/developer_guide/build.rst`), so system FCL stays
 unpatched. Remove the exclusion when the distribution's FCL
 stops aborting.
+
+The Tier 2 lane is `.github/workflows/ci_noble_fallbacks.yml`, which
+`nightly.yml` also calls every night. A pull request that changes the file runs
+it too, and `gh workflow run ci_noble_fallbacks.yml --ref <branch>` runs it
+alone. Like the Tier 1 lane, it runs in an `ubuntu:24.04` container without
+pixi, and it installs the Tier 1 packages and `libsdformat14-dev`. It adds these
+packages:
+
+| Packages | Why |
+| -------- | --- |
+| `clang-20` | Builds the private Filament SDK. It comes from noble-updates; the `noble` pocket stops at Clang 18. |
+| `libgl-dev` | Required. It pulls in `libglx-dev`, which provides the `GL/glx.h` that Filament includes. |
+| `libx11-dev`, `libxcursor-dev`, `libxext-dev`, `libxi-dev`, `libxinerama-dev`, `libxrandr-dev` | Build the fetched GLFW 3.4, which uses X11 only. |
+| `libpng-dev`, `libjpeg-dev` | Decode textures and write PNG captures. |
+| `python3-dev`, `python3-numpy`, `python3-pytest` | Build and test dartpy. |
+| `mesa-vulkan-drivers`, `libvulkan1` | Provide Lavapipe, the software Vulkan driver. |
+| `libgl1`, `libegl1`, `libgl1-mesa-dri`, `xvfb`, `xauth` | Run the native-window tests under Xvfb. |
+| `fonts-dejavu-core` | Supplies the DejaVu Sans font that `test_GuiParity` loads by default. |
+
+The CMake route to dartpy needs no pip packages: configure fetches nanobind
+3.1.0, and apt supplies Python, NumPy and pytest. Apt names Lavapipe's ICD
+`/usr/share/vulkan/icd.d/lvp_icd.json`, where conda names it
+`lvp_icd.x86_64.json`, so the lane sets `VK_DRIVER_FILES` to the apt path. The
+Tier 1 list already has `git`, which a dartpy test needs for `git rev-parse`.
+
+Configure adds `DART_BUILD_GUI=ON`, `DART_BUILD_DARTPY=ON`,
+`DART_ENABLE_GUI_SMOKE_TESTS=ON`, `DART_USE_SYSTEM_FILAMENT=OFF` and
+`DART_USE_SYSTEM_GLFW=OFF` to the Tier 1 switches, and it drops
+`FETCHCONTENT_FULLY_DISCONNECTED`. The lane sets the Filament and GLFW switches
+explicitly, so it keeps testing the fallbacks if their defaults change.
+Configure then downloads the Filament 1.77.3 sources (828 MB) and builds the SDK
+with Clang 20 and libstdc++. It also fetches GLFW 3.4, Dear ImGui and nanobind.
+A missing Clang 20 stops configure only after the download, and a missing
+`libgl-dev` only after about 15 CPU-minutes of SDK build.
+
+The lane builds `all`, `tests`, `dartpy` and `dartpy_gc_test`, then runs these
+steps in order:
+
+1. CTest without the `gui-device` tests and `test_Distance`.
+2. The GUI CTest tests (`-L gui -LE filament-native`) on Lavapipe, with no
+   display.
+3. `python/tests/unit/gui` and `python/tests/integration`, also on Lavapipe.
+4. The native-window tests and `offscreen_capture_smoke` under `xvfb-run`.
+5. `scripts/test_gui_install.py`, which installs the GUI, relocates the
+   installation and builds a C++17 consumer.
+6. The `pytest` target, which runs the other dartpy tests.
+
+Expect about 40 minutes cold on a 4-vCPU hosted runner. The compiler cache
+(ccache, which also covers the Filament SDK) holds about 100 MB. To reproduce
+the job, run its steps by hand in the same `docker run` command as for Tier 1. A
+dartpy test runs `git rev-parse`, so mount a regular clone, not a linked
+worktree, and run `git config --global --add safe.directory /src` first, as
+`actions/checkout` does in CI.
 
 ## Test Tooling
 

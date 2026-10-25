@@ -25,6 +25,7 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | `ci_freebsd.yml`                  | CI FreeBSD (VM)              | nightly, dispatch               | FreeBSD build + test in a VM |
 | `ci_toolchain.yml`                | CI Toolchain (Linux)         | nightly, dispatch               | Ubuntu 24.04 floor (gcc 13, clang 18) and newest (gcc 16, clang 19) build + test |
 | `ci_stock_noble.yml`              | CI Stock Ubuntu 24.04 (apt)  | nightly, dispatch, PRs changing it | Tier 1 of the [support tiers](build-system.md#support-tiers): the core and `dart-io` built and tested without pixi in an `ubuntu:24.04` container, from apt packages plus OSRF's sdformat |
+| `ci_noble_fallbacks.yml`          | CI Ubuntu 24.04 with fallbacks | nightly, dispatch, PRs changing it | Tier 2 of the [support tiers](build-system.md#support-tiers): the GUI and dartpy built and tested without pixi in an `ubuntu:24.04` container, from apt packages plus DART's fallbacks (a fetched GLFW, nanobind and ImGui, and a Filament SDK built with Clang 20) |
 | `codeql.yml`                      | CodeQL                       | nightly, dispatch               | Static security analysis |
 | `publish_dartpy.yml`              | Publish dartpy               | nightly, version tags, dispatch | Build, repair, verify, and test wheels; publish from version tags |
 | `nightly.yml`                     | Nightly                      | daily, on demand                | Everything above, on `main`; files `nightly-failure` issues |
@@ -414,8 +415,9 @@ that would push it past that, without catching failures the per-PR jobs miss,
 runs nightly instead: the VS 2022 baseline, the Filament Windows leg, and the
 Windows build-requirement checks (CI Linux runs those on every PR).
 
-The `stock-noble` group (`ci_stock_noble.yml`) does not use pixi: reproduce it
-in Docker as the [support tiers](build-system.md#support-tiers) describe.
+The `stock-noble` and `noble-fallbacks` groups (`ci_stock_noble.yml` and
+`ci_noble_fallbacks.yml`) do not use pixi: reproduce them in Docker as the
+[support tiers](build-system.md#support-tiers) describe.
 
 Useful commands:
 

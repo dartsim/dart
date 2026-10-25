@@ -217,10 +217,10 @@ improvements with unchanged motion use plots. Record why visual corroboration
 is unavailable or irrelevant and name replacement evidence when that applies.
 
 Write each paragraph and list item on one line, and separate paragraphs with a
-blank line. Unlike Markdown files in the repository, where a single newline is
-a soft break, GitHub renders every newline in PR descriptions, comments,
-issues, and release notes as a line break, so text wrapped at a fixed width,
-as this repository's docs are, breaks mid-sentence.
+blank line. In this repository's Markdown files, a single newline is a soft
+break. GitHub instead renders every newline in PR descriptions, comments,
+issues, and release notes as a line break. Text wrapped at a fixed width, as
+this repository's docs are, therefore breaks mid-sentence there.
 
 This guidance follows [Google's description advice](https://google.github.io/eng-practices/review/developer/cl-descriptions.html)
 and [GitHub's review guidance](https://docs.github.com/en/pull-requests/concepts/helping-others-review-your-changes):

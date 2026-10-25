@@ -100,6 +100,14 @@ if(DART_USE_SYSTEM_FILAMENT)
       break()
     endif()
   endforeach()
+  # Without such a tree (conda-forge's SDK has none), take the notices from the
+  # Filament source tree that seeds the private SDK's FetchContent source.
+  if(
+    NOT _filament_notice_source
+    AND NOT "${FETCHCONTENT_SOURCE_DIR_DART_FILAMENT_SDK}" STREQUAL ""
+  )
+    set(_filament_notice_source "${FETCHCONTENT_SOURCE_DIR_DART_FILAMENT_SDK}")
+  endif()
   dart_filament_stage_notices("${DART_FILAMENT_LICENSE_DIRECTORY}" "${_filament_notice_source}")
 endif()
 file(

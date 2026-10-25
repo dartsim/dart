@@ -21,16 +21,20 @@ Priority order is document order. Active implementation handoff remains in
   temporary project home is retired. See the
   [host and model architecture](../onboarding/architecture.md#python-demo-catalog)
   and [remaining M6b scope](../dev_tasks/dart7_python_first/README.md#demo-consolidation-d31b).
-- Next step: M0 exited on 2026-10-14. Four chains run in parallel, Python
-  first: M5a's snapshot, package, arrays, errors and `Transform` packets (in
-  review or merged; D4, D6, D11, D22, D28 and D29 fix their central public
-  names, and the rulebook governs the rest), then the facade slice and the
-  API areas under the approved naming rulebook; compile and edit (M1b),
-  counted stepping (M1d), the remapping clone (M1i) and `WorldBatch`; the
-  typed solver policy (M1e), the written contract and the rigid domain
-  boundary; and M6b through checkpoint C2. Step-path PRs land in the
-  program's order, each re-qualified on current `main`; see the
-  [M1 packet table](../dev_tasks/dart7_python_first/RESUME.md).
+- Next step: four chains run in parallel, Python first. The project home's
+  [status](../dev_tasks/dart7_python_first/README.md#status) maps them.
+  1. Python API (M5): the snapshot, package, arrays, errors and `Transform`
+     packets and the naming rulebook (#3956) have merged. The facade slice
+     and the remaining API areas come next.
+  2. Native core (M1): compile and edit (M1b) and counted stepping (M1d,
+     #3927) have merged. The remapping clone (M1i) and `WorldBatch` come next,
+     then actuators, sensors and checkpoints.
+  3. Multi-solver (M1e): the typed solver policy, the written contract and
+     the rigid domain boundary.
+  4. Rendering (M6b) through checkpoint C2.
+
+  Step-path PRs land in the program's order, each re-qualified on current
+  `main`; see the [M1 packet table](../dev_tasks/dart7_python_first/RESUME.md).
 - Gate: Per-packet gates and two clean reviews; bit-identical refactors per
   detector; zero new steady-state allocations; Gazebo lanes for every core
   change.
@@ -48,8 +52,10 @@ Priority order is document order. Active implementation handoff remains in
   DART's own code may build as C++20 while the exported interface stays
   C++17, subject to the maintainer decisions recorded in the project home.
   FCL and the collision-backend lifecycle stay with PLAN-620.
-- Next step: Record the maintainer decision batch, then land the Gazebo
-  contact-surface probe assertion (DEP-0) and the decision-free packets.
+- Next step: the remaining packets, with DEP-21 (DART's own targets as C++20)
+  last. Every PR listed in the project home has merged, including both
+  release-6.20 backports, and no maintainer decision is queued; see its
+  [status](../dev_tasks/dart7_dependencies/README.md#status).
 - Gate: Per-packet gates in the project home, two clean reviews, and the
   Gazebo lanes against each packet's base for any change to installed
   headers, exported targets or the package config.

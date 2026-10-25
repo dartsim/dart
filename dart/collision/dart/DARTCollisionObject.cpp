@@ -100,6 +100,7 @@ DARTCollisionObject::DARTCollisionObject(
   : CollisionObject(collisionDetector, shapeFrame)
 {
   auto* detector = static_cast<DARTCollisionDetector*>(collisionDetector);
+  mManifoldId = detector->allocateManifoldId();
   // Anchor the external engine state in a member present in the released
   // object layout. This also cleans up objects destroyed through an old inline
   // destructor or a directly constructed downstream subclass.

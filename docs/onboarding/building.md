@@ -176,15 +176,26 @@ The umbrella leaves these to the packager:
   its demo app host and dartpy without `dartpy.viewer`.
 - dartpy fetches nanobind unless `DART_USE_SYSTEM_NANOBIND=ON` finds nanobind
   3.1.x through `nanobind_DIR` or `python -m nanobind --cmake_dir`.
-- The GUI installs Filament's license and notices. It copies them from the SDK
-  root (`Filament_ROOT`, or the directory above the SDK's include directory)
-  when that holds Filament's `LICENSE` and a `notices/` tree, as the SDK that
-  Linux builds with `DART_USE_SYSTEM_FILAMENT=OFF` does. Otherwise configure
-  downloads each missing file from `raw.githubusercontent.com` at `v1.77.3`
-  and checks its SHA-256, even with `FETCHCONTENT_FULLY_DISCONNECTED=ON`;
-  offline, configure stops with CMake's own error for the failed download.
-  conda-forge's `filament` package has no `notices/` tree, and
-  `cmake/DARTFilamentNotices.cmake` lists the files.
+- The GUI installs Filament's license and notices, and configure checks every
+  file against its pinned SHA-256. `cmake/DARTFilamentNotices.cmake` lists the
+  files. Configure takes them from the first of these sources:
+  1. The SDK root (`Filament_ROOT`, or the directory above the SDK's include
+     directory), when it holds Filament's `LICENSE` and a `notices/` tree. The
+     SDK that Linux builds with `DART_USE_SYSTEM_FILAMENT=OFF` does.
+  2. The Filament 1.77.3 source tree that
+     `FETCHCONTENT_SOURCE_DIR_DART_FILAMENT_SDK` names. Extract the tag
+     archive and pass its top-level directory, as for any seeded dependency.
+     The archive is about 800 MB, but configure reads only the listed files,
+     so a tree that holds just those paths also works.
+  3. `raw.githubusercontent.com` at `v1.77.3`, one file at a time.
+
+  conda-forge's `filament` package has no `notices/` tree, so its builds use
+  source 2 or 3. With `FETCHCONTENT_FULLY_DISCONNECTED=ON`, configure never
+  downloads. If no source has a file, it stops, names the file, and offers
+  source 2 or `DART_BUILD_GUI=OFF`. On macOS arm64 and Windows x64 with
+  `DART_USE_SYSTEM_FILAMENT=OFF`, `FETCHCONTENT_SOURCE_DIR_DART_FILAMENT_SDK`
+  names the release archive instead, so an offline configure needs the files
+  already under the SDK root's `notices/` directory.
 
 ### Fetched dependencies in the installation
 
@@ -249,8 +260,8 @@ Ubuntu 24.04 LTS is the oldest supported platform. Its packages plus OSRF's
 sdformat build `dart` and `dart-io` headless (Tier 1); the GUI and dartpy need
 DART's fallbacks there (Tier 2); Pixi, conda-forge and the wheels build
 everything (Tier 3). The [support tiers](build-system.md#support-tiers)
-describe each tier and the nightly Tier 1 lane, whose configure is a working
-offline package configure:
+describe each tier and the nightly lanes that enforce Tiers 1 and 2. The Tier 1
+configure is a working offline package configure:
 
 ```bash
 cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Release \
@@ -332,8 +343,9 @@ recipe's current state before applying them. For every package:
   `fmt`, `spdlog`, `libboost-devel`, `openscenegraph` and `pybind11` host
   dependencies.
 - The GUI needs `filament` 1.77.3 (Pixi pins its Linux `x11` build), `glfw`
-  3.4, `libpng` and `libjpeg-turbo`, and its configure downloads Filament's
-  notices (see [Offline builds](#offline-builds)).
+  3.4, `libpng` and `libjpeg-turbo`. Its configure downloads Filament's
+  notices unless the recipe seeds the Filament 1.77.3 source tree (see
+  [Offline builds](#offline-builds)).
 - `DART_USE_SYSTEM_IMGUI=ON` needs `imgui` 1.92.8 or newer. Without the
   docking branch, the demo app host and `dartpy.viewer` drop out; the bundled
   ImGui instead needs its archive, for example as a second source passed

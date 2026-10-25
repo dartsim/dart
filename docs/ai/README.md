@@ -140,7 +140,7 @@ on 2026-10-17:
 
 - **Codex — GPT-6 family.** Start with GPT-6.1 Sol (`gpt-6.1-sol`) for most
   work, including ambiguous multi-step work that needs planning and
-  validation; use GPT-6 Astra (`gpt-6-astra`) for the hardest end-to-end work
+  validation. Use GPT-6 Astra (`gpt-6-astra`) for the hardest end-to-end work
   and GPT-6 Luna (`gpt-6-luna`) for clear, repeatable, or narrowly scoped
   packets. In the API, `gpt-6.1-sol` accepts reasoning effort `low`, `medium`
   (the API default), `high`, `xhigh`, and `max`, but not `none` or `minimal`;
@@ -154,9 +154,9 @@ on 2026-10-17:
   [Codex models](https://learn.chatgpt.com/docs/models), and
   [Codex subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
 - **Claude Code — current Claude models.** Use Fable 5.1 (`claude-fable-5-1`,
-  the tier above Opus) for the hardest ambiguous or long-horizon work; Opus
-  5.5 (`claude-opus-5-5`) for substantial maintenance work; Sonnet 5.5
-  (`claude-sonnet-5-5`) for standard bounded work; and Haiku 5.5
+  the tier above Opus) for the hardest ambiguous or long-horizon work. Use Opus
+  5.5 (`claude-opus-5-5`) for substantial maintenance work, Sonnet 5.5
+  (`claude-sonnet-5-5`) for standard bounded work, and Haiku 5.5
   (`claude-haiku-5-5`) for quick lookups and repeatable packets. Claude Code
   offers `low`, `medium`, `high`, `xhigh`, and `max`; use `--effort` for a
   session override, while `/effort` normally saves per-model preferences.

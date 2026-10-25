@@ -2,9 +2,10 @@
 
 For `main`, the north star is the Python-first DART 7 program
 ([PLAN-624](../plans/dashboard.md)): a modern, typed dartpy over a core that
-keeps the current solver as its baseline, gains multi-physics, batching, and
-replay readiness behind bit-identical gates, and keeps the C++ API that
-Gazebo/gz-physics and gz-sim use compatible. `release-6.20` keeps the DART 6
+keeps the current solver as its baseline. The core gains multi-physics,
+batching, and replay readiness behind bit-identical gates. It also keeps the
+C++ API that Gazebo/gz-physics and gz-sim use compatible. `release-6.20`
+keeps the DART 6
 north star of a stable maintenance line.
 
 Near-term AI-assisted work should prioritize:

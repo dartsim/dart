@@ -115,15 +115,12 @@ def test_edit_compile(world, robot):
     before = (list(robot.links), robot.num_dofs)
     world.compile()
     assert world.is_compiled
-    with pytest.raises(Exception) as frozen_link:
+    with pytest.raises(RuntimeError, match="^ModelFrozenError: "):
         add_link("frozen_child", parent=parent, joint=spec)
-    assert type(frozen_link.value).__name__ == "ModelFrozenError"
     assert (list(robot.links), robot.num_dofs) == before
     assert world.is_compiled
-    # The design names the error but leaves its public module to M5.
-    with pytest.raises(Exception) as frozen:
+    with pytest.raises(RuntimeError, match="^ModelFrozenError: "):
         world.remove(robot)
-    assert type(frozen.value).__name__ == "ModelFrozenError"
     assert robot in world.multibodies
     with world.edit():
         assert not world.is_compiled
@@ -179,9 +176,8 @@ def test_load_model_and_add(world):
     duplicate = dart.io.load_model(path)
     assert duplicate.name == robot.name
     membership = list(world.multibodies)
-    with pytest.raises(Exception) as conflict:
+    with pytest.raises(ValueError, match="^NameConflictError: "):
         world.add(duplicate)
-    assert type(conflict.value).__name__ == "NameConflictError"
     assert list(world.multibodies) == membership
     assert duplicate not in world.multibodies
 
@@ -1049,9 +1045,8 @@ def test_capture_restore_checkpoint(world, contact_box, solver, other_solver):
         else:
             world.gravity = [0, 0, 0]
         before_rejection = frame()
-        with pytest.raises(Exception) as mismatch:
+        with pytest.raises(ValueError, match="^CheckpointMismatchError: "):
             world.restore_state(captured)
-        assert type(mismatch.value).__name__ == "CheckpointMismatchError"
         assert frame() == before_rejection
 
     # A World that differs only in its detector, such as FCL, cannot capture
