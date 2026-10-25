@@ -116,6 +116,18 @@ def test_native_dependency_image_preserves_collision_backends():
     assert "v3.0.3" in dockerfile
 
 
+def test_dependency_image_builds_urdfdom_6():
+    dockerfile = (ROOT / "docker/wheels/Dockerfile.manylinux_2_28").read_text()
+    headers = "ros/urdfdom_headers.git -b '3.0.1'"
+    parser = "ros/urdfdom.git -b '6.0.1'"
+    assert (
+        dockerfile.index("# tinyxml2")
+        < dockerfile.index("# console_bridge")
+        < dockerfile.index(headers)
+        < dockerfile.index(parser)
+    )
+
+
 @pytest.mark.parametrize("wheels, succeeds", [(True, True), (False, False)])
 def test_wheels_do_not_require_python_embedding_library(tmp_path, wheels, succeeds):
     (tmp_path / "FindPython3.cmake").write_text(
