@@ -5,6 +5,7 @@ import re
 import subprocess
 import sys
 import tomllib
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -90,6 +91,14 @@ def test_linux_driver_repairs_and_tests_in_clean_base(monkeypatch, tmp_path):
     assert "abi3audit --strict" in repair[-1]
     assert "scikit-build-core" in repair[-1]
     assert "setuptools" not in repair[-1]
+    # The repaired wheel gains the image's notices before verification.
+    assert (
+        script.index("auditwheel repair")
+        < script.index('scripts/wheel_notices.py "$DARTPY_LICENSES"')
+        < script.index("scripts/verify_wheel.py")
+    )
+    dockerfile = (ROOT / "docker/wheels/Dockerfile.manylinux_2_28").read_text()
+    assert "\nENV DARTPY_LICENSES=" in dockerfile
     # The abi3 wheel is also tested on a newer interpreter.
     smoke_tags = [python_tag, "cp313"]
     assert len(smokes) == len(smoke_tags)
@@ -101,6 +110,67 @@ def test_linux_driver_repairs_and_tests_in_clean_base(monkeypatch, tmp_path):
         assert f"/opt/python/{tag}-{tag}/bin/python" in smoke
         assert smoke[-1].endswith(f"{python_tag}-*-manylinux_2_28_aarch64.whl")
     assert all(kwargs == {"check": True} for _, kwargs in calls)
+
+
+def test_wheel_notices_add_the_image_notices_that_verification_needs(tmp_path, capsys):
+    def load(name):
+        spec = importlib.util.spec_from_file_location(name, ROOT / f"scripts/{name}.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    notices = tmp_path / "licenses"
+    notices.mkdir()
+    (notices / "fcl.txt").write_bytes(b"FCL license\r\n")
+    dist_info = "dartpy-1.0.dist-info"
+    licenses = f"{dist_info}/licenses/"
+    wheel = tmp_path / "dartpy-1.0-cp312-abi3-manylinux_2_28_x86_64.whl"
+    with zipfile.ZipFile(wheel, "w") as archive:
+        for name in (
+            "dartpy/__init__.py",
+            "dartpy/_core.abi3.so",
+            "dartpy/py.typed",
+            "dartpy/experimental/__init__.py",
+            "dartpy.libs/libfcl-0123abcd.so.0.7.0",
+            *(
+                licenses + name
+                for name in (
+                    "LICENSE",
+                    "NOTICE",
+                    "filament/LICENSE",
+                    "python/dartpy/licenses/curl.txt",
+                    "python/dartpy/licenses/openssl.txt",
+                )
+            ),
+        ):
+            archive.writestr(name, name)
+        archive.writestr(
+            f"{dist_info}/METADATA",
+            "Metadata-Version: 2.4\nName: dartpy\nLicense-File: LICENSE\n\nBody\n",
+        )
+        archive.writestr(f"{dist_info}/RECORD", "")
+    verify = load("verify_wheel")
+    assert not verify.verify_wheel(wheel)
+    assert "fcl.txt for dartpy.libs/libfcl-0123abcd.so.0.7.0" in capsys.readouterr().out
+
+    assert load("wheel_notices").main(["", str(notices), str(wheel)]) == 0
+
+    assert verify.verify_wheel(wheel)
+    notice = f"{licenses}python/dartpy/licenses/fcl.txt"
+    with zipfile.ZipFile(wheel) as archive:
+        assert archive.read(notice) == b"FCL license\r\n"
+        metadata = archive.read(f"{dist_info}/METADATA").decode()
+        assert metadata.endswith(
+            "License-File: LICENSE\n"
+            "License-File: python/dartpy/licenses/fcl.txt\n\nBody\n"
+        )
+        record = archive.read(f"{dist_info}/RECORD").decode()
+        assert {row.split(",")[0] for row in record.splitlines()} == set(
+            archive.namelist()
+        )
+    # A notice never replaces a file the wheel already has.
+    with pytest.raises(ValueError, match=f"already has {notice}"):
+        load("wheel_notices").main(["", str(notices), str(wheel)])
 
 
 @pytest.mark.parametrize("python_tag", ["cp311", "cp313", "cp314"])
@@ -144,6 +214,9 @@ def test_dependency_image_builds_only_the_assimp_importers_dart_uses():
         "-DASSIMP_BUILD_STL_IMPORTER=ON",
         "-DCMAKE_CXX_FLAGS=-DASSIMP_BUILD_NO_GLTF1_IMPORTER",
         "-DASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT=OFF",
+        # assimp compiles Open3DGC, whose notice is only in source headers,
+        # when it finds librt; the glTF 1.0 importer that uses it is off.
+        "-DCMAKE_DISABLE_FIND_PACKAGE_RT=ON",
     ):
         assert setting in assimp
     # ASSIMP_NO_EXPORT also removes aiCopyScene(), which MeshShape::clone() uses.

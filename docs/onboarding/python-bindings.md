@@ -532,7 +532,10 @@ Linux OpenSSL's config and modules directories are dedicated to dartpy to
 avoid another installation's configuration.
 The wheel's `dist-info/licenses/` also includes upstream notices for curl
 and OpenSSL from `python/dartpy/licenses/`; the eight deferred-platform notices
-remain in the repository without shipping in wheels.
+remain in the repository without shipping in wheels. Linux wheels also ship
+a notice for every other library that they bundle or compile in, and for the
+third-party code inside assimp and ODE; see
+[Linux wheel notices](../../python/dartpy/licenses/README.md#linux-wheel-notices).
 macOS and Windows wheels keep this component disabled. Their locked
 conda-forge curl closure would add **18,163,786 compressed bytes** on macOS
 arm64 (14 libraries) and **16,546,729 bytes** on Windows x64 (6 libraries),
@@ -601,7 +604,11 @@ both in its containers, and macOS and Windows run
 more instructions on NumPy-heavy setters. `scripts/verify_wheel.py` rejects a
 wheel that is not `cp312-abi3`, exceeds its size budget, lacks package files,
 `LICENSE`, `NOTICE`, the Filament license or required curl/OpenSSL notices, or
-ships files outside the package.
+ships files outside the package. It also rejects a Linux wheel that bundles a
+library in `dartpy.libs/` without one of its notices, and names the notice and
+the library. macOS and Windows wheels do not yet ship notices for the
+conda-forge libraries that delocate and delvewheel bundle, so this check skips
+them.
 
 Linux release wheels use `python3 scripts/wheel_linux.py cp312` on native
 x86_64 or aarch64 hosts with Docker.
@@ -614,7 +621,12 @@ libraries' symbol tables (about 1.0 MB compressed, 5.9 MB unpacked) and needs
 auditwheel 6.8.0 or newer, which strips before patching
 ([pypa/auditwheel#716](https://github.com/pypa/auditwheel/issues/716)); the
 manylinux image provides it. nanobind already strips `dartpy._core`, so its
-exported symbols do not change. The TLS smoke temporarily hides
+exported symbols do not change. The image also copies the license file of
+each library that the wheel bundles or compiles in, except curl and OpenSSL,
+and of the third-party code that assimp and ODE compile in, unedited, to the
+directory that `DARTPY_LICENSES` names. After repair,
+`scripts/wheel_notices.py` adds those files to the wheel's
+`dist-info/licenses/python/dartpy/licenses/`. The TLS smoke temporarily hides
 curl's pinned default bundle and places the test CA in the Debian/Ubuntu search
 location alongside the real system roots, with `CURL_CA_BUNDLE` and
 `SSL_CERT_FILE` unset. It also rejects the test server with only the real system
@@ -629,6 +641,9 @@ glTF 2.0 (`.gltf`, `.glb`) importers. DART's samples, tests and robot catalog
 use the first three, `MeshShape` converts TriMesh geometry to assimp through
 OBJ, and glTF carries the PBR materials the renderer reads. Exporters are off,
 but export support stays because `MeshShape::clone()` uses `aiCopyScene()`.
+The build hides librt (`CMAKE_DISABLE_FIND_PACKAGE_RT`). Without librt, assimp
+skips Open3DGC, the codec of the disabled glTF 1.0 importer, whose MIT notice
+exists only in source headers.
 macOS and Windows wheels bundle conda-forge's full assimp and still load the
 other formats, such as FBX, PLY, 3DS, Blender and glTF 1.0; Linux wheels
 reject them. In a build without `--strip`, the allowlist shrank the bundled

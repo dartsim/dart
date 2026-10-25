@@ -60,6 +60,9 @@ if [ "$(printf '%s\n' 6.8.0 "$auditwheel_version" | sort -V | head -n 1)" != 6.8
 fi
 auditwheel repair --plat manylinux_2_28_{arch} --only-plat --strip \\
     dist/dartpy-*-linux_{arch}.whl -w /output
+# The image collected the license file of every library that repair bundles.
+{python} scripts/wheel_notices.py "$DARTPY_LICENSES" \\
+    /output/dartpy-*-{args.python_tag}-*-manylinux_2_28_{arch}.whl
 {python} scripts/verify_wheel.py /output/dartpy-*-{args.python_tag}-*.whl
 {python} -m pip install abi3audit==0.0.26
 abi3audit --strict --report /output/dartpy-*-cp312-abi3-*.whl
