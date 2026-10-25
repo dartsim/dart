@@ -169,15 +169,18 @@ on 2026-10-17:
   if it still refuses. See Anthropic's
   [model catalog](https://platform.claude.com/docs/en/models/overview) and
   [Claude Code effort guidance](https://code.claude.com/docs/en/model-config#adjust-effort-level).
-- **Muse — current Muse models.** Use `muse-wonder-full-1.0`, available only on
-  the Muse Code Power Usage and Maximum Usage plans, for the most critical
-  work; `muse-wonder-1.0`, on every plan, for complex software engineering and
-  long-horizon agentic work and as the fallback for Wonder Full; and
-  `muse-spark-1.3` for high-volume, latency-sensitive, or cost-sensitive
-  packets such as subagent tasks. Muse Wonder accepts reasoning effort
-  `minimal` through `max`, and neither Wonder nor Spark accepts `none`; the
-  Muse Code CLI also lists `ultra`, which the reasoning guide does not, so
-  prefer the model-specific values and reserve `max` for a hard task. See the
+- **Muse — current Muse models.** Use:
+  - `muse-wonder-full-1.0` for the most critical work. It is available only on
+    the Muse Code Power Usage and Maximum Usage plans.
+  - `muse-wonder-1.0` for complex software engineering and long-horizon agentic
+    work. It is on every plan and is the fallback for Wonder Full.
+  - `muse-spark-1.3` for high-volume, latency-sensitive, or cost-sensitive
+    packets such as subagent tasks.
+
+  Muse Wonder accepts reasoning effort `minimal` through `max`. Neither Wonder
+  nor Spark accepts `none`. The Muse Code CLI also lists `ultra`, which the
+  reasoning guide does not. Prefer the model-specific values, and reserve `max`
+  for a hard task. See the
   [reasoning guide](https://dev.meta.ai/docs/reasoning),
   [Wonder catalog](https://dev.meta.ai/models/muse-wonder),
   [model-selection guidance](https://dev.meta.ai/docs/models), and

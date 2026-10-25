@@ -59,7 +59,7 @@ Use this matrix before creating or moving a release-branch doc:
 | Theory, paper, math, solver, or research reference foundation    | `docs/background/`       | `docs/design/` unless it is a DART decision |
 | Multi-session implementation status, branch note, resume prompt  | `docs/dev_tasks/<task>/` | durable docs after task completion    |
 | Generated or handwritten C++ API reference input                 | `docs/doxygen/`          | temporary task folders                |
-| Durable docs image, diagram, or small media asset outside RTD static files | `docs/assets/` | task folders unless temporary |
+| Durable docs image, diagram image, or small media asset outside RTD static files | `docs/assets/` | task folders unless temporary |
 
 ## Dev-Task Retirement
 

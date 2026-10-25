@@ -42,7 +42,7 @@ Start a team-scale or autonomous DART task: $ARGUMENTS
 `$ARGUMENTS` is a task brief (prose or a structured `TASK` / `CONTEXT` block)
 plus optional mode flags:
 
-- `mode=interview`: ask one up-front batch of critical questions.
+- `mode=interview`: ask the critical questions up front, one at a time.
 - `mode=brief`: treat provided context as sufficient unless escalation applies.
 - `mode=resume`: start from the existing `docs/dev_tasks/<task>/` project home
   and run the session-start protocol before changing files.
@@ -88,11 +88,12 @@ the real scope materially different stops and reports back.
    `docs/information-architecture.md` for routing only when they apply.
    Draft a candidate decomposition privately before asking anything.
 3. **Interview decisions; self-resolve uncertainties** - Split consequential
-   unknowns. Maintainer decisions (preference, scope, public API, release,
-   quality-bar, roadmap) go to the human in at most one up-front batch
-   (focused questions, 2-4 concrete options each, recommendation first);
-   skip that batch under `mode=brief`, or under `interview=skip` when the
-   brief already answers everything consequential.
+   unknowns. Ask the human about maintainer decisions (preference, scope,
+   public API, release, quality bar, roadmap) up front, one question at a
+   time. Give each question its context, 2-4 concrete options with
+   tradeoffs, and your recommendation first. Skip these questions under
+   `mode=brief`, or under `interview=skip` when the brief already answers
+   everything consequential.
    Evidence-resolvable uncertainties (anything a focused A/B test,
    benchmark, spike, reference lookup, or blind-spot review can settle) are
    scheduled as research packets, never asked. Regardless of mode, escalate
@@ -110,15 +111,15 @@ the real scope materially different stops and reports back.
    Claim-dependent physics/simulation, collision/contact, model, Filament,
    and visual-example work routes through `dart-verify-sim`: require a text
    oracle plus assessed visual/debug evidence, or a justified replacement.
-5. **Bind the native goal loop** - Express done-when as verifiable outcomes
-   (files, tests, gates, artifacts) and bind it to the client's native goal
-   or continuation mode (`/goal` in Claude Code, a Codex goal, a Muse
-   Code session goal) so the client owns keep-working-until-done and
-   stopping; do not reimplement that loop in prose. Done means acceptance
-   criteria satisfied, verification recorded, docs current, known gaps
-   documented, and unnecessary work removed or deferred. Every delegated
-   packet gets its own contract: GOAL (one sentence), DONE WHEN
-   (verifiable), EVIDENCE (what to record), RISKS, and NEXT STEP.
+5. **Bind the native goal loop** - Express done-when as verifiable outcomes:
+   files, tests, gates, and artifacts. Then bind it to the client's native goal
+   or continuation mode (`/goal` in Claude Code, a Codex goal, a Muse Code
+   session goal). The client then owns keep-working-until-done and stopping:
+   do not reimplement that loop in prose. Done means acceptance criteria
+   satisfied, verification recorded, docs current, known gaps documented, and
+   unnecessary work removed or deferred. Every delegated packet gets its own
+   contract: GOAL (one sentence), DONE WHEN (verifiable), EVIDENCE (what to
+   record), RISKS, and NEXT STEP.
 6. **Decompose, run, review** - Cut packets per the contract above and assign
    each to the best available agent: the parent, native subagents or
    specialists, or another installed supported client. Honor the task's
