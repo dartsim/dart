@@ -1760,41 +1760,6 @@
   },
   "dartpy.errors": {
     "classes": {
-      "CheckpointMismatchError": {
-        "camel_case": 0,
-        "get_set": 0,
-        "public": 0
-      },
-      "DartError": {
-        "camel_case": 0,
-        "get_set": 0,
-        "public": 0
-      },
-      "ModelFrozenError": {
-        "camel_case": 0,
-        "get_set": 0,
-        "public": 0
-      },
-      "NameConflictError": {
-        "camel_case": 0,
-        "get_set": 0,
-        "public": 0
-      },
-      "NotFoundError": {
-        "camel_case": 0,
-        "get_set": 0,
-        "public": 1
-      },
-      "OperationError": {
-        "camel_case": 0,
-        "get_set": 0,
-        "public": 0
-      },
-      "ValidationError": {
-        "camel_case": 0,
-        "get_set": 0,
-        "public": 0
-      },
       "WorldBusyError": {
         "camel_case": 0,
         "get_set": 0,
@@ -1802,23 +1767,9 @@
       }
     },
     "container_owners": {
-      "CheckpointMismatchError": "dartpy.errors.CheckpointMismatchError",
-      "DartError": "dartpy.errors.DartError",
-      "ModelFrozenError": "dartpy.errors.ModelFrozenError",
-      "NameConflictError": "dartpy.errors.NameConflictError",
-      "NotFoundError": "dartpy.errors.NotFoundError",
-      "OperationError": "dartpy.errors.OperationError",
-      "ValidationError": "dartpy.errors.ValidationError",
       "WorldBusyError": "dartpy.errors.WorldBusyError"
     },
     "containers": [
-      "CheckpointMismatchError",
-      "DartError",
-      "ModelFrozenError",
-      "NameConflictError",
-      "NotFoundError",
-      "OperationError",
-      "ValidationError",
       "WorldBusyError"
     ],
     "functions": {

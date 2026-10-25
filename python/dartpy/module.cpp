@@ -79,8 +79,7 @@ NB_MODULE(_core, m)
 
   eigen_geometry(dartpy);
 
-  // First: later nanobind exception registrations derive from these types, and
-  // their translators run before this module's catch-all translator.
+  // Later submodule translators run before the WorldBusyError translator.
   dart_errors(dartpy);
 #ifdef DARTPY_TESTING_HOOKS
   dart_testing(dartpy);

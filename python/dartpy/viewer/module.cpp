@@ -35,7 +35,6 @@
  */
 
 #include "detail/eigen.hpp"
-#include "detail/errors.hpp"
 #include "detail/gil.hpp"
 #include "gui/ownership.hpp"
 #include "viewer/session.hpp"
@@ -576,7 +575,7 @@ void dart_viewer(nb::module_& m)
       "capture.");
 
   nb::exception<app::AssetsNotPrefetched>(
-      sm, "AssetsNotPrefetchedError", dartnb::operationError());
+      sm, "AssetsNotPrefetchedError", PyExc_RuntimeError);
   assetsNotPrefetchedError = sm.attr("AssetsNotPrefetchedError").ptr();
   Py_INCREF(assetsNotPrefetchedError);
 

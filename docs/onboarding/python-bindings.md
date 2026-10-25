@@ -147,30 +147,49 @@ unaffected.
 
 ### Errors and logging
 
-`dartpy.errors` holds the exception hierarchy. The errors dartpy defines
-derive from `DartError`, which has three branches named after their builtin
-parent: `ValidationError` (`ValueError`) for invalid arguments and inputs,
-`NotFoundError` (`KeyError`) for failed name lookups, whose message lists the
-valid names, and `OperationError` (`RuntimeError`) for operations that fail
-or run in the wrong state. `WorldBusyError` and `ModelFrozenError` derive
-from `OperationError`; `CheckpointMismatchError` and `NameConflictError`
-derive from `ValidationError`. The design doc's top-level allowlist excludes
-errors, so they live in their own submodule and their `__module__` is
-`dartpy.errors`.
+dartpy raises the builtin exception that names each failure:
 
-Not every exception dartpy raises is a `DartError`. A translator registered
-before every submodule maps the C++ exceptions DART throws:
-`std::invalid_argument` and `std::length_error` to `ValidationError`, and
-`std::runtime_error`, `std::logic_error` and every other `std::exception`
-subclass not listed next to `OperationError`. `std::out_of_range`
-(`IndexError`), `std::domain_error` and `std::range_error` (`ValueError`),
-`std::overflow_error` (`OverflowError`) and `std::bad_alloc` (`MemoryError`)
-keep nanobind's builtin mapping on purpose, and nanobind's own argument
-conversion failures raise plain `TypeError`. Register more specific nanobind
-exceptions in their submodule with `dartnb::operationError()` as the base, as
-`dartpy.gui` and `dartpy.viewer` do; nanobind runs later registrations first.
-Binding-side `nb::value_error` and `nb::type_error` checks are still plain
-builtins; bad input raises, it is never logged and ignored.
+- `ValueError` for malformed input, an invalid registration, a taken name or a
+  checkpoint mismatch;
+- `KeyError` for a failed name lookup, with a message that lists the valid
+  names;
+- `FileNotFoundError` for a missing file;
+- `RuntimeError` for an operation that the current state rejects;
+- `TypeError` for a wrong argument type, and `IndexError` for an index out of
+  range.
+
+When a DART rule rejects a call, the message starts with a stable token, such
+as `ModelFrozenError: `. Callers and tests match that token. A token is part of
+a message, not an exception class.
+
+Only three dartpy exception classes exist, one for each condition that callers
+handle at runtime:
+
+- `dartpy.errors.WorldBusyError`;
+- `dartpy.gui.RenderingUnavailableError`;
+- `dartpy.viewer.AssetsNotPrefetchedError`.
+
+Each class derives directly from `RuntimeError` and takes only a message.
+dartpy has no base exception class.
+
+The `dartpy.errors` module registers one translator. It turns a plain
+`std::runtime_error` whose message starts with `WorldBusyError: ` into
+`WorldBusyError`. It rethrows every other exception, subclasses of
+`std::runtime_error` included, so nanobind's default translations apply:
+
+| C++ exception | Python exception |
+| --- | --- |
+| `std::invalid_argument`, `std::length_error`, `std::domain_error`, `std::range_error` | `ValueError` |
+| `std::out_of_range` | `IndexError` |
+| `std::overflow_error` | `OverflowError` |
+| `std::bad_alloc` | `MemoryError` |
+| Any other `std::exception`, including `std::runtime_error` and `std::logic_error` | `RuntimeError` |
+
+The GUI and viewer submodules register their own translators, and nanobind runs
+later registrations first. Argument conversion failures raise plain
+`TypeError`. Binding-side `nb::value_error` and `nb::type_error` checks also
+raise plain builtins. Bad input always raises; dartpy never logs and ignores
+it.
 
 DART's C++ diagnostics reach `logging.getLogger("dartpy")`. The bridge in
 `detail/logging.cpp` registers a `dart::common::setLogCallback()` callback
