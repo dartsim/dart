@@ -171,10 +171,11 @@ that Ubuntu and conda-forge install beside the single-precision ones.
 
 Touching convex pairs in FCL 0.7.0's libccd GJK distance can abort with
 assertions (as on Ubuntu 24.04), or return -1 and zero nearest points. DART's
-Linux wheels carry a fix, demonstrated for ellipsoid, ellipsoid-sphere and
-box pairs. Discrete collision queries are unaffected. Every other build,
-including the macOS and Windows wheels, pixi and conda-forge builds, and source
-builds using system FCL, remains affected.
+Linux wheels and source builds that fetch FCL (``DART_USE_SYSTEM_FCL=OFF``)
+carry a fix, demonstrated for ellipsoid, ellipsoid-sphere and box pairs.
+Discrete collision queries are unaffected. Every other build, including the
+macOS and Windows wheels, pixi and conda-forge builds, and source builds using
+system FCL, remains affected.
 The patch is in
 ``docker/wheels/patches/fcl-0.7.0-gjk-zero-direction.patch`` and is intended for
 upstream submission (not yet reported).
@@ -248,6 +249,12 @@ include:
      - ``ON``
      - Use an installed Filament 1.77.3 SDK; ``OFF`` uses a pinned private
        SDK.
+   * - ``DART_USE_SYSTEM_FCL``
+     - ``OFF`` (``ON`` with ``DART_USE_SYSTEM_DEPENDENCIES=ON`` or a
+       multi-configuration generator)
+     - Use an installed FCL and libccd; ``OFF`` builds the pinned FCL 0.7.0
+       and a double-precision libccd 2.1 at configure time and installs them
+       with DART.
    * - ``DART_ENABLE_SIMD``
      - ``OFF``
      - Add local-machine SIMD compiler flags such as ``-march=native``.

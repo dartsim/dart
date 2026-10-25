@@ -43,6 +43,11 @@ urdfdom (3.0) is below the floor: use Pixi, build urdfdom 4 or newer, or set
 `DART_BUILD_UTILS_ASSETS=ON` (the Pixi tasks enable it) requires libcurl 8.5.0
 or newer, the Ubuntu 24.04 LTS version.
 
+Builds without `DART_USE_SYSTEM_DEPENDENCIES=ON`, which the Pixi tasks set,
+fetch and build FCL and libccd at configure time and install them with DART;
+set `DART_USE_SYSTEM_FCL=ON` to use an installed FCL instead. See the
+[build system notes](build-system.md#dependency-sources).
+
 ## Filament GUI
 
 `pixi run config` builds the Filament GUI (`DART_BUILD_GUI=ON`, the default)
@@ -95,7 +100,7 @@ package builds use installed ones.
 ### Dependency switches
 
 Each dependency that DART can fetch has a `DART_USE_SYSTEM_<X>` switch.
-`DART_USE_SYSTEM_DEPENDENCIES=ON` (default `OFF`) defaults the first four
+`DART_USE_SYSTEM_DEPENDENCIES=ON` (default `OFF`) defaults the first five
 switches below to `ON`. Pixi's configure tasks set it, and package builds
 should too. Each switch
 keeps its cached value, so set the umbrella on the first configure of a fresh
@@ -103,6 +108,7 @@ build tree; an explicit `-D` always wins.
 
 | Switch | Used when | Standalone default | With the umbrella | `OFF` fetches |
 | --- | --- | --- | --- | --- |
+| `DART_USE_SYSTEM_FCL` | Always | `OFF`; `ON` with a multi-configuration generator | `ON` | FCL 0.7.0 with the Linux wheels' GJK fix and a double-precision libccd 2.1, both shared; needs the `patch` program |
 | `DART_USE_SYSTEM_GOOGLETEST` | `BUILD_TESTING=ON`, the default | `OFF` | `ON` | GoogleTest 1.17.0 |
 | `DART_USE_SYSTEM_GOOGLEBENCHMARK` | `BUILD_TESTING=ON` | `OFF` | `ON` | Google Benchmark 1.10.0 |
 | `DART_USE_SYSTEM_TRACY` | `DART_BUILD_PROFILE=ON` and `DART_PROFILE_TRACY=ON` | `OFF` | `ON` | Tracy 0.14.1, built with `TRACY_ENABLE=ON` |
@@ -110,7 +116,7 @@ build tree; an explicit `-D` always wins.
 | `DART_USE_SYSTEM_IMGUI` | `DART_BUILD_GUI=ON` | `OFF` | `OFF` | Dear ImGui v1.92.8-docking |
 | `DART_USE_SYSTEM_FILAMENT` | `DART_BUILD_GUI=ON` | `ON` | `ON` | Filament 1.77.3: Linux builds the SDK from source with Clang 20 or newer and Ninja; macOS arm64 and 64-bit Windows download the release SDK |
 | `DART_USE_SYSTEM_NANOBIND` | `DART_BUILD_DARTPY=ON` | `OFF` | `OFF` | nanobind 3.1.0 |
-| `DART_USE_SYSTEM_ODE` | `DART_SKIP_ODE=OFF`, the default | `ON` | `ON` | ODE 0.16.6, shared and double precision, with the system libccd |
+| `DART_USE_SYSTEM_ODE` | `DART_SKIP_ODE=OFF`, the default | `ON` | `ON` | ODE 0.16.6, shared and double precision, with the fetched libccd when FCL is fetched and the system one otherwise |
 | `DART_USE_SYSTEM_BULLET` | `DART_SKIP_BULLET=OFF`, the default | `ON` | `ON` | Bullet 3.25, only shared double-precision `BulletCollision` and `LinearMath` |
 | `DART_USE_SYSTEM_FMT` | Never | `ON` | `ON` | Nothing; a deprecated no-op through 7.x |
 
@@ -131,8 +137,10 @@ SHA-256:
 | `nanobind` | `https://files.pythonhosted.org/packages/c7/1f/e28fae715401e8f57400e72aeaff4fde12046d31828164f34f61f0816da8/nanobind-3.1.0.tar.gz` | `6661e3dc1434d78781ccf7913442d90361dab395c3424efadb63bbb6ddea7ea3` |
 | `ode` | `https://github.com/odedevs/ode/archive/refs/tags/0.16.6.tar.gz` | `91fa10c811db757c113ba5ced02e578587f84331d51041b9fd4cadb1522fcef6` |
 | `bullet` | `https://github.com/bulletphysics/bullet3/archive/refs/tags/3.25.tar.gz` | `c45afb6399e3f68036ddb641c6bf6f552bf332d5ab6be62f7e6c54eda05ceb77` |
+| `dart_libccd` | `https://github.com/danfis/libccd/archive/refs/tags/v2.1.tar.gz` | `542b6c47f522d581fbf39e51df32c7d1256ac0c626e7c2b41f1040d4b9d50d1e` |
+| `dart_fcl` | `https://github.com/flexible-collision-library/fcl/archive/refs/tags/0.7.0.tar.gz` | `90409e940b24045987506a6b239424a4222e2daf648c86dd146cbcb692ebdcbc` |
 
-DART never fetches its other dependencies: Eigen, FCL and libccd, assimp,
+DART never fetches its other dependencies: Eigen, assimp,
 octomap, tinyxml2, urdfdom, sdformat, libpng, libjpeg, libcurl, OpenSSL,
 Python and NumPy always come from the system.
 
@@ -199,13 +207,17 @@ The umbrella leaves these to the packager:
   directly under `include/`, plus a `bullet.pc` narrowed to those two
   libraries (not with MSVC), but no Bullet CMake package. An installed DART
   finds these files before the consumer's search paths.
+- Fetched FCL and libccd install their shared libraries, headers, CMake
+  packages and pkg-config files beside DART. An installed DART finds them
+  before the consumer's search paths, and `libdart`'s `$ORIGIN` RUNPATH
+  (`@loader_path` on macOS) loads them without `LD_LIBRARY_PATH`.
 - Tracy links only into profiling builds (`DART_PROFILE_TRACY=ON`), which
   packages leave off.
 
-Fetched ODE and Bullet keep their upstream library names, so a distribution
-that also packages ODE or Bullet keeps `DART_USE_SYSTEM_ODE` and
-`DART_USE_SYSTEM_BULLET` at their `ON` defaults instead of shipping second
-copies.
+Fetched ODE, Bullet, FCL and libccd keep their upstream library names. A
+distribution that also packages them keeps `DART_USE_SYSTEM_ODE` and
+`DART_USE_SYSTEM_BULLET` at their `ON` defaults, and sets the umbrella or
+`DART_USE_SYSTEM_FCL=ON`, instead of shipping second copies.
 
 ### Scalar precision
 
@@ -223,7 +235,7 @@ those.
 
 | Channel | Bullet | ODE | libccd |
 | --- | --- | --- | --- |
-| DART's fetched copies | Double | Double | Not fetched |
+| DART's fetched copies | Double | Double | Double |
 | Debian and Ubuntu | `-float64` beside single; DART links double | Double, except on armel, mips and mipsel | Double |
 | conda-forge and Pixi | `-float64` beside single; DART links double | Double | Double (`libccd-double`) |
 | Homebrew | Single in `lib`; double in `lib/bullet/double` without the suffix, so DART links single (unverified) | Double | Double |
@@ -371,7 +383,8 @@ recipe's current state before applying them. For every package:
   `libsdformat14-dev` for SDF. Without sdformat 14.8 to 16, a package passes
   `-DDART_SKIP_SDFORMAT=ON`.
 - Tests need `libgtest-dev` and `libbenchmark-dev`; a package that sets only
-  `DART_USE_SYSTEM_GOOGLETEST=ON` still fetches Benchmark. `test_Distance`
+  `DART_USE_SYSTEM_GOOGLETEST=ON` still fetches Benchmark, and FCL unless it
+  also sets `DART_USE_SYSTEM_FCL=ON`. The umbrella covers both. `test_Distance`
   aborts on the archive's FCL, which is built with assertions, and the Tier 1
   lane excludes it.
 - dartpy needs the GUI, whose Filament SDK Ubuntu 24.04 lacks, and nanobind

@@ -16,6 +16,11 @@ foreach(external_dep @external_dependencies@)
     # Directories of the fetched Bullet that this DART installed, if any.
     set(DART_BULLET_SEARCH_DIRS "@DART_BULLET_INSTALL_DIRS@")
   endif()
+  if(external_dep STREQUAL "fcl")
+    # Config directories of the fetched libccd and FCL that this DART
+    # installed, if any.
+    set(DART_FCL_SEARCH_DIRS "@DART_FCL_INSTALL_DIRS@")
+  endif()
   include(${CMAKE_CURRENT_LIST_DIR}/DARTFind${external_dep}.cmake)
 
   string(TOUPPER ${external_dep} EXTERNAL_DEP_UPPER)

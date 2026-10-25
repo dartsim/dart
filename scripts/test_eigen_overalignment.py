@@ -165,6 +165,7 @@ def configure(build_dir: Path, args: argparse.Namespace) -> None:
         "-DDART_BUILD_PROFILE=OFF",
         "-DDART_PROFILE_BUILTIN=OFF",
         "-DDART_PROFILE_TRACY=OFF",
+        "-DDART_USE_SYSTEM_FCL=ON",
         "-DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON",
         "-DDART_USE_SYSTEM_GOOGLETEST=ON",
         "-DDART_USE_SYSTEM_IMGUI=ON",

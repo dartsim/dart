@@ -74,7 +74,7 @@ jobs:
     uses: ./.github/workflows/ci_stock_noble.yml
 
   collision-fetch:
-    name: CMake 4 ODE and Bullet fetch fallbacks
+    name: CMake 4 ODE, Bullet and FCL fetch fallbacks
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
@@ -97,6 +97,7 @@ jobs:
               -DCMAKE_INSTALL_RPATH="$CONDA_PREFIX/lib" \
               -DDART_USE_SYSTEM_DEPENDENCIES=ON \
               -DDART_USE_SYSTEM_ODE=OFF -DDART_USE_SYSTEM_BULLET=OFF \
+              -DDART_USE_SYSTEM_FCL=OFF \
               -DDART_BUILD_GUI=OFF -DDART_BUILD_DARTPY=OFF -DDART_BUILD_PROFILE=OFF
             # Pixi has system packages too; prove these switches selected fetched sources.
             grep -E "^DART_ODE_SOURCE_DIR:INTERNAL=.*_deps/ode-src$" build/collision-fetch/CMakeCache.txt
@@ -107,9 +108,20 @@ jobs:
             grep -E "_deps/ode-build/.*libode" build/collision-fetch/link-commands.txt
             grep -E "_deps/bullet-build/.*libBulletCollision" build/collision-fetch/link-commands.txt
             grep -E "_deps/bullet-build/.*libLinearMath" build/collision-fetch/link-commands.txt
+            grep -E "_deps/dart_fcl-sdk/.*libfcl" build/collision-fetch/link-commands.txt
+            grep -E "_deps/dart_fcl-sdk/.*libccd" build/collision-fetch/link-commands.txt
+            # Fetched ODE uses the fetched libccd, so one libccd is loaded.
+            ninja -C build/collision-fetch -t commands ODE > build/collision-fetch/ode-commands.txt
+            grep -E "_deps/dart_fcl-sdk/.*libccd" build/collision-fetch/ode-commands.txt
             ctest --test-dir build/collision-fetch --output-on-failure -j 2
             cmake --install build/collision-fetch
             test ! -e "$install_prefix/include/btBulletDynamicsCommon.h"
+            # The installed FCL has the wheels GJK fix, octree support and a
+            # double-precision libccd.
+            grep -F "Preserve the witnesses" \
+              "$install_prefix/include/fcl/narrowphase/detail/convexity_based_algorithm/gjk_libccd-inl.h"
+            grep -F "#define FCL_HAVE_OCTOMAP 1" "$install_prefix/include/fcl/config.h"
+            grep -F "#define CCD_DOUBLE" "$install_prefix/include/ccd/config.h"
             cmake -G Ninja -S tools/package -B build/collision-fetch-consumer \
               -DDART_DIR="$install_prefix/share/dart/cmake" \
               -DCMAKE_PREFIX_PATH="$install_prefix;$CONDA_PREFIX" \
@@ -119,7 +131,7 @@ jobs:
             export LD_LIBRARY_PATH="$install_prefix/lib:$CONDA_PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
             ctest --test-dir build/collision-fetch-consumer --output-on-failure -j 2
             ldd build/collision-fetch-consumer/package_collision > build/collision-fetch-consumer/ldd.txt
-            for library in BulletCollision LinearMath ode; do
+            for library in BulletCollision LinearMath ode fcl ccd; do
               grep -F "=> $install_prefix/lib/lib${library}.so" build/collision-fetch-consumer/ldd.txt
             done
             unset LD_LIBRARY_PATH

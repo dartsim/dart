@@ -78,6 +78,10 @@ DART_BUILD_WHEELS = "ON"
 DART_DARTPY_STABLE_ABI = "ON"
 DART_ENABLE_SIMD = "OFF"
 DART_TREAT_WARNINGS_AS_ERRORS = "OFF"
+# The shared FCL that DART fetches is not part of the `python` component, so
+# wheels and source installs link the environment's FCL; the Linux wheel image
+# builds it with DART's GJK fix.
+DART_USE_SYSTEM_FCL = "ON"
 DART_USE_SYSTEM_IMGUI = "OFF"
 DART_VERBOSE = "ON"
 

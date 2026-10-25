@@ -320,6 +320,7 @@ def test_python_discovery_needs_no_embedding_library(tmp_path, wheels, stable_ab
         "set(DART_BUILD_DARTPY ON)\n"
         f'set(DART_BUILD_WHEELS {"ON" if wheels else "OFF"})\n'
         f'set(DART_DARTPY_STABLE_ABI {"ON" if stable_abi else "OFF"})\n'
+        "set(DART_USE_SYSTEM_FCL ON)\n"
         "set(DART_USE_SYSTEM_ODE ON)\n"
         "set(DART_USE_SYSTEM_BULLET ON)\n"
         f'include("{ROOT.as_posix()}/cmake/DARTFindDependencies.cmake")\n'
@@ -453,6 +454,7 @@ def test_dartpy_disabled_does_not_discover_python(tmp_path):
         "macro(dart_check_optional_package)\nendmacro()\n"
         f'set(CMAKE_MODULE_PATH "{tmp_path.as_posix()}")\n'
         "set(DART_BUILD_DARTPY OFF)\n"
+        "set(DART_USE_SYSTEM_FCL ON)\n"
         "set(DART_USE_SYSTEM_ODE ON)\n"
         "set(DART_USE_SYSTEM_BULLET ON)\n"
         f'include("{ROOT.as_posix()}/cmake/DARTFindDependencies.cmake")\n'

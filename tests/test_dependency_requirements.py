@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CMAKE = os.environ.get("DART_TEST_CMAKE") or shutil.which("cmake")
 
 
-def configure(tmp_path, content, *, cmake_args=(), language="NONE"):
+def configure(tmp_path, content, *, cmake_args=(), language="NONE", generator="Ninja"):
     source = tmp_path / "source"
     source.mkdir(exist_ok=True)
     (source / "CMakeLists.txt").write_text(
@@ -39,7 +39,7 @@ def configure(tmp_path, content, *, cmake_args=(), language="NONE"):
         [
             CMAKE,
             "-G",
-            "Ninja",
+            generator,
             f"-DCMAKE_MAKE_PROGRAM={shutil.which('ninja')}",
             "-S",
             str(source),
@@ -156,7 +156,7 @@ def test_system_dependency_defaults_are_seeded_once(tmp_path, umbrella, explicit
     ]
     # macOS always defaults GLFW to the system one (tested separately).
     content = "include(dart_defs)\nset(APPLE OFF)\n" + options
-    switches = ("GOOGLETEST", "GOOGLEBENCHMARK", "TRACY", "GLFW")
+    switches = ("FCL", "GOOGLETEST", "GOOGLEBENCHMARK", "TRACY", "GLFW")
     args = [] if umbrella is None else [f"-DDART_USE_SYSTEM_DEPENDENCIES={umbrella}"]
     if explicit is not None:
         args.extend(f"-DDART_USE_SYSTEM_{name}={explicit}" for name in switches)
@@ -188,6 +188,49 @@ def test_macos_glfw_defaults_to_the_system_one(tmp_path, apple, expected):
     assert result.returncode == 0, result.stdout + result.stderr
     cache = (tmp_path / "build" / "CMakeCache.txt").read_text()
     assert f"DART_USE_SYSTEM_GLFW:BOOL={expected}" in cache
+
+
+def test_multi_config_generators_default_to_the_installed_fcl(tmp_path):
+    source = (ROOT / "CMakeLists.txt").read_text()
+    options = source[
+        source.index("dart_option(\n  DART_USE_SYSTEM_DEPENDENCIES") : source.index(
+            "dart_option(\n  DART_ALLOW_SINGLE_PRECISION_LIBCCD"
+        )
+    ]
+    result = configure(
+        tmp_path,
+        "include(dart_defs)\nset(APPLE OFF)\n" + options,
+        cmake_args=["-DDART_USE_SYSTEM_DEPENDENCIES=OFF"],
+        generator="Ninja Multi-Config",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    cache = (tmp_path / "build" / "CMakeCache.txt").read_text()
+    assert "DART_USE_SYSTEM_FCL:BOOL=ON" in cache
+    assert "DART_USE_SYSTEM_GOOGLETEST:BOOL=OFF" in cache
+
+
+@pytest.mark.parametrize("system_fcl", ["ON", "OFF"])
+def test_libdart_runpath_follows_a_fetched_fcl_alone(tmp_path, system_fcl):
+    """libdart finds a fetched FCL beside it even when ODE and Bullet are system."""
+    source = (ROOT / "dart/CMakeLists.txt").read_text()
+    start = source.index("if(\n  BUILD_SHARED_LIBS\n  AND\n    (\n      (HAVE_BULLET")
+    guard = source[start : source.index("# assimp version detection", start)]
+    result = configure(
+        tmp_path,
+        "add_custom_target(dart)\nset(BUILD_SHARED_LIBS ON)\nset(HAVE_BULLET ON)\n"
+        "set(HAVE_ODE ON)\nset(DART_USE_SYSTEM_BULLET ON)\nset(DART_USE_SYSTEM_ODE ON)\n"
+        f"set(DART_USE_SYSTEM_FCL {system_fcl})\n"
+        + guard
+        + "get_property(rpath TARGET dart PROPERTY INSTALL_RPATH)\n"
+        'message(STATUS "rpath=[${rpath}]")\n',
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode == 0, output
+    origin = "@loader_path" if sys.platform == "darwin" else "$ORIGIN"
+    if os.name == "nt":
+        assert "rpath=[]" in output
+    else:
+        assert (f"rpath=[{origin};" in output) == (system_fcl == "OFF")
 
 
 _DEPENDENCIES = (ROOT / "cmake/DARTFindDependencies.cmake").read_text()
@@ -2752,6 +2795,342 @@ def test_fetched_glfw_fails_fast_offline(tmp_path):
     assert result.returncode != 0
     assert "Cannot fetch glfw with FETCHCONTENT_FULLY_DISCONNECTED=ON" in flat
     assert "DART_USE_SYSTEM_GLFW=ON" in flat
+
+
+FCL_FETCH_FIXTURE = (
+    "include(DARTMacros)\ninclude(GNUInstallDirs)\n"
+    f'set(DART_SOURCE_DIR "{ROOT.as_posix()}")\n'
+    "set(CONFIG_INSTALL_DIR share/dart/cmake)\nset(DART_USE_SYSTEM_FCL OFF)\n"
+    + _DEPENDENCIES[
+        _DEPENDENCIES.index("if(NOT DART_USE_SYSTEM_FCL)") : _DEPENDENCIES.index(
+            "# ASSIMP"
+        )
+    ]
+)
+
+
+@pytest.mark.parametrize("seeded", [False, True])
+def test_fetched_fcl_fails_fast_offline(tmp_path, seeded):
+    args = ["-DFETCHCONTENT_FULLY_DISCONNECTED=ON"]
+    missing = "dart_libccd"
+    if seeded:
+        seed = tmp_path / "libccd-seed"
+        seed.mkdir()
+        (seed / "README").write_text("libccd\n")
+        args.append(f"-DFETCHCONTENT_SOURCE_DIR_DART_LIBCCD={seed.as_posix()}")
+        missing = "dart_fcl"
+    result = configure(tmp_path, FCL_FETCH_FIXTURE, cmake_args=args)
+    flat = " ".join((result.stdout + result.stderr).split())
+    assert result.returncode != 0
+    assert f"Cannot fetch {missing} with FETCHCONTENT_FULLY_DISCONNECTED=ON" in flat
+    assert f"FETCHCONTENT_SOURCE_DIR_{missing.upper()}" in flat
+    assert "DART_USE_SYSTEM_FCL=ON" in flat
+
+
+@pytest.mark.parametrize(
+    "case", ["multi-config", "eigen5", "single-ccd", "double-ccd", "fetched-ode"]
+)
+def test_fetched_fcl_stops_before_downloading_when_it_cannot_fit(tmp_path, case):
+    """Each stop comes before the fetch, which fails offline otherwise."""
+    precision = "SINGLE" if case in ("single-ccd", "fetched-ode") else "DOUBLE"
+    header = tmp_path / "prefix/include/ccd/config.h"
+    header.parent.mkdir(parents=True)
+    header.write_text(f"/* #undef CCD_X */\n#define CCD_{precision}\n")
+    args = [
+        "-DFETCHCONTENT_FULLY_DISCONNECTED=ON",
+        f"-DDART_USE_SYSTEM_ODE={'OFF' if case == 'fetched-ode' else 'ON'}",
+    ]
+    if case == "eigen5":
+        args.append("-DEigen3_VERSION=5.0.0")
+    generator = "Ninja Multi-Config" if case == "multi-config" else "Ninja"
+    result = configure(
+        tmp_path, FCL_FETCH_FIXTURE, cmake_args=args, generator=generator
+    )
+    flat = " ".join((result.stdout + result.stderr).split())
+    assert result.returncode != 0
+    expected = {
+        "multi-config": "needs a single-configuration generator",
+        "eigen5": "Eigen 5.0.0 does not support",
+        "single-ccd": "is a single-precision libccd",
+    }.get(case)
+    if expected:
+        assert expected in flat
+        assert "DART_USE_SYSTEM_FCL=ON" in flat
+        assert "dart_libccd" not in flat
+    else:
+        # Neither a double-precision libccd nor a fetched ODE stops it.
+        assert "single-precision libccd" not in flat
+        assert "dart_libccd" in flat
+
+
+FCL_HEADER = "include/fcl/narrowphase/detail/convexity_based_algorithm/gjk_libccd-inl.h"
+
+
+@pytest.mark.skipif(shutil.which("patch") is None, reason="needs the patch program")
+def test_fetched_fcl_rejects_sources_the_fix_does_not_fit(tmp_path):
+    seeds = []
+    for name in ("libccd", "fcl"):
+        seed = tmp_path / f"{name}-seed"
+        (seed / FCL_HEADER).parent.mkdir(parents=True)
+        (seed / FCL_HEADER).write_text("// Not FCL 0.7.0\n")
+        seeds.append(f"-DFETCHCONTENT_SOURCE_DIR_DART_{name.upper()}={seed.as_posix()}")
+    result = configure(
+        tmp_path,
+        FCL_FETCH_FIXTURE,
+        cmake_args=[*seeds, f"-DPatch_EXECUTABLE={shutil.which('patch')}"],
+    )
+    flat = " ".join((result.stdout + result.stderr).split())
+    assert result.returncode != 0
+    assert "must hold the FCL 0.7.0 release sources" in flat
+    assert "DART_USE_SYSTEM_FCL=ON" in flat
+    # The check leaves the tree as it was.
+    fcl = tmp_path / "fcl-seed"
+    assert (fcl / FCL_HEADER).read_text() == "// Not FCL 0.7.0\n"
+    assert sorted(p.name for p in fcl.rglob("*") if p.is_file()) == ["gjk_libccd-inl.h"]
+
+
+FCL_PATCH = ROOT / "docker/wheels/patches/fcl-0.7.0-gjk-zero-direction.patch"
+
+
+def unpatched_fcl_files(patch):
+    """Return the lines each hunk of the patch replaces, keyed by file."""
+    files = {}
+    lines = iter(patch.read_text().splitlines())
+    for line in lines:
+        if line.startswith("+++ b/"):
+            old = files.setdefault(line[len("+++ b/") :], [])
+        elif line.startswith("@@"):
+            removed, added = (int(n) for n in re.findall(r"[-+]\d+,(\d+)", line))
+            while removed or added:
+                hunk = next(lines)
+                kind = hunk[:1] or " "
+                if kind != "+":
+                    old.append(hunk[1:])
+                    removed -= 1
+                if kind != "-":
+                    added -= 1
+    return files
+
+
+def fcl_stand_in(source, name, settings, config_dir):
+    """Write a compiler-free libccd or FCL whose config records where it is."""
+    source.mkdir(parents=True)
+    (source / "CMakeLists.txt").write_text(
+        # libccd's CMake 2.8 minimum needs the policy floor under CMake 4.
+        f"cmake_minimum_required(VERSION 2.8.12)\nproject({name} NONE)\n"
+        "include(GNUInstallDirs)\n"
+        f"if(NOT ({settings}))\n"
+        f'  message(FATAL_ERROR "Wrong {name} settings")\nendif()\n'
+        "set(config [=[\ninclude(CMakeFindDependencyMacro)\n"
+        + ("find_dependency(ccd)\n" if name == "fcl" else "")
+        + f'set_property(GLOBAL PROPERTY DART_FIXTURE_{name} "${{CMAKE_CURRENT_LIST_DIR}}")\n'
+        f"if(NOT TARGET {name})\n  add_library({name} INTERFACE IMPORTED)\nendif()\n]=])\n"
+        f'file(WRITE "${{CMAKE_BINARY_DIR}}/{name}-config.cmake" "${{config}}")\n'
+        f'file(WRITE "${{CMAKE_BINARY_DIR}}/{name}-config-version.cmake"\n'
+        '  "set(PACKAGE_VERSION 0.7.0)\\nset(PACKAGE_VERSION_COMPATIBLE TRUE)\\n")\n'
+        f"{config_dir}\n"
+        f'install(FILES "${{CMAKE_BINARY_DIR}}/{name}-config.cmake"\n'
+        f'  "${{CMAKE_BINARY_DIR}}/{name}-config-version.cmake" DESTINATION "${{dir}}")\n'
+        # Upstream writes the configured install prefix into its .pc file.
+        + """set(pc [=[prefix=@CMAKE_INSTALL_PREFIX@
+libdir=@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@
+includedir=@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_INCLUDEDIR@
+
+Name: NAME
+Description: NAME
+Version: 0.7.0
+Cflags: -I${includedir}
+]=])
+string(CONFIGURE "${pc}" pc @ONLY)
+file(WRITE "${CMAKE_BINARY_DIR}/NAME.pc" "${pc}")
+install(FILES "${CMAKE_BINARY_DIR}/NAME.pc"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+""".replace(
+            "NAME", name
+        )
+    )
+
+
+HERMETIC_FIND = (
+    "set(CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH FALSE)\n"
+    "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH FALSE)\n"
+    "set(CMAKE_FIND_USE_CMAKE_SYSTEM_PATH FALSE)\n"
+    "set(CMAKE_FIND_USE_PACKAGE_REGISTRY FALSE)\n"
+)
+
+
+@pytest.mark.skipif(shutil.which("patch") is None, reason="needs the patch program")
+@pytest.mark.parametrize("octomap", [False, True])
+def test_fetched_fcl_is_patched_staged_and_found_first_when_installed(
+    tmp_path, octomap
+):
+    """An installed DART finds the libccd and FCL it fetched before others."""
+    fcl_stand_in(
+        tmp_path / "libccd-src",
+        "ccd",
+        "ENABLE_DOUBLE_PRECISION AND BUILD_SHARED_LIBS AND NOT BUILD_TESTING",
+        'set(dir "${CMAKE_INSTALL_LIBDIR}/ccd")',
+    )
+    # FCL's octree support follows the octomap that DART found, if any.
+    deps = tmp_path / "deps"
+    deps.mkdir()
+    octree = "NOT FCL_WITH_OCTOMAP AND NOT DEFINED octomap_DIR"
+    if octomap:
+        config_package(deps, "octomap", "1.10.1", "octomap")
+        octomap_dir = (deps / "prefix/lib/cmake/octomap").as_posix()
+        octree = f'FCL_WITH_OCTOMAP AND octomap_DIR STREQUAL "{octomap_dir}"'
+    rpath = "@loader_path" if sys.platform == "darwin" else "$ORIGIN"
+    fcl = tmp_path / "fcl-src"
+    fcl_stand_in(
+        fcl,
+        "fcl",
+        f'ccd_DIR MATCHES "/dart_fcl-sdk/" AND {octree}'
+        # Upstream defaults both switches the other way (FCL_STATIC_LIBRARY is
+        # ON under MSVC), so DART must set them.
+        " AND DEFINED FCL_NO_DEFAULT_RPATH AND NOT FCL_NO_DEFAULT_RPATH"
+        f' AND CMAKE_INSTALL_RPATH STREQUAL "{rpath}"'
+        " AND DEFINED FCL_STATIC_LIBRARY AND NOT FCL_STATIC_LIBRARY"
+        # Policy, cross-compiling and per-configuration settings reach the
+        # nested builds.
+        ' AND CMAKE_POLICY_DEFAULT_CMP0091 STREQUAL "NEW"'
+        ' AND CMAKE_CXX_COMPILER_TARGET STREQUAL "dart-fixture-target"'
+        ' AND CMAKE_CXX_COMPILER_ARG1 STREQUAL "--dart-fixture-arg"'
+        ' AND CMAKE_CXX_FLAGS_RELEASE STREQUAL "-DDART_FIXTURE_RELEASE"'
+        ' AND CMAKE_EXE_LINKER_FLAGS STREQUAL "-Wl,--dart-fixture"'
+        ' AND CMAKE_TRY_COMPILE_TARGET_TYPE STREQUAL "STATIC_LIBRARY"',
+        # Upstream's config directory.
+        "if(WIN32 AND NOT CYGWIN)\n  set(dir CMake)\nelse()\n"
+        '  set(dir "${CMAKE_INSTALL_LIBDIR}/cmake/fcl")\nendif()',
+    )
+    with (fcl / "CMakeLists.txt").open("a") as cmake:
+        cmake.write(
+            "find_package(ccd REQUIRED CONFIG)\n"
+            'install(DIRECTORY include/ DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")\n'
+        )
+    for name, lines in unpatched_fcl_files(FCL_PATCH).items():
+        (fcl / name).parent.mkdir(parents=True, exist_ok=True)
+        (fcl / name).write_text("\n".join(lines) + "\n")
+    # Another FCL and libccd that both DART's and the consumer's paths list.
+    decoy = tmp_path / "decoy"
+    for name, directory in (("ccd", "lib/ccd"), ("fcl", "lib/cmake/fcl")):
+        (decoy / directory).mkdir(parents=True)
+        (decoy / directory / f"{name}-config.cmake").write_text(
+            f'set_property(GLOBAL PROPERTY DART_FIXTURE_{name} "decoy")\n'
+            f"add_library({name} INTERFACE IMPORTED)\n"
+        )
+        (decoy / directory / f"{name}-config-version.cmake").write_text(
+            "set(PACKAGE_VERSION 0.7.0)\nset(PACKAGE_VERSION_COMPATIBLE TRUE)\n"
+        )
+    project = tmp_path / "dart"
+    project.mkdir()
+    (project / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.28)\nproject(dart NONE)\n"
+        f'set(CMAKE_MODULE_PATH "{(ROOT / "cmake").as_posix()}")\n'
+        f'set(CMAKE_PREFIX_PATH "{decoy.as_posix()}" "{(deps / "prefix").as_posix()}")\n'
+        + HERMETIC_FIND
+        + FCL_FETCH_FIXTURE
+        + "foreach(name ccd fcl)\n"
+        "  get_property(found GLOBAL PROPERTY DART_FIXTURE_${name})\n"
+        '  if(NOT found MATCHES "/dart_fcl-sdk/")\n'
+        '    message(FATAL_ERROR "DART found ${name} in ${found}")\n  endif()\n'
+        "endforeach()\n"
+        "add_library(dart INTERFACE)\ntarget_link_libraries(dart INTERFACE fcl)\n"
+        "set(INCLUDE_INSTALL_DIR include)\nset(PROJECT_NAME_UPPERCASE DART)\n"
+        "include(Components)\ninitialize_component_helpers(dart)\n"
+        "add_component(dart dart)\nadd_component_targets(dart dart dart)\n"
+        "add_component_dependency_packages(dart dart fcl)\n"
+        "install_component_exports(dart)\n"
+        "set(DART_USE_SYSTEM_IMGUI ON)\nset(DART_MAJOR_VERSION 7)\n"
+        "include(CMakePackageConfigHelpers)\n"
+        f'configure_package_config_file("{(ROOT / "cmake/DARTConfig.cmake.in").as_posix()}"\n'
+        '  "${CMAKE_BINARY_DIR}/DARTConfig.cmake" INSTALL_DESTINATION share/dart/cmake\n'
+        "  PATH_VARS INCLUDE_INSTALL_DIR)\n"
+        'install(FILES "${CMAKE_BINARY_DIR}/DARTConfig.cmake" DESTINATION share/dart/cmake)\n'
+    )
+    cmake = CMAKE
+    build = tmp_path / "dart-build"
+    configure_args = [
+        cmake,
+        "-G",
+        "Ninja",
+        "-S",
+        project,
+        "-B",
+        build,
+        f"-DFETCHCONTENT_SOURCE_DIR_DART_LIBCCD={(tmp_path / 'libccd-src').as_posix()}",
+        f"-DFETCHCONTENT_SOURCE_DIR_DART_FCL={fcl.as_posix()}",
+        # The hermetic search above skips PATH.
+        f"-DPatch_EXECUTABLE={shutil.which('patch')}",
+        "-DCMAKE_CXX_COMPILER_TARGET=dart-fixture-target",
+        "-DCMAKE_CXX_COMPILER_ARG1=--dart-fixture-arg",
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DCMAKE_CXX_FLAGS_RELEASE=-DDART_FIXTURE_RELEASE",
+        "-DCMAKE_EXE_LINKER_FLAGS=-Wl,--dart-fixture",
+        "-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY",
+    ]
+    # A DESTDIR in the environment, as packaging installs set, must not move
+    # the nested stage away from where DART looks for it.
+    cmake_fixture_run(
+        *configure_args, env={**os.environ, "DESTDIR": str(tmp_path / "destdir")}
+    )
+    assert not (tmp_path / "destdir").exists()
+    marker = "Preserve the witnesses when a support point is exactly the origin."
+    assert (fcl / FCL_HEADER).read_text().count(marker) == 1
+    # A reconfigure keeps the already patched tree.
+    cmake_fixture_run(*configure_args)
+    assert (fcl / FCL_HEADER).read_text().count(marker) == 1
+    # The recorded directories follow the components into a relocated prefix.
+    stage = tmp_path / "install"
+    cmake_fixture_run(cmake, "--install", build, "--prefix", stage)
+    assert (stage / FCL_HEADER).read_text().count(marker) == 1
+    # The installed pkg-config files follow the relocated prefix.
+    pc_dir = stage / "lib/pkgconfig"
+    for name in ("ccd", "fcl"):
+        lines = (pc_dir / f"{name}.pc").read_text().splitlines()
+        # file(RELATIVE_PATH) may end the path with a slash, as in dart.pc.
+        assert lines[0].rstrip("/") == "prefix=${pcfiledir}/../.."
+        assert lines[1:3] == ["libdir=${prefix}/lib", "includedir=${prefix}/include"]
+    if shutil.which("pkg-config"):
+        env = {**os.environ, "PKG_CONFIG_LIBDIR": str(pc_dir), "PKG_CONFIG_PATH": ""}
+        includedir = subprocess.run(
+            ["pkg-config", "--variable=includedir", "fcl"],
+            capture_output=True,
+            text=True,
+            check=True,
+            env=env,
+        ).stdout.strip()
+        assert Path(includedir).resolve() == (stage / "include").resolve()
+    consumer = tmp_path / "consumer"
+    consumer.mkdir()
+    (consumer / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.22.1)\nproject(Consumer NONE)\n"
+        f'set(CMAKE_PREFIX_PATH "{decoy.as_posix()}")\n'
+        + HERMETIC_FIND
+        + "find_package(DART REQUIRED CONFIG)\n"
+        'set(found "")\n'
+        "foreach(name ccd fcl)\n"
+        "  get_property(directory GLOBAL PROPERTY DART_FIXTURE_${name})\n"
+        '  string(APPEND found "${directory}\\n")\nendforeach()\n'
+        'file(WRITE "${CMAKE_BINARY_DIR}/found.txt" "${found}")\n'
+    )
+    cmake_fixture_run(
+        cmake,
+        "-G",
+        "Ninja",
+        "-S",
+        consumer,
+        "-B",
+        consumer / "build",
+        f"-DDART_DIR={(stage / 'share/dart/cmake').as_posix()}",
+    )
+    found = (consumer / "build/found.txt").read_text().splitlines()
+    assert [Path(path).resolve() for path in found] == [
+        (stage / "lib/ccd").resolve(),
+        (stage / ("CMake" if os.name == "nt" else "lib/cmake/fcl")).resolve(),
+    ]
+    # The consumer's own cache keeps its search for these packages.
+    cache = (consumer / "build/CMakeCache.txt").read_text()
+    assert "fcl_DIR" not in cache and "ccd_DIR" not in cache
 
 
 @pytest.mark.parametrize(
