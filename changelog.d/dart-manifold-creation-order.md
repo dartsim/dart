@@ -6,3 +6,4 @@ Section: Collision
     depend on heap layout. Results can change in the last bits where the two
     orders differed. `DARTCollisionObject` gains a member, so code that
     subclasses it must be rebuilt.
+    [#3963](https://github.com/dartsim/dart/pull/3963)
