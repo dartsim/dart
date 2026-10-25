@@ -101,6 +101,11 @@ def test_nested_edits_preserve_lazy_or_compiled_mode(compiled):
         assert world.hasSkeleton(first)
 
 
+
+def raise_error(error):
+    """Raise through a call, so analyzers see that a with block can continue."""
+    raise error
+
 @pytest.mark.parametrize("compiled", [False, True])
 def test_exception_retains_edits_without_recompiling(compiled):
     world = dart.World()
@@ -112,7 +117,7 @@ def test_exception_retains_edits_without_recompiling(compiled):
         with world.edit():
             with world.edit():
                 world.addSkeleton(model)
-                raise error
+                raise_error(error)
     assert raised.value is error
     assert not world.is_compiled
     assert world.getSkeleton("retained") is model
@@ -128,7 +133,7 @@ def test_caught_inner_exception_allows_outer_recompile():
     with world.edit():
         with pytest.raises(ValueError, match="caught"):
             with world.edit():
-                raise ValueError("caught")
+                raise_error(ValueError("caught"))
         assert not world.is_compiled
     assert world.is_compiled
 
