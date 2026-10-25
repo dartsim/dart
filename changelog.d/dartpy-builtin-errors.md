@@ -10,3 +10,4 @@ Section: Python
     `dartpy.errors`: `DartError`, `OperationError`, `ValidationError`,
     `NotFoundError`, `ModelFrozenError`, `CheckpointMismatchError` and
     `NameConflictError` are removed.
+    [#3959](https://github.com/dartsim/dart/pull/3959)
