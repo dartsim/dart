@@ -2,6 +2,8 @@
 #include "detail/dart_nb.hpp"
 // clang-format on
 
+#include "detail/world.hpp"
+
 #include "detail/eigen.hpp"
 
 #include <nanobind/stl/set.h>
@@ -56,14 +58,114 @@
 
 #include <memory>
 #include <set>
+#include <stdexcept>
 #include <string>
 
+#include <cmath>
 #include <cstddef>
 
 namespace dart {
 namespace python {
 
 namespace {
+
+void setTimeStep(dart::simulation::World& world, double timeStep)
+{
+  dartnb::checkWorldBusy(world);
+  if (!std::isfinite(timeStep) || timeStep <= 0.0)
+    throw nb::value_error("time_step must be positive and finite");
+  world.setTimeStep(timeStep);
+}
+
+void setGravity(dart::simulation::World& world, nb::handle gravity)
+{
+  dartnb::checkWorldBusy(world);
+  Eigen::Vector3d value;
+  if (!nb::try_cast(gravity, value))
+    throw nb::value_error("gravity must be a vector of length 3");
+  world.setGravity(value);
+}
+
+struct WorldHandle
+{
+  nb::object owner;
+
+  explicit WorldHandle(nb::handle world) : owner(nb::borrow(world)) {}
+
+  dart::simulation::World& get() const
+  {
+    auto& world = nb::cast<dart::simulation::World&>(owner);
+    dartnb::checkWorldBusy(world);
+    return world;
+  }
+
+  void clear()
+  {
+    owner.reset();
+  }
+};
+
+struct WorldCollision : WorldHandle
+{
+  using WorldHandle::WorldHandle;
+};
+
+struct WorldSolver : WorldHandle
+{
+  using WorldHandle::WorldHandle;
+};
+
+struct WorldEdit : WorldHandle
+{
+  using WorldHandle::WorldHandle;
+  std::unique_ptr<dart::simulation::World::EditScope> scope;
+
+  void clear()
+  {
+    scope.reset();
+    WorldHandle::clear();
+  }
+
+  void exit(bool failed)
+  {
+    get();
+    if (!scope)
+      throw std::runtime_error("World edit scope is not active");
+    if (failed) {
+      struct BodyRaised
+      {
+      };
+      try {
+        // Python __exit__ has no C++ unwind; give EditScope the same signal.
+        auto unwinding = std::move(scope);
+        throw BodyRaised{};
+      } catch (const BodyRaised&) {
+      }
+    } else {
+      scope.reset();
+    }
+  }
+};
+
+template <class T>
+const PyType_Slot* worldHandleSlots()
+{
+  static const PyType_Slot slots[] = {
+      {Py_tp_traverse,
+       reinterpret_cast<void*>(+[](PyObject* self, visitproc visit, void* arg) {
+         Py_VISIT(Py_TYPE(self));
+         if (nb::inst_ready(self))
+           Py_VISIT(nb::inst_ptr<T>(self)->owner.ptr());
+         return 0;
+       })},
+      {Py_tp_clear, reinterpret_cast<void*>(+[](PyObject* self) {
+         if (nb::inst_ready(self))
+           nb::inst_ptr<T>(self)->clear();
+         return 0;
+       })},
+      {0, nullptr}};
+  return slots;
+}
 
 // Independent copy of a state channel with NumPy's writeable flag cleared.
 template <typename Array>
@@ -78,6 +180,55 @@ nb::object readOnlyCopy(Array array)
 
 void World(nb::module_& m)
 {
+  nb::class_<WorldCollision>(
+      m, "WorldCollision", nb::type_slots(worldHandleSlots<WorldCollision>()))
+      .def_prop_rw(
+          "detector",
+          [](const WorldCollision& self) {
+            return self.get().getCollisionDetector();
+          },
+          [](WorldCollision& self,
+             const dart::collision::CollisionDetectorPtr& detector) {
+            self.get().setCollisionDetector(detector);
+          },
+          "The live detector. Replacement requires edit() on a compiled "
+          "World.");
+
+  nb::class_<WorldSolver>(
+      m, "WorldSolver", nb::type_slots(worldHandleSlots<WorldSolver>()))
+      .def_prop_rw(
+          "threads",
+          [](const WorldSolver& self) {
+            return self.get().getNumSimulationThreads();
+          },
+          [](WorldSolver& self, std::size_t threads) {
+            self.get().setNumSimulationThreads(threads);
+          },
+          "Simulation worker count; assigning 0 selects the hardware count.");
+
+  nb::class_<WorldEdit>(
+      m, "_WorldEdit", nb::type_slots(worldHandleSlots<WorldEdit>()))
+      .def(
+          "__enter__",
+          [](WorldEdit& self) -> WorldEdit& {
+            auto& world = self.get();
+            if (self.scope)
+              throw std::runtime_error("World edit scope is already active");
+            self.scope
+                = std::make_unique<dart::simulation::World::EditScope>(world);
+            return self;
+          },
+          nb::rv_policy::reference_internal)
+      .def(
+          "__exit__",
+          [](WorldEdit& self, nb::handle type, nb::handle, nb::handle) {
+            self.exit(!type.is_none());
+            return false;
+          },
+          nb::arg("exc_type").none(),
+          nb::arg("exc_value").none(),
+          nb::arg("traceback").none());
+
   nb::enum_<dart::simulation::CollisionDetectorType>(
       m, "CollisionDetectorType", nb::is_arithmetic())
       .value("DART", dart::simulation::CollisionDetectorType::Dart)
@@ -157,6 +308,90 @@ void World(nb::module_& m)
             return dart::simulation::World::create(name);
           }),
           nb::arg("name"))
+      .def(
+          dartnb::factory(
+              +[](const std::string& name,
+                  double timeStep,
+                  nb::handle gravity,
+                  const dart::collision::CollisionDetectorPtr& detector,
+                  std::size_t threads) {
+                auto world = dart::simulation::World::create(name);
+                setTimeStep(*world, timeStep);
+                setGravity(*world, gravity);
+                if (detector)
+                  world->setCollisionDetector(detector);
+                world->setNumSimulationThreads(threads);
+                return world;
+              }),
+          nb::kw_only(),
+          nb::arg("name") = "world",
+          nb::arg("time_step") = 0.001,
+          nb::arg("gravity") = nb::make_tuple(0.0, 0.0, -9.81),
+          nb::arg("collision_detector").none() = nb::none(),
+          nb::arg("threads") = 1,
+          "Construct a World. Omitted collision_detector or None keeps FCL.")
+      .def_prop_rw(
+          "name",
+          [](const dart::simulation::World& self) {
+            dartnb::checkWorldBusy(self);
+            return std::string(self.getName());
+          },
+          [](dart::simulation::World& self, const std::string& name) {
+            dartnb::checkWorldBusy(self);
+            self.setName(name);
+          })
+      .def_prop_rw(
+          "time_step",
+          [](const dart::simulation::World& self) {
+            dartnb::checkWorldBusy(self);
+            return self.getTimeStep();
+          },
+          &setTimeStep,
+          "Step duration in seconds; must be positive and finite.")
+      .def_prop_rw(
+          "gravity",
+          [](const dart::simulation::World& self) {
+            dartnb::checkWorldBusy(self);
+            return Eigen::Vector3d(self.getGravity());
+          },
+          &setGravity,
+          "Gravity vector; the getter returns a read-only copy.")
+      .def_prop_ro(
+          "is_compiled",
+          [](const dart::simulation::World& self) {
+            dartnb::checkWorldBusy(self);
+            return self.isCompiled();
+          })
+      .def_prop_ro(
+          "collision",
+          [](nb::handle self) {
+            dartnb::checkWorldBusy(nb::cast<dart::simulation::World&>(self));
+            return WorldCollision(self);
+          })
+      .def_prop_ro(
+          "solver",
+          [](nb::handle self) {
+            dartnb::checkWorldBusy(nb::cast<dart::simulation::World&>(self));
+            return WorldSolver(self);
+          })
+      .def(
+          "compile",
+          [](dart::simulation::World& self) {
+            dartnb::checkWorldBusy(self);
+            self.compile();
+          },
+          "Prepare simulation data and freeze topology.")
+      .def(
+          "edit",
+          [](nb::handle self) {
+            dartnb::checkWorldBusy(nb::cast<dart::simulation::World&>(self));
+            return WorldEdit(self);
+          },
+          "Return a topology-edit context manager. Nested scopes are allowed.\n"
+          "Successful exit recompiles a previously compiled World; lazy "
+          "Worlds\n"
+          "stay lazy. If the body raises, edits remain and the World stays\n"
+          "uncompiled. A failed recompile is reported by step() or compile().")
       .def(
           "clone",
           +[](const dart::simulation::World* self)

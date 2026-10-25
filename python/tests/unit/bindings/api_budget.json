@@ -4,6 +4,7 @@
     "container_owners": {
       "Rotation": "dartpy.math.Rotation",
       "Transform": "dartpy.math.Transform",
+      "World": "dartpy.simulation.World",
       "collision": "dartpy.collision",
       "common": "dartpy.common",
       "constraint": "dartpy.constraint",
@@ -20,6 +21,7 @@
     "containers": [
       "Rotation",
       "Transform",
+      "World",
       "collision",
       "common",
       "constraint",
@@ -2237,7 +2239,17 @@
       "World": {
         "camel_case": 32,
         "get_set": 23,
-        "public": 39
+        "public": 47
+      },
+      "WorldCollision": {
+        "camel_case": 0,
+        "get_set": 0,
+        "public": 2
+      },
+      "WorldSolver": {
+        "camel_case": 0,
+        "get_set": 0,
+        "public": 2
       },
       "WorldState": {
         "camel_case": 0,
@@ -2250,6 +2262,8 @@
       "DeactivationOptions": "dartpy.simulation.DeactivationOptions",
       "Recording": "dartpy.simulation.Recording",
       "World": "dartpy.simulation.World",
+      "WorldCollision": "dartpy.simulation.WorldCollision",
+      "WorldSolver": "dartpy.simulation.WorldSolver",
       "WorldState": "dartpy.simulation.WorldState"
     },
     "containers": [
@@ -2257,6 +2271,8 @@
       "DeactivationOptions",
       "Recording",
       "World",
+      "WorldCollision",
+      "WorldSolver",
       "WorldState"
     ],
     "functions": {
