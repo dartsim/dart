@@ -179,7 +179,8 @@ Four PRs in order; the default standard stays C++17.
    `throw()` with `noexcept` in `StlAllocator`.
 2. Explicit captures for the six implicit-`this` lambdas:
    `InverseKinematics.cpp` (three), `optimizer/Function.cpp` (one) now;
-   `World.cpp` (two) after M1d or through the PLAN-624 owner.
+   `World.cpp` (two) after M1d or through the PLAN-624 owner. All six merged
+   with #3804.
 3. Third-party header warnings: SYSTEM includes or a scoped suppression for
    bundled ODE's enum-enum conversion, and push/pop suppression of octomap's
    `<ciso646>` warning around the FCL and octomap includes.
@@ -303,10 +304,11 @@ pattern. A mechanical PR can default their copy operations the same way.
   `dart.data` builds on the binding. libcurl and OpenSSL stay; DEP-2 exports
   them only for static builds. Linux wheels enable `utils-assets`: the image
   builds current libcurl and OpenSSL 3 from hash-pinned archives (DEP-8(f)).
-  macOS/Windows retrievers are deferred pending an approved size/trust decision
-  or a minimal curl build; their locked closures add roughly 18.2/16.5 MB.
-  Measure the wheel-size cost and enforce the platform budgets.
-  Standalone builds that enable it fetch libcurl and OpenSSL under DD-10.
+  macOS and Windows wheels build the same minimal libcurl and OpenSSL from
+  pinned sources (DD-37), instead of the conda-forge closures that would add
+  about 18.2 and 16.5 MB. Measure the wheel-size cost and enforce the
+  platform budgets. Standalone builds that enable it fetch libcurl and
+  OpenSSL under DD-10 and DD-36.
 - **Gates:** base, py, wheel (the binding loads, `model://` resolves a pinned
   bundle, size recorded), pkg, gz.
 
@@ -330,7 +332,15 @@ pattern. A mechanical PR can default their copy operations the same way.
   exported requirement stays `cxx_std_17`; the C++20 library rule with a grep
   gate.
 - **Gates:** in [verification.md](verification.md#c-standard-gates).
-- **Timing:** after M1d, DEP-0, DEP-11 and DEP-12(a).
+- **Timing:** after M1d, DEP-0, DEP-11 and DEP-12(a), all merged by
+  2026-10-24 except DEP-11 PR4 (#3943).
+- **Prerequisites (wave-7 spikes, 2026-10-24):** make `DART_STRING_TYPE`'s
+  function-local `std::string` initialize the same way in both dialects
+  (for example, bind it to a heap string, under a new name so an old
+  header's copy cannot bind to it); check gate 3 with the scripted checks in
+  [verification.md](verification.md#wave-7-2026-10-24); add a C++17
+  consumer of C++20-built libraries to `tools/package` that reads such
+  statistics library-first.
 
 ## DEP-22. Developer-tooling refresh (7.x)
 
@@ -365,12 +375,11 @@ pattern. A mechanical PR can default their copy operations the same way.
   pixi and package managers; DD-30) wired at every existing fetch site; an offline
   fail-fast that names the switch; CMP0170 at every existing fetch site; no
   version or default changes otherwise. New fetch paths follow one dependency
-  per PR, starting with the tinyxml2 prototype.
+  per PR; under DD-36 the next is FCL/libccd.
 - **Non-goals:** publishing the tinyxml2 prototype or resolving its dependency
-  ABI question (the open question in
-  [decisions.md](decisions.md#open-question-2026-10-20); the prototype stays
-  local and unpublished until the maintainer decides). The approved DD-10
-  fetch-first acquisition of Gazebo-shared libraries is unchanged, and so is
+  ABI question (answered by DD-36: the prototype stays local until urdfdom
+  can be fetched too). DD-10's acquisition
+  rule, with DD-36's loader rule, is unchanged, and so is
   the installed-first sdformat exception (DD-11, DEP-18).
 - **Needs:** none. **Gates:** base, pkg, dis (installed CMake files
   unchanged except the new option).
@@ -422,12 +431,13 @@ Four PRs; each keeps its test coverage on authored fixtures.
 - **(a)** Remove `data/skel/kima/` and move the three `MeshShape` tests to a
   DART-authored COLLADA fixture (DD-21). Merged (#3880).
 - **(b)** Replace the KR5 with a DART-authored six-axis URDF fixture that keeps
-  `KR5MeshColor` coverage (DD-22, first step). Ready (#3878).
+  `KR5MeshColor` coverage (DD-22, first step). Merged (#3878).
 - **(c)** Keep only the WAM's BSD files and ship `LICENSE.bsd` and the Atlas
   v3 Apache-2.0 license with NOTICE entries (DD-20, DD-23); needs DEP-27a
-  (#3857), which supplies the root NOTICE and its coverage test. Draft (#3882).
+  (#3857), which supplies the root NOTICE and its coverage test. Merged (#3882).
 - **(d)** The pinned online catalog (G1, UR5e, FR3; DD-22, DD-23, DD-24)
-  through `ModelResourceRetriever`; starts after DEP-19's wheel half.
+  through `ModelResourceRetriever`; DEP-19's Linux wheels merged (#3931), so
+  it can start.
 - **Non-goals:** porting the Atlas controllers or the robot benchmark to G1
   (DD-23), the Go2, TIAGo and hands, and any set DD-16 sends back to the
   maintainer.

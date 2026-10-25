@@ -168,6 +168,25 @@ add_test(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test_HeadersComponent.cmake"
 )
 
+# The test stages this build's install and reads its cache, so DART must be the
+# top-level project. A static GUI built with DART's private Filament SDK
+# installs a package that consumers can use only with their own Filament_ROOT.
+if(
+  PROJECT_IS_TOP_LEVEL
+  AND (BUILD_SHARED_LIBS OR NOT DART_BUILD_GUI OR DART_USE_SYSTEM_FILAMENT)
+)
+  add_test(
+    NAME test_StandaloneHeaders
+    COMMAND
+      "${CMAKE_COMMAND}" "-DDART_BINARY_DIR=${DART_BINARY_DIR}"
+      "-DTEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/cmake/StandaloneHeaders"
+      "-DTEST_CONFIG=$<CONFIG>" -P
+      "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test_StandaloneHeaders.cmake"
+  )
+  # It compiles on every core, so CTest must not run other tests beside it.
+  set_tests_properties(test_StandaloneHeaders PROPERTIES RUN_SERIAL TRUE)
+endif()
+
 if(TARGET dart-collision-ode)
   add_test(
     NAME test_DARTConfigODE

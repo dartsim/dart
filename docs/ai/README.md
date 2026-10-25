@@ -169,7 +169,7 @@ on 2026-10-17:
   if it still refuses. See Anthropic's
   [model catalog](https://platform.claude.com/docs/en/models/overview) and
   [Claude Code effort guidance](https://code.claude.com/docs/en/model-config#adjust-effort-level).
-- **Muse — Muse Code 1.4.10.** Use:
+- **Muse — current Muse models.** Use:
   - `muse-wonder-full-1.0` for the most critical work. It is available only on
     the Muse Code Power Usage and Maximum Usage plans.
   - `muse-wonder-1.0` for complex software engineering and long-horizon agentic
