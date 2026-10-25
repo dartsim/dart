@@ -68,10 +68,17 @@ def api_surface(monkeypatch):
 
 
 def test_api_surface_budget(api_surface):
-    """Pin World's current surface; the DART 7 target is about 20 public names."""
+    """Ratchet the live surface and enforce R57 caps and all four naming checks."""
     budget = json.loads(api_surface.BUDGET_PATH.read_text())
+    rows = api_surface.snapshot()
     failures = api_surface.budget_growth(
-        api_surface.budget_surface(api_surface.snapshot()), budget, check_stale=True
+        api_surface.budget_surface(rows), budget, check_stale=True
+    )
+    failures += api_surface.cap_failures(
+        api_surface.visible_class_members(rows), budget.get("caps", {})
+    )
+    failures += api_surface.naming_failures(
+        rows, exceptions=json.loads(api_surface.NAMING_EXCEPTIONS_PATH.read_text())
     )
     assert not failures, (
         "\n".join(failures)
@@ -81,6 +88,172 @@ def test_api_surface_budget(api_surface):
         + f"{api_surface.BUDGET_UPDATE} --allow-growth. "
         + f"Lowering is automatic with {api_surface.BUDGET_UPDATE}."
     )
+
+
+def test_api_visible_caps_and_naming_checks(api_surface):
+    def cls(name):
+        return {"kind": "class", "runtime": {"module": "dartpy", "qualname": name}}
+
+    def method(result="None", arguments=()):
+        return {
+            "kind": "callable",
+            "normalized": [{"return": result, "arguments": list(arguments)}],
+        }
+
+    rows = {
+        "dartpy.Base": cls("Base"),
+        "dartpy.Derived": cls("Derived"),
+        "dartpy.Base.value": {"kind": "property"},
+        "dartpy.Derived.value": {
+            "kind": "property",
+            "runtime": {"identity_path": "dartpy.Base.value"},
+        },
+        "dartpy.Derived.__init__": method(arguments=[{"name": "compute_init"}]),
+        "dartpy.Derived.children": {"kind": "property"},
+        "dartpy.Derived.get_value": method("float"),
+        "dartpy.Derived.get_missing": method("float"),
+        "dartpy.Derived.compute_result": method("float"),
+        "dartpy.Derived.calc_result": method("float"),
+        "dartpy.Derived.eval_result": method("float"),
+        "dartpy.Derived.compute_flag": {"kind": "property"},
+        "dartpy.Derived.store": method(arguments=[{"name": "compute_flag"}]),
+        "dartpy.Derived.otherValue": method(),
+        "dartpy.Derived.get_composite_state": method("State"),
+        "dartpy.Other": cls("Other"),
+        "dartpy.Other.value": method("float"),
+        "dartpy.Mode": {
+            **cls("Mode"), "kind": "enum", "members": {"FIRST": 1, "_private": 2}
+        },
+    }
+    classes = api_surface.visible_class_members(rows)
+    assert len(classes["dartpy.Derived"]) == 11
+    assert "value" in classes["dartpy.Derived"]
+    assert "__init__" not in classes["dartpy.Derived"]
+    assert set(classes["dartpy.Mode"]) == {"FIRST"}
+    assert not api_surface.cap_failures(classes, {"dartpy.Base": 1})
+    assert api_surface.cap_failures(classes, {"dartpy.Derived": 10})
+    assert "missing" in api_surface.cap_failures(classes, {"dartpy.Absent": 15})[0]
+    failures = api_surface.naming_failures(rows)
+    assert sum("naming check 1" in failure for failure in failures) == 1
+    assert sum("naming check 2" in failure for failure in failures) == 3
+    assert sum("naming check 3" in failure for failure in failures) == 4
+    assert sum("naming check 4" in failure for failure in failures) == 1
+    assert not any("API freeze" in failure for failure in failures)
+    assert any(
+        "otherValue" in failure
+        for failure in api_surface.naming_failures(rows, freeze=True)
+    )
+    assert not any("composite_state" in failure for failure in failures)
+
+
+@pytest.mark.parametrize("prune", [False, True])
+def test_api_budget_update_preserves_caps(api_surface, tmp_path, prune):
+    path = tmp_path / "budget.json"
+    caps = {"dartpy.Value": 15, "dartpy.Missing": 12}
+    path.write_text(json.dumps({"caps": caps}))
+    api_surface.update_budget(path, {}, prune=prune)
+    assert json.loads(path.read_text()) == {"caps": caps}
+
+
+def test_api_naming_exceptions_require_recorded_rule(api_surface):
+    with pytest.raises(ValueError, match="rule, reason and exception"):
+        api_surface.naming_failures(
+            {}, exceptions=[{"check": 4, "path": "dartpy.X.value"}]
+        )
+    for entry in json.loads(api_surface.NAMING_EXCEPTIONS_PATH.read_text()):
+        assert entry["rule"] in {"R23", "R41", "R57", "R59"}
+        if entry["exception"].startswith("https://"):
+            assert re.fullmatch(
+                r"https://github\.com/dartsim/dart/pull/\d+(?:#[\w-]+)?",
+                entry["exception"],
+            )
+            continue
+        path, anchor = entry["exception"].split("#")
+        text = (TOOLS.parents[1] / path).read_text()
+        assert anchor in {
+            re.sub(r"[^\w -]", "", heading).lower().replace(" ", "-")
+            for heading in re.findall(r"^#+ (.+)$", text, re.MULTILINE)
+        }
+        assert entry["path"] in text
+
+
+def test_api_visible_aliases_inheritance_and_protocols(api_surface, monkeypatch):
+    module = types.ModuleType("dartpy")
+    module.__version__ = "test"
+
+    class Base:
+        @property
+        def index(self):
+            return 0
+
+    class Derived(Base):
+        pass
+
+    class Sequence:
+        def __len__(self):
+            return 0
+
+        def __getitem__(self, key):
+            raise IndexError(key)
+
+        def index(self, value):
+            return 0
+
+    for cls in (Base, Derived, Sequence):
+        cls.__module__ = "dartpy"
+        cls.__qualname__ = cls.__name__
+        setattr(module, cls.__name__, cls)
+    module.Alias = Derived
+    monkeypatch.setitem(sys.modules, "dartpy", module)
+    rows = api_surface.snapshot()
+    visible = api_surface.visible_class_members(rows)
+    assert set(visible) == {"dartpy.Base", "dartpy.Derived", "dartpy.Sequence"}
+    assert set(visible["dartpy.Derived"]) == {"index"}
+    assert not api_surface.naming_failures(rows)
+
+
+def test_api_naming_exception_does_not_exempt_other_classes(api_surface):
+    rows = {
+        f"dartpy.{name}": {
+            "kind": "class",
+            "runtime": {"module": "dartpy", "qualname": name},
+        }
+        for name in ("Legacy", "Value", "New")
+    }
+    rows["dartpy.Legacy.axis"] = {"kind": "callable"}
+    rows["dartpy.Value.axis"] = {"kind": "property"}
+    exceptions = [
+        {
+            "check": 4,
+            "path": "dartpy.Legacy.axis",
+            "rule": "R59",
+            "reason": "Legacy callable retires with its last consumer under R41.",
+            "exception": "scripts/nanobind/README.md#recorded-naming-exceptions",
+        }
+    ]
+    assert not api_surface.naming_failures(rows, exceptions=exceptions)
+    rows["dartpy.New.axis"] = {"kind": "callable"}
+    failures = api_surface.naming_failures(rows, exceptions=exceptions)
+    assert len(failures) == 1
+    assert "dartpy.New.axis" in failures[0]
+    assert "dartpy.Legacy.axis" not in failures[0]
+
+
+def test_api_freeze_exempts_only_r2_members(api_surface):
+    rows = {
+        f"{module}.{name}": {
+            "kind": "class",
+            "runtime": {"module": module, "qualname": name},
+        }
+        for module, name in (("dartpy.gui", "Widget"), ("dartpy", "Model"))
+    }
+    rows["dartpy.gui.Widget.oldName"] = {"kind": "callable"}
+    rows["dartpy.Model.getCompositeState"] = {"kind": "callable"}
+    assert not api_surface.naming_failures(rows, freeze=True)
+    rows["dartpy.Model.newName"] = {"kind": "callable"}
+    failures = api_surface.naming_failures(rows, freeze=True)
+    assert len(failures) == 1
+    assert "dartpy.Model" in failures[0] and "newName" in failures[0]
 
 
 def test_api_snapshot_imports_public_subpackages(api_surface, tmp_path, monkeypatch):
