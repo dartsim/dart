@@ -17,6 +17,23 @@ its gates; the FCL and collision-backend lifecycle stays with PLAN-620.
 - [Progress log](progress-log.md): completed chunks.
 - [Resume](RESUME.md): the next-session handoff.
 
+## Status
+
+Status on 2026-10-25. [RESUME](RESUME.md) holds the published PRs and the next
+steps.
+
+- **State:** every published PR has merged, including wave 8 on 2026-10-25
+  and both release-6.20 backports (#3947 and #3948). The FCL/libccd fetch
+  path is in review. The maintainer answered the queued decisions (DD-36 to
+  DD-38).
+- **Acceptance progress:** the stock-noble lane passed in the 2026-10-25
+  nightly on `main`.
+- **Next:** the remaining packets in RESUME's order, starting with the
+  FCL/libccd fetch path and DEP-20(c) under DD-38. DEP-21, which builds
+  DART's own targets as C++20, comes last, after its prerequisites.
+- **Blockers:** none recorded.
+- **Needs the maintainer:** nothing is queued.
+
 ## North star
 
 DART 7 builds from a short, current and well-understood dependency list.
