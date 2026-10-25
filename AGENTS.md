@@ -25,7 +25,7 @@ pixi run build-py-dev # Build dartpy
 pixi run test-py      # Run dartpy tests
 pixi run test-all     # Build defaults and run C++/Python tests
 pixi run test-gui     # Run Filament GUI tests that need a graphics device
-pixi run lint         # Format code, docs, TOML, and spelling (auto-fixes)
+pixi run lint         # Format C++, CMake, Python, TOML; fix spelling (auto-fixes)
 pixi run check-lint   # Run the non-mutating lint aggregate
 ```
 

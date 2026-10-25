@@ -55,11 +55,11 @@ loop to the next terminal state:
 
 This explicit approval covers routine PR-maintenance mutations for that loop:
 additive fix commits and pushes, description/metadata corrections, resolving
-already-addressed review threads, rerunning failed CI jobs, requesting a fresh
-`@codex review` for a new head, and marking a draft ready once the
-"PR Lifecycle" step 2 gate passes. It does **not** cover merging (see
+already-addressed review threads, and rerunning failed CI jobs. It also covers
+requesting a fresh `@codex review` for a new head and marking a draft ready
+once the "PR Lifecycle" step 2 gate passes. It does **not** cover merging (see
 `mode=merge`), force-pushes, branch deletion, PR closure, base-branch changes,
-or human reviewer requests; ask separately for those.
+or human reviewer requests. Ask separately for those.
 
 Do not call the PR managed just because checks are green: continue until it is
 mergeable with required checks complete and addressed threads resolved, or a

@@ -12,10 +12,16 @@ Maintain DART changelog entries: $ARGUMENTS
 usually invoked by other DART workflows when they reach a changelog decision,
 not directly by users.
 
-Use it to decide whether a change needs a changelog entry, draft an entry at
-the right level of detail, add a PR link after publication, audit pending
-fragments or a release section for missing or over-detailed entries, or
-assemble `main`'s fragments at a checkpoint. On `main`, an entry is a
+Use it to:
+
+- decide whether a change needs a changelog entry;
+- draft an entry at the right level of detail;
+- add a PR link after publication;
+- audit pending fragments or a release section for missing or over-detailed
+  entries; or
+- assemble `main`'s fragments at a checkpoint.
+
+On `main`, an entry is a
 `changelog.d/` fragment and only checkpoint assembly adds entries to
 `CHANGELOG.md`;
 `release-*` branches edit `CHANGELOG.md` directly. Keep style, placement,

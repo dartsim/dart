@@ -100,8 +100,8 @@ the real scope materially different stops and reports back.
    before destructive operations, history rewrites, irreversible
    migrations, meaningful cost, secret handling, legal/privacy-sensitive
    choices, product-direction calls outside the brief, or assumptions whose
-   wrong answer could cause significant harm; if input is unavailable, take
-   the safest reversible path, document the assumption, and continue only
+   wrong answer could cause significant harm. If input is unavailable, take
+   the safest reversible path and document the assumption. Continue only
    with non-blocked work.
 4. **Tracking surface** - Populate the project home with value, north star,
    deliverable, scope, non-goals, assumptions, risks, acceptance evidence,

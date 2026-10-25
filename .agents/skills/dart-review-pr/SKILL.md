@@ -64,11 +64,12 @@ requests it or when there is a clear reason such as removing sensitive content
 or repairing broken branch history.
 
 Before every push, first merge the latest base branch into the PR branch (on
-every push, not just the first) so each pushed/CI-tested state reflects current
-target base branch and conflicts surface early: `git fetch origin <base>` then
-`git merge --no-ff origin/<base>`, rebuild/retest if the merge touched code, then
-push. The local base merge is a routine pre-push step; the push itself still
-requires explicit maintainer/user approval. Do not rebase a published PR branch
+every push, not just the first). Each pushed/CI-tested state then reflects the
+current target base branch, and conflicts surface early:
+`git fetch origin <base>` then `git merge --no-ff origin/<base>`, rebuild/retest
+if the merge touched code, then push. The local base merge is a routine
+pre-push step; the push itself still requires explicit maintainer/user
+approval. Do not rebase a published PR branch
 by default because it invalidates existing CI runs and makes PR review/comment
 history harder to follow. Rebase or force-push only when the maintainer
 explicitly requests it.

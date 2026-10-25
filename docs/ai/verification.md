@@ -167,8 +167,8 @@ engine-rendered overlay on/off pixel regression
 (`pixi run test-agent-debug-overlay`). A second A/B runs through
 `agent-capture` itself with identical cameras and requires the
 contact/bounds/label layers to change at least 128
-pixels; it also requires rendered contact-marker color pixels, while retaining
-the sidecar's count of any filtered DART sentinel contacts, then proves
+pixels. It also requires rendered contact-marker color pixels, while retaining
+the sidecar's count of any filtered DART sentinel contacts. It then proves
 contacts, collision bounds, and labels each change pixels independently. This
 keeps the camera assessment, Filament debug overlay, off-screen
 renderer, artifact write, overlay injection, and image-verdict path covered end
@@ -225,10 +225,16 @@ readable alongside their contact markers and collision bounds.
   `scripts/agent_debug_overlay.py` renders the debug layers *through the
   engine* via a `dart.gui.DebugOverlay` viewer attachment. These layers become
   always-on-top overlay lines:
-  a ground grid, the world frame, contacts (implausible sentinel contact points
-  are skipped and counted), body frames, velocity arrows, centers of mass,
-  inertia-equivalent boxes (eigendecomposed moment of inertia), collision
-  bounding boxes (world-transformed local AABBs), and trajectory polylines.
+  - a ground grid;
+  - the world frame;
+  - contacts (implausible sentinel contact points are skipped and counted);
+  - body frames;
+  - velocity arrows;
+  - centers of mass;
+  - inertia-equivalent boxes (eigendecomposed moment of inertia);
+  - collision bounding boxes (world-transformed local AABBs);
+  - trajectory polylines.
+
   Labels become world-anchored text. The engine draws all of them unlit, with
   depth testing disabled, after the scene. The debug primitives stay legible on
   top of the geometry they annotate instead of being buried in depth or
