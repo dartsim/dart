@@ -2,10 +2,13 @@
 
 The maintainer took the decisions below one at a time, starting on 2026-10-10,
 after read-only research and independent reviews; D13 was amended on
-2026-10-12, and D2, D3, D6, D7, D14, D20 and D30 on 2026-10-19 (see
-[Re-prioritization](#re-prioritization-2026-10-19)). Durable API rules derived
+2026-10-12, D2, D3, D6, D7, D14, D20 and D30 on 2026-10-19 (see
+[Re-prioritization](#re-prioritization-2026-10-19)), and two of the
+2026-10-19 rules on 2026-10-24 (see
+[Naming rulebook](#naming-rulebook-2026-10-24)). Durable API rules derived
 from them live in the
-[DART 7 Python API design](../../design/dart7_python_api.md). Revisit a decision
+[DART 7 Python API design](../../design/dart7_python_api.md) and the
+[naming rulebook](../../design/dart7_python_naming.md). Revisit a decision
 only with new evidence and maintainer approval.
 
 ## Product and release
@@ -291,9 +294,14 @@ these decisions, one at a time:
   two obvious arguments; named collections that raise `KeyError` listing the
   valid names; generated C++ helper types kept private; a name budget per
   class, about 20 for `World`.
+  - Amended 2026-10-24: a budget counts a class's visible names, and
+    `World`'s cap is 24 (see [Naming rulebook](#naming-rulebook-2026-10-24)).
 - **`None` for a frame argument** means the world frame where C++ defaults the
   argument to `Frame::World()`, keeps the meanings C++ documents for null, and
   raises `TypeError` elsewhere.
+  - Amended 2026-10-24: an omitted or `None` frame means the world, with the
+    exceptions that the [Naming rulebook](#naming-rulebook-2026-10-24) entry
+    lists.
 - **Never-compiled C++ Worlds keep DART 6.20 behavior**, except the labeled
   rejection of re-entrant `step()` and of edits during a step. Model-ownership
   tracking and strict guards start at `compile()`.
@@ -337,3 +345,105 @@ these decisions, one at a time:
   `docs/onboarding/changelog.md` applies. Open pull requests convert their
   `CHANGELOG.md` hunk into a fragment during the next base merge they need
   anyway, so the switch costs no extra pushes (2026-10-20).
+
+## Naming rulebook (2026-10-24)
+
+On 2026-10-24 the maintainer approved the
+[naming rulebook](../../design/dart7_python_naming.md) and took these
+decisions, one at a time:
+
+- **Python first; C++ parity is best effort.** The best Python behavior wins,
+  and parity with C++ never blocks it. C++ changes only where the Python API
+  needs it, and the subset that Gazebo uses stays compatible. Every semantic
+  difference is recorded in one
+  [differences register](../../design/dart7_python_cpp_differences.md), to
+  be resolved later.
+- **Omitted and `None` frames mean the world.** Every omitted frame keyword
+  means the world frame, for 6-D quantities as for all others, and `None`
+  always means the same as omitting it. A few arguments default to a
+  documented null meaning instead: joint wrenches, task-space region
+  references, `descends_from(None)`, a builder's `parent=None` and
+  `Chain(start=None)`. This amends the 2026-10-19 `None` rule. Poses and positions keep the API design's `X_AB` rule: an omitted or
+  `None` `expressed_in=` of `get_transform` or `get_com` means its
+  `relative_to=` frame. Docstrings of 6-D methods show `expressed_in=link` for
+  the own-coordinates form that C++ returns by default, and say that the
+  spatial Jacobian derivative in world axes is the rotated own-coordinates
+  derivative, while the time derivative of the world Jacobian is the classic
+  derivative. For today's calls that give no frame where C++ uses the
+  object's own coordinates, the codemod passes `expressed_in=` set to the
+  receiver, or to the link or end effector that a multibody's Jacobian
+  targets. The register records the difference.
+- **`expressed_in=` names the axes only.** It re-expresses a result in a
+  frame's axes, a rotation that keeps the reference point. The joint wrench,
+  whose C++ frame argument also moves the moment's reference point, gets its
+  own keyword in the joint area pull request. `relative_to=` is unchanged.
+- **Values are nouns, `get_` pairs with a property, and `compute_` stores.**
+  - A method that returns a value is named for its quantity: `mass_matrix()`,
+    `gravity_forces()`, `kinetic_energy()`,
+    `jacobian(offset=…, expressed_in=…)`, `com_jacobian()`,
+    `position_differences(q2, q1, /)`. No such method starts with
+    `compute_`, `calc_` or `eval_`. Operations applied to their arguments
+    keep their verbs: `raycast`, `collide`, `solve`, the `from_`, `as_` and
+    `to_` forms, and overridable callbacks.
+  - `get_<x>(…)` exists exactly when a property `x`, `world_x` or
+    `relative_x` holds the same quantity in its default form, as with
+    `world_transform` and `get_transform`, `linear_velocity` and
+    `get_linear_velocity`, and `com` and `get_com`.
+    6-D velocities and accelerations get the pair too (`spatial_velocity` and
+    `get_spatial_velocity`). Process-wide static `get_` and `set_` pairs are
+    allow-listed, and other lookups that are not collections become nouns
+    (`occupancy(point)`).
+  - `compute_` names only actions that store their results in the model and
+    return `None`: `compute_forward_kinematics()`,
+    `compute_forward_dynamics()` and `compute_inverse_dynamics()`. The stubs
+    annotate them as returning `None`. No property or keyword starts with
+    `compute_`; R23 of the rulebook renames such flags.
+  - A noun has one kind across all classes and all kinds of member, fields
+    and static factories included, so a shape's computed inertia is
+    `shape.moment_of_inertia(mass=…)`, not `shape.inertia(mass)` beside
+    `link.inertia`. Momenta, energies, the Lagrangian and wrenches are
+    bare-noun methods (`linear_momentum()`, `angular_momentum(pivot=…)`).
+    The joint area pull request gives the `FreeJoint` and `BallJoint`
+    statistics that turn a transform or a rotation into joint positions
+    (`convertToPositions`) names that do not reuse `positions`.
+  - Property docstrings are noun phrases and method docstrings are commands.
+    A docstring says when a property costs more than constant time and when
+    a result is a copy.
+  - Lints for these rules join the API-surface check. No aliases ship; the
+    codemod migrates, and the acceptance tests' `compute_inverse_mass_matrix()`
+    becomes `inverse_mass_matrix()`.
+- **Public C++ bases are Python bases.** Each public class takes its public
+  C++ base as its Python base, so `isinstance(revolute_joint, dart.Joint)`
+  holds, and members of private bases are bound again on it. A per-class
+  `__instancecheck__` is a fallback only where re-basing fails.
+- **Name budgets count visible names.** A class's budget counts its own
+  public names and those it inherits from public bases, without dunders, and
+  a collection or sub-object counts once. The rulebook sets each class's cap.
+  `World`'s cap is 24, the 8 properties, 11 methods and 5 sub-objects that the
+  API design lists, replacing the 2026-10-19 "about 20".
+  `scripts/nanobind/api_surface.py` learns to count inherited names.
+- **`com` stays short.** Names abbreviate the center of mass as `com`
+  (`link.com`, `link.local_com`, `com_jacobian()`, `get_com(relative_to=…)`),
+  and docstrings spell out "center of mass".
+- **Builtin errors; classes only for runtime conditions.** An error is the
+  builtin that names the failure: `ValueError`, `TypeError`, `IndexError`,
+  `RuntimeError`, `KeyError` listing the valid names, or `FileNotFoundError`
+  with its `errno` and `filename` set. A message that reports a DART rule
+  starts with a stable token, such as `ModelFrozenError:`. A dartpy class
+  exists only for a condition that callers handle at runtime; it subclasses
+  exactly one builtin and takes only a message. The three such classes,
+  `WorldBusyError`, `RenderingUnavailableError` and
+  `AssetsNotPrefetchedError`, subclass `RuntimeError`. This amends the API
+  design's rule that all DART errors share one base class, and replaces the
+  error classes that shipped in #3844: `DartError`, `OperationError`,
+  `ValidationError`, `NotFoundError`, `ModelFrozenError`,
+  `CheckpointMismatchError` and `NameConflictError` are removed, and no
+  `ResourceNotFoundError` is added. A follow-up pull request moves the
+  bindings and `docs/onboarding/python-bindings.md` to this rule.
+- **Deferred surfaces are dropped at the freeze.** A surface that a later
+  milestone owns but has not replaced when the API freeze `F` is declared,
+  such as aspect and composite state (M3), is dropped, because a milestone
+  that lands in 7.x may only add names. Shipped examples move off such
+  surfaces before the freeze, as `world_history.py` moves to `capture_state`
+  and `restore_state`. The C++ recording accessor is not deferred: the API
+  design already leaves it unbound.

@@ -19,6 +19,14 @@ but each public-API or ABI-layout change needs maintainer approval, apart from
 the ABI window `AGENTS.md` records for classes Gazebo neither subclasses nor
 reads. No deprecated C++ API is removed during 7.x.
 
+The Python API is designed first. When the best Python behavior differs from
+the C++ API that `dartpy` binds, Python takes the better behavior: parity with
+C++ is best effort and never blocks the Python design. C++ changes only where
+the Python API needs it, and only within the boundary above, so the subset that
+Gazebo uses stays compatible. The
+[DART 7 Python and C++ Differences](dart7_python_cpp_differences.md) register
+records every semantic difference between the two.
+
 DART 7.0 is a **clean break for Python**:
 - there are no runtime aliases or deprecation shims for the 6.x names;
 - users migrate with a provided codemod and migration guide;
@@ -53,20 +61,27 @@ introspection. Native renames in the binding sources avoid all three.
   fill arrays.
 - Options beyond one or two obvious positional arguments are keyword-only.
 - Errors raise exceptions; bad input is never logged and ignored:
-  - all DART errors share one base class, named in M5's errors PR;
-  - validation errors subclass `ValueError`;
-  - lookup errors subclass `KeyError` and list the valid names;
-  - loaders raise instead of returning `None`.
+  - an error is the builtin that names the failure, such as `ValueError`,
+    `TypeError`, `KeyError`, `IndexError` or `RuntimeError`; there is no
+    shared DART base class;
+  - a dartpy error class exists only for a condition that callers handle at
+    runtime, subclasses exactly one builtin and takes only a message, such as
+    `WorldBusyError(RuntimeError)`;
+  - a message that reports a DART rule starts with a stable token naming it,
+    such as `ModelFrozenError:`, which tests can match;
+  - loaders raise `FileNotFoundError` for a missing file and `ValueError` for
+    invalid content, instead of returning `None`;
+  - lookups raise `KeyError` listing the valid names.
 - DART's C++ diagnostics are forwarded to `logging.getLogger("dartpy")`.
 - Typed stubs (`.pyi` plus `py.typed`) ship in every wheel. CI fails on stub
   drift.
 
-The API is designed first, area by area, under one naming rulebook the
-maintainer approves. The old-to-new mapping generated from those designs drives
-the user codemod, the stubs and the migration guide; old members with no place
-in 7.0 are dropped. Docstrings generated from the C++ documentation pass
-through the same mapping, and the generated API reference is built from the
-stubs and docstrings.
+The API is designed first, area by area, under one
+[naming rulebook](dart7_python_naming.md), which the maintainer approved. The
+old-to-new mapping generated from those designs drives the user codemod, the
+stubs and the migration guide; old members with no place in 7.0 are dropped.
+Docstrings generated from the C++ documentation pass through the same mapping,
+and the generated API reference is built from the stubs and docstrings.
 
 ## Model vocabulary
 
@@ -132,8 +147,8 @@ Use these spellings consistently:
 ## World, modes and mutation classes
 
 A `World` owns model membership and advances time. Its public Python surface is
-capped at about 20 names, enforced by `scripts/nanobind/api_surface.py`, and
-every new member needs a use case:
+capped at 24 names, the ones listed below, enforced by
+`scripts/nanobind/api_surface.py`, and every new member needs a use case:
 
 - constructor: `World(*, name, time_step, gravity, collision_detector, threads)`;
 - properties: `name`, `time_step`, `gravity`, `time`, `step_count`,
@@ -174,8 +189,9 @@ edits keep working. Lazy and compiled worlds run the same kernels.
 
 Structural edits on a compiled World happen inside `with world.edit():`. Leaving
 the block recompiles the affected data and starts a new topology revision.
-Outside `edit()`, a structural edit on a compiled World raises
-`ModelFrozenError`. C++ strictness is opt-in.
+Outside `edit()`, a structural edit on a compiled World raises a
+`RuntimeError` whose message starts with `ModelFrozenError:`. C++ strictness is
+opt-in.
 
 Every mutator belongs to exactly one class:
 
@@ -242,8 +258,8 @@ models, shape poses, inertia, and detector and solver replacement.
   DART collision detector (and ODE if it qualifies) with the Dantzig or PGS
   solver. Capturing one with any other detector, such as FCL or Bullet, raises.
   Restoring it re-steps bit-identically. A mismatched
-  topology, parameter set, build, solver or extension raises
-  `CheckpointMismatchError`.
+  topology, parameter set, build, solver or extension raises a `ValueError`
+  whose message starts with `CheckpointMismatchError:`.
 - Restoring never goes through ordinary setters, which have side effects (waking
   sleeping bodies, bumping revisions). It restores the following directly:
   - sleep state and the World's sleep records;
@@ -442,9 +458,15 @@ Binding rules:
   whose convention differs;
 - every C++ function that takes a non-const rigid-transform reference is
   audited before binding;
-- `None` for a frame argument means the world frame where C++ defaults that
-  argument to `Frame::World()`, keeps the meaning C++ documents for a null
-  frame elsewhere, and otherwise raises `TypeError`.
+- an omitted frame argument means the world frame, including where the C++
+  default is the object's own coordinates, except that a pose or position
+  (`get_transform`, `get_com`) is expressed in its `relative_to=` frame
+  (`X_AB`), and a few arguments default to a documented null meaning instead:
+  joint wrenches, task-space region references, `descends_from(None)`, a
+  builder's `parent=None` and `Chain(start=None)`. `None` always means the
+  same as omitting the argument. The
+  [naming rulebook](dart7_python_naming.md) (R20, R21) lists the changed
+  defaults.
 
 ## Loading and building models
 
@@ -455,7 +477,8 @@ Binding rules:
   world-only, because their collision rules and equality constraints are owned
   by the world.
 - `world.add()` accepts only a detached `Multibody` or `SimpleFrame`, and raises
-  `NameConflictError` instead of renaming silently.
+  a `ValueError` whose message starts with `NameConflictError:` instead of
+  renaming silently.
 - Programmatic construction uses `add_*` builders with immutable keyword-only
   specifications on the live objects, for example
   `multibody.add_link(name, parent=..., joint=dart.dynamics.RevoluteJointSpec(...))`,
