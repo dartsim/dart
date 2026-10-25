@@ -133,6 +133,7 @@ jobs:
               -DDART_BUILD_DARTPY=OFF \
               -DDART_BUILD_GUI=OFF \
               -DDART_BUILD_IO=OFF \
+              -DDART_USE_SYSTEM_FCL=ON \
               -DDART_USE_SYSTEM_GOOGLETEST=ON \
               -DDART_VERBOSE=ON
             cmake --build build/freebsd/cpp/Release --target tests -j2

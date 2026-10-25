@@ -17,6 +17,299 @@ dart_find_package(Eigen3)
 dart_check_required_package(EIGEN3 "eigen3")
 
 # FCL
+if(NOT DART_USE_SYSTEM_FCL)
+  # Fetch FCL 0.7.0 and the double-precision libccd 2.1 it needs, build both in
+  # their own CMake runs, and install them with DART. FCL's octree support
+  # follows the octomap that DART uses.
+  include(FetchContent)
+  dart_find_package(octomap)
+  block(
+    SCOPE_FOR VARIABLES
+    PROPAGATE DART_FCL_SEARCH_DIRS DART_FCL_INSTALL_DIRS
+  )
+    # Stop before downloading when the fetched build cannot fit this one.
+    get_property(multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+    if(multi_config)
+      message(
+        FATAL_ERROR
+        "DART_USE_SYSTEM_FCL=OFF needs a single-configuration generator, such as Ninja; set DART_USE_SYSTEM_FCL=ON to use an installed FCL."
+      )
+    endif()
+    # FCL 0.7.0 compiles as C++11, which Eigen 5 does not support.
+    if(Eigen3_VERSION VERSION_GREATER_EQUAL 5)
+      message(
+        FATAL_ERROR
+        "DART_USE_SYSTEM_FCL=OFF builds FCL 0.7.0 as C++11, which Eigen ${Eigen3_VERSION} does not support; set DART_USE_SYSTEM_FCL=ON to use an installed FCL."
+      )
+    endif()
+    # A system ODE may load an installed libccd, and one process cannot hold
+    # it and the fetched double-precision libccd if their precisions differ.
+    if(DART_USE_SYSTEM_ODE AND NOT DART_SKIP_ODE)
+      find_file(ccd_config ccd/config.h NO_CACHE)
+      if(ccd_config)
+        file(STRINGS "${ccd_config}" single REGEX "^#define CCD_SINGLE")
+        if(single)
+          message(
+            FATAL_ERROR
+            "${ccd_config} is a single-precision libccd, which a system ODE may load beside the fetched double-precision one; set DART_USE_SYSTEM_ODE=OFF to fetch ODE as well, or DART_USE_SYSTEM_FCL=ON to use an installed FCL."
+          )
+        endif()
+      endif()
+    endif()
+    # DART installs the staged packages as they are, under its own prefix.
+    foreach(dir BINDIR INCLUDEDIR LIBDIR DATAROOTDIR)
+      if(IS_ABSOLUTE "${CMAKE_INSTALL_${dir}}")
+        message(
+          FATAL_ERROR
+          "DART_USE_SYSTEM_FCL=OFF needs a relative CMAKE_INSTALL_${dir}; set DART_USE_SYSTEM_FCL=ON to use an installed FCL."
+        )
+      endif()
+    endforeach()
+    # Populate without adding upstream targets or compiler flags to DART.
+    FetchContent_Declare(
+      dart_libccd
+      URL https://github.com/danfis/libccd/archive/refs/tags/v2.1.tar.gz
+      URL_HASH
+        SHA256=542b6c47f522d581fbf39e51df32c7d1256ac0c626e7c2b41f1040d4b9d50d1e
+      TLS_VERIFY ON
+      DOWNLOAD_EXTRACT_TIMESTAMP FALSE
+      SOURCE_SUBDIR
+      dart-private-sdk
+    )
+    FetchContent_MakeAvailable(dart_libccd)
+    dart_check_fetchcontent(dart_libccd DART_USE_SYSTEM_FCL)
+    FetchContent_Declare(
+      dart_fcl
+      URL
+        https://github.com/flexible-collision-library/fcl/archive/refs/tags/0.7.0.tar.gz
+      URL_HASH
+        SHA256=90409e940b24045987506a6b239424a4222e2daf648c86dd146cbcb692ebdcbc
+      TLS_VERIFY ON
+      DOWNLOAD_EXTRACT_TIMESTAMP FALSE
+      SOURCE_SUBDIR
+      dart-private-sdk
+    )
+    FetchContent_MakeAvailable(dart_fcl)
+    dart_check_fetchcontent(dart_fcl DART_USE_SYSTEM_FCL)
+
+    # Apply the GJK fix the Linux wheels carry, unless the tree already has it.
+    set(
+      patch
+      "${DART_SOURCE_DIR}/docker/wheels/patches/fcl-0.7.0-gjk-zero-direction.patch"
+    )
+    find_package(Patch)
+    if(NOT Patch_FOUND)
+      message(
+        FATAL_ERROR
+        "DART_USE_SYSTEM_FCL=OFF needs the patch program to fix the fetched FCL; install it, or set DART_USE_SYSTEM_FCL=ON to use an installed FCL."
+      )
+    endif()
+    execute_process(
+      COMMAND "${Patch_EXECUTABLE}" -p1 -R -s -f --dry-run -i "${patch}"
+      WORKING_DIRECTORY "${dart_fcl_SOURCE_DIR}"
+      RESULT_VARIABLE patched
+      OUTPUT_QUIET
+      ERROR_QUIET
+    )
+    if(NOT patched EQUAL 0)
+      # Check first, so that a tree the fix does not fit stays as it is.
+      execute_process(
+        COMMAND "${Patch_EXECUTABLE}" -p1 -s -f --dry-run -i "${patch}"
+        WORKING_DIRECTORY "${dart_fcl_SOURCE_DIR}"
+        RESULT_VARIABLE fits
+        OUTPUT_QUIET
+        ERROR_QUIET
+      )
+      if(NOT fits EQUAL 0)
+        message(
+          FATAL_ERROR
+          "Cannot apply ${patch} to ${dart_fcl_SOURCE_DIR}, which must hold the FCL 0.7.0 release sources, with or without the fix. Remove a fetched copy to download it again, or set DART_USE_SYSTEM_FCL=ON to use an installed FCL."
+        )
+      endif()
+      execute_process(
+        COMMAND "${Patch_EXECUTABLE}" -p1 -s -f -i "${patch}"
+        WORKING_DIRECTORY "${dart_fcl_SOURCE_DIR}"
+        COMMAND_ERROR_IS_FATAL ANY
+      )
+    endif()
+
+    # Build both with DART's toolchain, configuration and install layout, and
+    # stage them in the build tree; DART installs the stage under its prefix.
+    set(prefix "${FETCHCONTENT_BASE_DIR}/dart_fcl-sdk")
+    set(ccd_dir "${CMAKE_INSTALL_LIBDIR}/ccd")
+    set(fcl_dir "${CMAKE_INSTALL_LIBDIR}/cmake/fcl")
+    if(WIN32 AND NOT CYGWIN)
+      set(fcl_dir CMake)
+    endif()
+    set(rpath "$ORIGIN")
+    if(APPLE)
+      set(rpath "@loader_path")
+    endif()
+    set(cache "set(FCL_WITH_OCTOMAP OFF CACHE BOOL \"\" FORCE)\n")
+    if(octomap_FOUND)
+      string(
+        CONCAT cache
+        "set(FCL_WITH_OCTOMAP ON CACHE BOOL \"\" FORCE)\n"
+        "set(octomap_DIR [==[${octomap_DIR}]==] CACHE PATH \"\" FORCE)\n"
+      )
+    endif()
+    string(TOUPPER "${CMAKE_BUILD_TYPE}" config)
+    set(cross)
+    if(CMAKE_CROSSCOMPILING)
+      set(cross CMAKE_SYSTEM_NAME CMAKE_SYSTEM_VERSION CMAKE_SYSTEM_PROCESSOR)
+    endif()
+    foreach(
+      var
+      CMAKE_GENERATOR_PLATFORM
+      CMAKE_GENERATOR_TOOLSET
+      CMAKE_GENERATOR_INSTANCE
+      CMAKE_MAKE_PROGRAM
+      CMAKE_TOOLCHAIN_FILE
+      ${cross}
+      CMAKE_SYSROOT
+      CMAKE_SYSROOT_COMPILE
+      CMAKE_SYSROOT_LINK
+      CMAKE_FIND_ROOT_PATH
+      CMAKE_FIND_ROOT_PATH_MODE_PROGRAM
+      CMAKE_FIND_ROOT_PATH_MODE_LIBRARY
+      CMAKE_FIND_ROOT_PATH_MODE_INCLUDE
+      CMAKE_FIND_ROOT_PATH_MODE_PACKAGE
+      CMAKE_C_COMPILER
+      CMAKE_CXX_COMPILER
+      CMAKE_C_COMPILER_ARG1
+      CMAKE_CXX_COMPILER_ARG1
+      CMAKE_C_COMPILER_TARGET
+      CMAKE_CXX_COMPILER_TARGET
+      CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN
+      CMAKE_CXX_COMPILER_EXTERNAL_TOOLCHAIN
+      CMAKE_C_COMPILER_LAUNCHER
+      CMAKE_CXX_COMPILER_LAUNCHER
+      CMAKE_LINKER
+      CMAKE_AR
+      CMAKE_RANLIB
+      CMAKE_C_FLAGS
+      CMAKE_CXX_FLAGS
+      CMAKE_C_FLAGS_${config}
+      CMAKE_CXX_FLAGS_${config}
+      CMAKE_SHARED_LINKER_FLAGS
+      CMAKE_SHARED_LINKER_FLAGS_${config}
+      CMAKE_EXE_LINKER_FLAGS
+      CMAKE_EXE_LINKER_FLAGS_${config}
+      CMAKE_TRY_COMPILE_TARGET_TYPE
+      CMAKE_MSVC_RUNTIME_LIBRARY
+      CMAKE_OSX_ARCHITECTURES
+      CMAKE_OSX_DEPLOYMENT_TARGET
+      CMAKE_OSX_SYSROOT
+      CMAKE_BUILD_TYPE
+      CMAKE_INSTALL_PREFIX
+      CMAKE_INSTALL_BINDIR
+      CMAKE_INSTALL_INCLUDEDIR
+      CMAKE_INSTALL_LIBDIR
+      CMAKE_INSTALL_DATAROOTDIR
+      Eigen3_DIR
+    )
+      if(DEFINED ${var})
+        string(
+          APPEND cache
+          "set(${var} [==[${${var}}]==] CACHE STRING \"\" FORCE)\n"
+        )
+      endif()
+    endforeach()
+    # libccd's 2.8 minimum needs the policy floor under CMake 4, and both
+    # projects predate CMP0091, without which they ignore the MSVC runtime.
+    # libccd builds in double precision, and FCL finds it in the stage and
+    # its own shared libraries beside it.
+    string(
+      APPEND cache
+      "set(CMAKE_PREFIX_PATH [==[${prefix};${CMAKE_PREFIX_PATH}]==] CACHE STRING \"\" FORCE)\n"
+      "set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING \"\" FORCE)\n"
+      "set(CMAKE_POLICY_DEFAULT_CMP0091 NEW CACHE STRING \"\" FORCE)\n"
+      "set(BUILD_TESTING OFF CACHE BOOL \"\" FORCE)\n"
+      "set(BUILD_SHARED_LIBS ON CACHE BOOL \"\" FORCE)\n"
+      "set(FCL_STATIC_LIBRARY OFF CACHE BOOL \"\" FORCE)\n"
+      "set(ENABLE_DOUBLE_PRECISION ON CACHE BOOL \"\" FORCE)\n"
+      "set(ccd_DIR [==[${prefix}/${ccd_dir}]==] CACHE PATH \"\" FORCE)\n"
+      "set(FCL_NO_DEFAULT_RPATH OFF CACHE BOOL \"\" FORCE)\n"
+      "set(CMAKE_INSTALL_RPATH [==[${rpath}]==] CACHE STRING \"\" FORCE)\n"
+    )
+    file(WRITE "${dart_fcl_BINARY_DIR}/dart-initial-cache.cmake" "${cache}")
+    set(log "${CMAKE_CURRENT_BINARY_DIR}/fcl-source-build.log")
+    message(
+      STATUS
+      "Building fetched libccd 2.1 and FCL 0.7.0; on failure, see ${log}"
+    )
+    foreach(project libccd fcl)
+      set(build "${dart_${project}_BINARY_DIR}")
+      execute_process(
+        COMMAND
+          "${CMAKE_COMMAND}" -C
+          "${dart_fcl_BINARY_DIR}/dart-initial-cache.cmake" -G
+          "${CMAKE_GENERATOR}" -S "${dart_${project}_SOURCE_DIR}" -B "${build}"
+        OUTPUT_FILE "${log}"
+        ERROR_FILE "${log}"
+        COMMAND_ERROR_IS_FATAL ANY
+      )
+      execute_process(
+        COMMAND
+          "${CMAKE_COMMAND}" --build "${build}" --config "${CMAKE_BUILD_TYPE}"
+        OUTPUT_FILE "${log}"
+        ERROR_FILE "${log}"
+        COMMAND_ERROR_IS_FATAL ANY
+      )
+      # Stage into the build tree even when the environment sets DESTDIR.
+      execute_process(
+        COMMAND
+          "${CMAKE_COMMAND}" -E env --unset=DESTDIR "${CMAKE_COMMAND}" --install
+          "${build}" --config "${CMAKE_BUILD_TYPE}" --prefix "${prefix}"
+        OUTPUT_FILE "${log}"
+        ERROR_FILE "${log}"
+        COMMAND_ERROR_IS_FATAL ANY
+      )
+    endforeach()
+    # The projects write DART's install prefix into their pkg-config files;
+    # make them relative to the file, as dart.pc is.
+    set(pc_dir "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+    file(
+      RELATIVE_PATH
+      up
+      "${CMAKE_INSTALL_PREFIX}/${pc_dir}"
+      "${CMAKE_INSTALL_PREFIX}"
+    )
+    foreach(pc ccd fcl)
+      set(file "${prefix}/${pc_dir}/${pc}.pc")
+      if(EXISTS "${file}")
+        file(READ "${file}" content)
+        foreach(
+          line
+          "prefix=\${pcfiledir}/${up}"
+          "libdir=\${prefix}/${CMAKE_INSTALL_LIBDIR}"
+          "includedir=\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}"
+        )
+          string(REGEX MATCH "^[a-z]+=" key "${line}")
+          string(
+            REGEX REPLACE
+            "(^|\n)${key}[^\n]*"
+            "\\1${line}"
+            content
+            "${content}"
+          )
+        endforeach()
+        file(WRITE "${file}" "${content}")
+      endif()
+    endforeach()
+    install(DIRECTORY "${prefix}/" DESTINATION . USE_SOURCE_PERMISSIONS)
+
+    # DARTFindfcl looks in these config directories first: the staged ones
+    # here, and in installed components the ones beside them, which follow
+    # the components when the package is relocated.
+    set(DART_FCL_SEARCH_DIRS "${prefix}/${ccd_dir}" "${prefix}/${fcl_dir}")
+    set(DART_FCL_INSTALL_DIRS)
+    foreach(dir "${ccd_dir}" "${fcl_dir}")
+      cmake_path(RELATIVE_PATH dir BASE_DIRECTORY "${CONFIG_INSTALL_DIR}")
+      list(APPEND DART_FCL_INSTALL_DIRS "\${CMAKE_CURRENT_LIST_DIR}/${dir}")
+    endforeach()
+  endblock()
+endif()
 dart_find_package(fcl)
 dart_check_required_package(fcl "fcl")
 

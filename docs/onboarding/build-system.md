@@ -46,7 +46,7 @@ new library layout.
 
 ## Dependency Sources
 
-`DART_USE_SYSTEM_DEPENDENCIES=ON` seeds the defaults of
+`DART_USE_SYSTEM_DEPENDENCIES=ON` seeds the defaults of `DART_USE_SYSTEM_FCL`,
 `DART_USE_SYSTEM_GOOGLETEST`, `DART_USE_SYSTEM_GOOGLEBENCHMARK`,
 `DART_USE_SYSTEM_TRACY`, and `DART_USE_SYSTEM_GLFW` to use installed packages.
 The umbrella defaults to `OFF`; other dependency switches keep their existing
@@ -67,7 +67,8 @@ tree; source-consuming dependencies such as the Filament SDK keep enforcing
 their own SDK and license requirements. Existing
 populated source directories in the build tree are accepted. The stable
 FetchContent names are `googletest`, `benchmark`, `tracy`, `nanobind`,
-`dart_imgui`, `dart_filament_sdk`, `glfw`, `ode`, and `bullet`. With
+`dart_imgui`, `dart_filament_sdk`, `glfw`, `ode`, `bullet`, `dart_libccd`, and
+`dart_fcl`. With
 `DART_USE_SYSTEM_FILAMENT=ON`, an installed SDK without Filament's `notices/`
 tree takes its license notices from the Filament source tree that
 `FETCHCONTENT_SOURCE_DIR_DART_FILAMENT_SDK` names. Without that tree,
@@ -83,6 +84,38 @@ over HTTPS and checked against a pinned SHA-256 hash, with `TRACY_ENABLE=ON`
 0.14 release: that is the first release whose installed package reports its
 version, and upstream's version file accepts no other minor series. It must
 also be built with `TRACY_ENABLE=ON`, or configure stops and says so.
+
+`DART_USE_SYSTEM_FCL=OFF`, the default unless `DART_USE_SYSTEM_DEPENDENCIES=ON`,
+fetches the FCL 0.7.0 and libccd 2.1 release archives over HTTPS with pinned
+SHA-256 hashes. The first configure builds them in their own CMake runs, with
+DART's generator, compilers, flags, build type and install layout, which takes a
+few minutes; the log is `fcl-source-build.log` in the build tree. libccd is a
+shared, double-precision library, and FCL is built against it with the GJK fix
+that the Linux wheels carry
+(`docker/wheels/patches/fcl-0.7.0-gjk-zero-direction.patch`); applying the fix
+needs the `patch` program, and it patches a pre-seeded
+`FETCHCONTENT_SOURCE_DIR_DART_FCL` tree in place. FCL gets octree support from
+the octomap that DART uses, so FCL-backed `VoxelGridShape` collisions work as
+with distribution FCL packages; without octomap, DART builds without voxel grids
+anyway.
+
+Multi-configuration generators, such as Visual Studio and Xcode,
+default to the installed FCL, because the fetched build has one configuration.
+Configure stops before downloading when DART uses Eigen 5, which FCL 0.7.0's
+C++11 build cannot compile. It also stops when a system ODE could load an
+installed single-precision libccd beside the fetched one.
+
+DART installs the fetched headers, libraries, CMake packages and pkg-config files
+beside its own, so the `CMAKE_INSTALL_*DIR` variables must be relative. Their
+pkg-config files locate the prefix relative to themselves, as `dart.pc` does.
+The installed DART finder
+looks for FCL and libccd in the directories where DART installed them before
+the consumer's search paths, including when the package is relocated or found
+through `DART_DIR`. FCL's CMake targets have no namespace, so a consumer that
+finds another FCL before DART links that one instead. Pixi tasks and package
+managers set `DART_USE_SYSTEM_DEPENDENCIES=ON` or `DART_USE_SYSTEM_FCL=ON` to
+use the environment's FCL; Gazebo-facing builds must, so that DART and Gazebo
+load the same FCL.
 
 ## Support Tiers
 
@@ -117,8 +150,9 @@ The lane excludes `test_Distance`, an expected external failure. Ubuntu's FCL
 ellipsoids aborts in `doSimplex2` ("A is not in region 1") in
 `Distance.testBasicInterface` and `Distance.Options`; the file's other three
 cases pass. DART fixes only the FCL it builds itself, in the Linux wheel image
-(see the FCL note in `docs/readthedocs/dart/developer_guide/build.rst`), so
-system FCL stays unpatched. Remove the exclusion when the distribution's FCL
+and with `DART_USE_SYSTEM_FCL=OFF` (see the FCL note in
+`docs/readthedocs/dart/developer_guide/build.rst`), so system FCL stays
+unpatched. Remove the exclusion when the distribution's FCL
 stops aborting.
 
 The Tier 2 lane is `.github/workflows/ci_noble_fallbacks.yml`, which
@@ -208,11 +242,13 @@ Eigen 3 and 5 are ABI-incompatible for DART's public Eigen types: select the
 same major or rebuild DART and its consumers.
 
 `DART_USE_SYSTEM_ODE=OFF` fetches ODE 0.16.6 from its GitHub release tag,
-builds a shared, double-precision library with system libccd and without the
+builds a shared, double-precision library with libccd and without the
 libccd box-cylinder collider, and installs ODE's headers, library and CMake
 package alongside DART. Installed `collision-ode` consumers must include that
-prefix in `CMAKE_PREFIX_PATH`; libccd remains a system dependency. System ODE
-must also use double precision; configuration rejects single-precision packages.
+prefix in `CMAKE_PREFIX_PATH`. ODE links the fetched libccd when FCL is fetched
+too, so the process loads one libccd, and the system libccd otherwise. System
+ODE must also use double precision; configuration rejects single-precision
+packages.
 For a nonstandard prefix on Linux, include its library directory in
 `LD_LIBRARY_PATH` or configure an install RPATH.
 The compatibility policy minimum needed by ODE under CMake 4 is scoped to the

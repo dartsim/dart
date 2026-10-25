@@ -449,6 +449,7 @@ def configure_and_build(revision: Revision) -> tuple[Path, Path]:
         "-DDART_BUILD_GUI=OFF",
         "-DDART_BUILD_GUI_OSG=OFF",
         "-DDART_BUILD_PROFILE=ON",
+        "-DDART_USE_SYSTEM_FCL=ON",
         "-DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON",
         "-DDART_USE_SYSTEM_GOOGLETEST=ON",
         "-DDART_USE_SYSTEM_IMGUI=ON",

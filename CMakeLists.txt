@@ -280,7 +280,7 @@ dart_option(DART_FORCE_COLORED_OUTPUT
 )
 dart_option(
   DART_USE_SYSTEM_DEPENDENCIES
-  "Default to system packages for GoogleTest, GoogleBenchmark, Tracy, and GLFW"
+  "Default to system packages for FCL, GoogleTest, GoogleBenchmark, Tracy, and GLFW"
   OFF
 )
 dart_option(
@@ -288,6 +288,14 @@ dart_option(
   "Deprecated no-op - DART no longer uses fmt (retained through DART 7.x)"
   ON
 )
+# A fetched FCL is built for one configuration, so multi-configuration
+# generators keep the installed one.
+get_property(_dart_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+set(_dart_system_fcl ${DART_USE_SYSTEM_DEPENDENCIES})
+if(_dart_multi_config)
+  set(_dart_system_fcl ON)
+endif()
+dart_option(DART_USE_SYSTEM_FCL "Use system FCL and libccd" ${_dart_system_fcl})
 dart_option(DART_USE_SYSTEM_ODE "Use system ODE" ON)
 dart_option(DART_USE_SYSTEM_BULLET "Use system Bullet" ON)
 dart_option(DART_BULLET_FLOAT64

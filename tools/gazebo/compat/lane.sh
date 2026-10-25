@@ -192,6 +192,8 @@ step_dart() {
   # they keep its optional optimizer plugins, which gz-physics does not use,
   # from picking up host packages outside the environment. CMAKE_CXX_FLAGS is
   # passed explicitly so the build never keeps flags cached by older runs.
+  # DART_USE_SYSTEM_FCL keeps DART on the environment's FCL instead of
+  # fetching its own.
   cmake -G Ninja -S "$dart_source" -B "$variant_dir/dart-build" \
     "${version_args[@]}" \
     --no-warn-unused-cli \
@@ -204,6 +206,7 @@ step_dart() {
     -DDART_BUILD_GUI=OFF \
     -DDART_BUILD_GUI_OSG=OFF \
     -DDART_BUILD_PROFILE=OFF \
+    -DDART_USE_SYSTEM_FCL=ON \
     -DDART_TREAT_WARNINGS_AS_ERRORS=OFF \
     -DDART_SKIP_IPOPT=ON \
     -DDART_SKIP_NLOPT=ON \
