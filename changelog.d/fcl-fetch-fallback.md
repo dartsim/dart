@@ -9,3 +9,4 @@ Section: Build
     installed FCL; package managers and Gazebo-facing builds should. Visual
     Studio and Xcode builds keep it by default, and builds with Eigen 5 need
     it.
+    [#3966](https://github.com/dartsim/dart/pull/3966)
