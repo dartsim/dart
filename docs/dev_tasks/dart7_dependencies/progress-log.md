@@ -138,3 +138,16 @@
   - Routing: Muse is out of quota until 2026-10-26, so Claude workers in
     isolated worktrees wrote wave 7 (including packets the table assigns to
     Codex or Muse) and Codex reviewed every packet.
+  - Later that evening the maintainer merged #3943, the project-home update
+    (#3945) and both 6.20.4 backports: #3947 (#3859) and #3948 (#3887).
+- **2026-10-25**
+  - Wave 8 (Claude workers, Codex reviews; Codex wrote DEP-3(b)) merged as
+    #3952 (DEP-3(b)), #3953 (`DART_STRING_TYPE`), #3954 (DEP-23 docs),
+    #3955 (DEP-8(b)), #3957 (DEP-8(e)) and #3958 (DEP-8(c)). Each draft left
+    draft through the DD-35 gate.
+  - The DEP-20(a) spike built and tested the GUI and dartpy on stock Ubuntu
+    24.04. The maintainer then chose fetch-first for the Filament SDK where
+    DART has a private one (DD-38).
+  - PR text now follows the Writing Style and PR Descriptions sections of
+    `contributing.md` (#3951).
+  - The FCL/libccd fetch path (DD-36) is in review.
