@@ -8,8 +8,8 @@
   approval for this plan's publishing, DD-34 extends it to merging `main`,
   resolving conflicts and fixing CI on the plan's ready PRs, and DD-35 marks
   drafts ready once they pass the PR Lifecycle gate.
-- Every PR the plan published through 2026-10-24 has merged (list below).
-  Open: #3943 (DEP-11 PR4) and the PR that carries this update.
+- Every PR the plan published through 2026-10-24 has merged (list below),
+  including #3943 (DEP-11 PR4) on 2026-10-25.
 - On 2026-10-24 the maintainer chose the order: land the in-flight work,
   then answer the queued decisions one at a time, then the backports, then
   the remaining packets, with DEP-21 after M1d. M1d's counted stepping
@@ -44,35 +44,42 @@
   Bullet), #3931 (DEP-19's Linux wheels), and wave 7: #3936 (a Clang
   `-Werror` fix for #3924's test), #3937 (DEP-12(a)'s Tier 1 apt lane),
   #3938 (DEP-13(c)), #3939 (DEP-22 Tracy), #3940 (DEP-24), #3941 (DEP-22
-  CMake cap) and #3942 (DEP-20(b)).
+  CMake cap), #3942 (DEP-20(b)) and #3943 (DEP-11 PR4); and wave 8 on
+  2026-10-25: #3952 (DEP-3(b)), #3953 (DEP-21's `DART_STRING_TYPE`
+  prerequisite), #3954 (DEP-23's packaging section), #3955 (DEP-8(b)),
+  #3957 (DEP-8(e)) and #3958 (DEP-8(c)).
+- Merged in `release-6.20` on 2026-10-25: #3947 (backports #3859) and #3948
+  (backports #3887).
 - DEP-8(a) needed no PR: #3847 already stopped packaging `tests` in wheels.
   DEP-13(b) needed no PR: #3865 already deleted those paths.
-- Open: #3943 (DEP-11 PR4).
 
 ## Next steps
 
-1. Land #3943, which is ready for review; merging is the maintainer's. Under
-   DD-35 later drafts leave draft once Codex has reviewed their head without
-   findings and CI is green. #3937's lane passed its first hosted run (176 of
-   176); the README's stock-noble acceptance bullet holds once the nightly
-   runs it green on `main`.
-2. Backports: the maintainer approved #3859's release-6.20 backport for
-   6.20.4 on 2026-10-24 (in progress, through `dart-backport-pr`); #3887's
-   urdfdom wheel bump (DD-32) is asked next.
-3. Remaining packets: DEP-3(b) (Bullet and ODE private in core), DEP-8 (b),
-   (c) and (e), DEP-20 (a) and (c), DEP-22's rest (CMake 4.4 once the Bullet
-   precision probe models CMP0200 per imported target, FreeBSD patches
-   upstream, formatter bumps; the clang-format reformat follows the PLAN-624
-   order),
-   DEP-23 (now unblocked by DD-36), the FCL/libccd fetch prototype (DD-36),
-   DEP-19's macOS and Windows wheels with a minimal libcurl and OpenSSL
-   (DD-37), and DEP-33(d) now that DEP-19's Linux wheels merged.
+1. #3943 merged on 2026-10-25. Under DD-35, later drafts leave draft once
+   Codex has reviewed their head without findings and CI is green. #3937's
+   stock-noble lane passed in the 2026-10-25 nightly on `main`, so the
+   README's stock-noble acceptance bullet holds.
+2. Backports: both merged into `release-6.20` on 2026-10-25. #3947 backports
+   #3859, and #3948 backports #3887's urdfdom wheel bump (DD-32).
+3. Remaining packets:
+   - DEP-20 (a) and (c);
+   - DEP-22's rest: CMake 4.4 once the Bullet precision probe models CMP0200
+     per imported target, FreeBSD patches upstream, and formatter bumps (the
+     clang-format reformat follows the PLAN-624 order);
+   - DEP-23's upstream proposals, each approval-gated;
+   - the FCL/libccd fetch prototype (DD-36);
+   - DEP-19's macOS and Windows wheels with a minimal libcurl and OpenSSL
+     (DD-37); and
+   - DEP-33(d), now that DEP-19's Linux wheels merged.
+
+   Wave 8 merged DEP-3(b), DEP-8 (b), (c) and (e), and DEP-23's packaging
+   section on 2026-10-25.
 4. DEP-21 prerequisites from the spikes
-   ([verification](verification.md#wave-7-2026-10-24)): make
-   `DART_STRING_TYPE`'s function-local `std::string` safe across dialects;
-   replace gate 3's raw `abidiff` condition with the scripted checks; add a
-   mixed-dialect consumer to `tools/package`. Then DEP-21 itself in the
-   PLAN-624 merge order.
+   ([verification](verification.md#wave-7-2026-10-24)): #3953 made
+   `DART_STRING_TYPE`'s names initialize the same way in both dialects. Still
+   to do: replace gate 3's raw `abidiff` condition with the scripted checks,
+   and add a mixed-dialect consumer to `tools/package`. Then DEP-21 itself in
+   the PLAN-624 merge order.
 5. Follow-ups found on the way: MJCF inertia from all geoms and
    `<compiler inertiafromgeom>`; MJCF heightfields; urdfdom in `package.xml`
    could become build and exec dependencies now that shared installs link it

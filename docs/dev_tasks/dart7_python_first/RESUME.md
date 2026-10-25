@@ -19,8 +19,9 @@ portable and micro rows still compare. Milestone exits compare those rows
 against `812310ffb` instead (decided 2026-10-19).
 
 M1 is active. M1a merged in #3775 and M1b's compile and edit in #3869; the
-first M1c and M1d packets merged earlier, one per pull request, and counted
-stepping is next. The merged M1 packets are C++; of them, only the dynamic
+first M1c and M1d packets merged earlier, one per pull request. Counted
+stepping merged in #3927 on 2026-10-24.
+The merged M1 packets are C++; of them, only the dynamic
 snapshots have a Python binding (#3842). The Python 7.0 API on `main` has the
 package layout (#3847), read-only arrays, `dartpy.errors` with the logging
 bridge, and `Transform` and `Rotation`. Three of the 44 target-shape tests
@@ -100,21 +101,19 @@ Merged since 2026-10-19:
 | Opt-in `World::compile()` and scoped `World::edit()` | M1b | [#3869](https://github.com/dartsim/dart/pull/3869) |
 | Changelog fragments on `main` | Process | [#3874](https://github.com/dartsim/dart/pull/3874) |
 | Project-home decisions of 2026-10-19 | Process | [#3867](https://github.com/dartsim/dart/pull/3867) |
+| API budget counts every export (#3846 review findings) | M5a tooling | [#3918](https://github.com/dartsim/dart/pull/3918) |
+| Busy guard in constraint workers and soft-body geometry refresh (#3869 review findings) | M1b fix | [#3926](https://github.com/dartsim/dart/pull/3926) |
+| Counted `World` stepping and lifecycle exclusion | M1d | [#3927](https://github.com/dartsim/dart/pull/3927) |
+| Python naming rulebook | M5 | [#3956](https://github.com/dartsim/dart/pull/3956) |
 
 ## Next steps
 
-1. Close the post-merge review findings: #3869's constraint-solver workers
-   must carry the stepping World's busy context, and a soft body's mesh
-   rebuild must bump its shape version so detectors refresh their geometry;
-   #3846's growth ratchet must count aliases, public exports of private
-   classes, members shared across unrelated classes, whole optional feature
-   groups and the tracked special methods.
-2. Counted stepping (M1d), re-qualified on current `main`, then the
-   remapping clone and `WorldBatch`.
-3. The facade slice, under the approved naming rulebook.
-4. The typed solver policy with its per-solver parameters (M1e), and the
+1. The remapping clone (M1i) and `WorldBatch`, re-qualified on current
+   `main`.
+2. The facade slice, under the approved naming rulebook.
+3. The typed solver policy with its per-solver parameters (M1e), and the
    written `World` and solver contract.
-5. Add the macOS and Windows Python 3.15 wheels to 6.20.x once conda-forge's
+4. Add the macOS and Windows Python 3.15 wheels to 6.20.x once conda-forge's
    `bullet-cpp` builds for Python 3.15.
 
 ## Risks and recovery
