@@ -133,6 +133,43 @@ Dependency-minimization work must preserve installed
 headers, package components, and downstream behavior unless a maintainer
 explicitly approves a breaking change.
 
+## Writing Style
+
+Write so that a reader can understand and act quickly. For a PR or a report,
+the reader is a reviewer who must decide. These rules adapt the writing rules
+of [ASD-STE100](https://www.asd-ste100.org/) Simplified Technical English.
+DART does not use the STE dictionary: use the names in the code and the terms
+in [AI Terminology](../ai/terminology.md).
+
+- Start with the result, the decision you need, or the risk. Then give the
+  method.
+- Write one topic in each sentence and one instruction in each step. Put a
+  condition before its instruction: "If the build fails, run ...".
+- Aim for 20 words or fewer in an instruction and 25 or fewer in a
+  description. Use a vertical list for steps, options, or many conditions.
+- Give each paragraph one topic and six sentences or fewer.
+- Use the active voice and name the actor: the agent, the maintainer, CI, or a
+  hook.
+- Use the same word for the same thing.
+- Keep articles such as "the" and "a". Do not stack more than three nouns,
+  except in exact names of files, commands, APIs, and checker markers.
+- Start a warning with the command, then give the reason: "Do not hand-edit
+  generated adapters in `.agents/skills/`. The sync script overwrites them."
+- Keep code, commands, identifiers, paths, and quoted output exact.
+
+Use a diagram when the point is a structure, a flow, or a state change. In
+Markdown that GitHub renders, draw a small `mermaid` code block beside the
+prose it explains, and change both together. Read the Docs does not render
+Mermaid, so use an image in `docs/readthedocs/_static/` there. A diagram
+explains a claim; it does not prove it.
+
+Apply these rules to text that you write or substantially change. Put
+style-only cleanup of other text in its own PR. In AI-harness files, the
+checkers and their tests match some phrases verbatim, often on one line. Before
+you reword or re-wrap such text, search `scripts/` and `tests/` for the phrase.
+Keep a matched phrase unchanged and on one line, or change the checker and its
+tests in the same PR.
+
 ## PR Descriptions
 
 Help a reviewer understand the problem, the resulting behavior, and whether
@@ -152,7 +189,7 @@ Scale detail to the change. Omit routine file inventories, tool activity,
 repeated assurances, empty sections, and None/N/A placeholders. Discuss missing
 measurements or untouched behavior only when they limit a claim or affect a
 reviewer's decision. Rewrite the title and description around the final change
-when scope changes.
+when scope changes. Write both as [Writing Style](#writing-style) describes.
 
 Choose the smallest format that explains the claim; media is useful when it
 shows something the text cannot:
@@ -161,6 +198,7 @@ shows something the text cannot:
 | ------------------------------------ | ---------------- |
 | Several distinct points | Short bullets |
 | A small comparison | Compact table |
+| A structure, flow, or state change | Small Mermaid diagram |
 | Trends, scaling, or distributions | Plot |
 | A static visual difference | Matched before/after images |
 | Motion, timing, or interaction | Short video |

@@ -10,6 +10,7 @@ Start with:
 2. `docs/README.md`
 3. `docs/information-architecture.md`
 4. The local folder `README.md` or `AGENTS.md` for the surface you are editing
+5. `docs/onboarding/contributing.md` § "Writing Style" for prose and diagrams
 
 For AI workflow docs, also read `docs/ai/principles.md`,
 `docs/ai/terminology.md`, `docs/ai/orchestration.md`,

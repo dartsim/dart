@@ -14,6 +14,12 @@ Recommended files:
 - `HANDOFF.md`: optional transfer note when handing work to another agent or
   worktree.
 
+Start `README.md` with a status block that fits on one screen: the current
+state, the next action, blockers, and any decision the maintainer must make.
+Keep history out of that block; put it in `progress-log.md`. When four or more
+packets depend on each other, add a small Mermaid graph of the packets and
+their status.
+
 For autonomous projects started with `dart-ultrawork`, this same folder is
 the project home. Keep `README.md` as the overview and plan: north star, final
 deliverable, acceptance criteria, scope, non-goals, constraints, risks, current

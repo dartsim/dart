@@ -4,8 +4,9 @@ This directory stores source-controlled assets used by repository
 documentation outside the Read the Docs site-local `_static/` tree.
 
 Use this directory for durable assets that should survive beyond one PR, such
-as reusable diagrams, small media files, or images referenced by docs under
-`docs/`.
+as reusable diagram images, small media files, or images referenced by docs
+under `docs/`. A Mermaid diagram stays inline in the Markdown file that owns
+it.
 
 Do not use this directory for transient review evidence, before/after captures,
 or local debugging artifacts. PR evidence belongs in the PR description or

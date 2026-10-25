@@ -54,6 +54,20 @@ and compatibility detail in the owner docs named by `AGENTS.md`.
   check files, commit messages, and PR text with `scripts/check_local_paths.py`
   before publication.
 
+## Reviewable Output
+
+- Agents do more of the work, and the maintainer checks it. Write reports,
+  handoffs, PR text, and docs that a maintainer can check quickly. Lead with
+  the result or the decision you need, and put evidence beside each claim. Use
+  a table, a diagram, a plot, or a capture when it is clearer than prose.
+  `docs/onboarding/contributing.md` § "Writing Style" owns the rules.
+- Ask the maintainer one question at a time. Give its context and evidence,
+  the options with their tradeoffs, and your recommendation first.
+- Build a throwaway script, plot, or local HTML page when it makes a result
+  easier to check. Keep it out of Git (for example, under `build/`, not in
+  `docs/dev_tasks/`) and add no project dependency for it. It never proves a
+  claim alone. Publishing it follows the approval rules below.
+
 ## Approval Boundaries
 
 - GitHub mutations, pushes, PR creation or updates, branch deletion, CI reruns,
