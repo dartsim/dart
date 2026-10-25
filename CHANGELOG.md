@@ -489,9 +489,11 @@
   * Fix `DART_USE_SYSTEM_TRACY=ON`, which rejected installed Tracy packages
     because they ship no CMake version file.
     [#3879](https://github.com/dartsim/dart/pull/3879)
-  * **Additive:** Linux wheels accept URDF 1.1 and 1.2 with urdfdom 6.0.1,
-    which also stops parser error logging from treating URDF text as a printf
-    format string. URDF 1.0 files load as before.
+  * **Additive:** Linux wheels build urdfdom 6.0.1, so files that declare URDF
+    1.1 or 1.2 load; geometry DART does not support, such as capsules, still
+    fails to load. The new urdfdom also stops parser error logging from
+    treating URDF text as a printf format string. URDF 1.0 files load as
+    before.
     [#3887](https://github.com/dartsim/dart/pull/3887)
 
   * Shared installs with `DART_BUILD_UTILS_ASSETS=ON` no longer make consumers
