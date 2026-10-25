@@ -142,6 +142,13 @@ Required before DEP-21 lands (option B):
 8. Wheels build, repair and pass `abi3audit --strict` and the headless import
    check on every platform.
 
+Status (2026-10-24): the [wave-7 spikes](#wave-7-2026-10-24) partly cover
+gate 1 (Linux GCC passes; Linux Clang fails only in two test files, one fixed
+by #3936), gates 4 and 6, and parts of 2, 3 and 5. Gate 3
+keeps its intent (no ABI difference a C++17 consumer can see), checked by the
+scripted checks the ABI spike lists, because `abidiff` itself always reports
+harmless weak-symbol and libstdc++ base-class differences.
+
 ## Packet evidence
 
 All packets below are based on `main` `548ff24ad` and are local until the
@@ -590,3 +597,113 @@ urdfdom (and sdformat with SDF on), and both link a shared tinyxml2. As the
 standalone default it would fail on Ubuntu 24.04 (apt urdfdom 4 and OSRF
 sdformat 14 link tinyxml2 10) and on macOS, Windows, FreeBSD and cross
 builds. The branch stays local; the maintainer decides how DD-10 applies.
+
+### Wave 6 and the fetch lanes (2026-10-21 to 2026-10-24)
+
+Each PR's two clean reviews came from engines other than its writer; Muse
+was out of quota, so Codex reviewed Claude's packets.
+
+- DEP-4(b) (#3900, #3901): fetched ODE and Bullet build, install, configure
+  an installed consumer and uninstall in a nightly lane; the uninstall
+  template reads the manifest as raw bytes and splits only on newlines, after
+  a review showed non-ASCII names could delete files outside it.
+- Installed DART finds its fetched Bullet (#3929): the nightly fetch lane
+  failed because an installed DART did not record the Bullet it fetched.
+  Three review rounds closed a partial cache hit that mixed recorded and
+  consumer libraries, Windows Debug names, a consumer's earlier
+  `FindBullet`, and Debug-only installs; 420 Bullet configure tests and the
+  lane replay (175 of 175) pass.
+- DEP-19's Linux wheels (#3931): the wheel is 21,303,502 bytes, 2,649,828
+  more than `main`'s, under a 23,000,000-byte budget; six TLS checks
+  (untrusted, wrong host and missing CA fail; explicit CA and the system
+  fallback succeed) pass in the smoke test, and on Ubuntu 24.04 and Debian
+  12. A first review measured conda-forge's libcurl closure on macOS and
+  Windows (about 18.2 MB and 16.5 MB compressed), which is why those wheels
+  wait on the maintainer.
+- libcurl 8.5.0 (#3922) and OpenSSL 3.0.13 (#3923): a bot review found the
+  OpenSSL configure tests failed on CMake 3.28 (FindOpenSSL calls
+  `pkg_check_modules`, which the tests disable); a no-op stub fixed it, and
+  the dependency suite passes 718 of 718 on CMake 3.28.3.
+- DEP-13(d) (#3924): gz-style raw-`aiScene` and TriMesh meshes collide, and
+  each ownership mode passes under ASan and LSan, after fixing a double
+  release in `MeshShape.cpp`. Its test then failed Clang `-Werror` builds;
+  #3936 fixes that (below).
+- DEP-11 PR3 (#3925): scoped suppressions at the octomap and FCL includes
+  (`-Wcpp`, `-W#warnings`) and the ODE includes (enum-enum conversion); the
+  Gazebo lanes pass.
+- DEP-33(e) (#3921): `check_urdf` confirmed `atlas_v3.urdf` never loaded.
+
+### Wave 7 (2026-10-24)
+
+Claude wrote every packet in isolated worktrees on `main` (`95ee796a5`,
+`c98e4591f` or `38b1484eb`); each was then rebased onto `765e26661` and
+reviewed twice by Codex.
+
+- Tier 1 apt lane (#3937): the job's steps, run in a fresh `ubuntu:24.04`
+  container, pass cold in 795 s (build 679 s at `-j 4`, no warnings, 175 of
+  175 tests) and warm in 121 s (448 of 448 ccache hits). Versions: GCC
+  13.3.0, CMake 3.28.3, FCL 0.7.0, octomap 1.9.7, assimp 5.3.1, tinyxml2
+  10.0.0, urdfdom 4.0.0, Bullet 3.24 (double precision detected), ODE
+  0.16.2, GoogleTest 1.14.0, Benchmark 1.8.3, curl 8.5.0, OpenSSL 3.0.13,
+  sdformat 14.9.0. `test_Distance` is excluded: two of its cases abort on the
+  distro FCL's libccd assertion (see the spike above). The first hosted run,
+  on #3937, passed 176 of 176 in about 16 minutes on `ubuntu-24.04`.
+- DEP-11 PR4 (#3943): 442 installed headers compile alone at C++17 and at
+  C++20 with `-Werror` (884 translation units) on GCC 15; the same consumer
+  passes on GCC 13, Clang 18 and Clang 21. Two headers needed an include.
+  Cold: about 14 CPU-minutes with GCC; warm: 5 s.
+- DEP-13(c) (#3938): a consumer that calls each deprecated API gets exactly
+  four warnings on GCC 15 and Clang 18, DART's own build gets none, and the
+  gz lane (gz-physics 8 and gz-sim 9) passes; the API inventory check
+  passes. DART's FCL and Bullet soft-mesh paths keep the `aiMesh`, so
+  soft-contact results stay bit-identical.
+- DEP-22 CMake cap (#3941): CMake 4.4.4 exposed CMP0219 warnings in
+  `DARTMacros.cmake` and four Bullet configure-test failures (CMP0200: since
+  4.4, `try_compile` imports targets with the policy NEW, which can select
+  other library files than the caller links). A version-keyed workaround in
+  the Bullet precision probe failed review, because each imported target
+  records its own CMP0200 setting, so the cap moves to `<4.4` (lock at 4.3.4)
+  and keeps the CMP0219 fix. On 4.3.4 the build, 185 of 185 tests and 967
+  requirement tests pass.
+- DEP-13(c) (#3938), after rebasing onto `main`: #3926's new face-count check
+  in `FCLCollisionObject.cpp` called the deprecated `getAssimpMesh()` outside
+  the suppression, and `getTriMesh()` refreshed shared transform caches from a
+  const reader; both fixed, 185 of 185.
+- DEP-22 Tracy (#3939): a fetched 0.14.1 client builds and records zones that
+  0.14.1's `tracy-capture` reads; DART's old `ScopedZone` call bound `true`
+  to 0.14's callstack-depth parameter, so the call now passes it explicitly.
+- DEP-20(b) (#3942): the fetched GLFW build passes the same GUI test counts as
+  the system-GLFW build, except two native-window tests that hand the test's
+  own GLFW windows to `dart-gui` and skip with a stated reason in shared
+  fetched builds; a relocated installed consumer passes. Review found that a
+  GLFW private to a shared `dart-gui` on macOS would register the same
+  Objective-C classes as any other GLFW in the process, so shared macOS
+  builds keep the system GLFW.
+- **C++20 warning budget spike** (no PR; base `38b1484eb`). With
+  `-Wall -Wextra`, `dart`, `dart-io`, `dart-gui` and dartpy have zero
+  warnings as C++20 on GCC 13.4, 14.4, 15.2 and 16.2 and Clang 18.1.8,
+  21.1.8 and 22.1.8. DEP-21's per-target design (default 17; the four
+  targets at 20; `-Werror` on) builds 868 of 868 steps on GCC 13 and 15. On
+  Clang it fails only in `test_MeshShape.cpp` (fixed by #3936) and in
+  `bm_simd.cpp`'s unused `kMeshMax`, both already at C++17. A global
+  `CMAKE_CXX_STANDARD=20` is not viable: fetched ODE emits 1,050 warnings,
+  and fetched GoogleTest fails Clang 21's `-Wcharacter-conversion`.
+- **ABI spike** (no PR; GCC 15.2, libstdc++ 15). Built as C++20 with a
+  C++17 interface, `libdart` and `libdart-io` keep every `STB_GLOBAL`
+  symbol (5,198 and 445); `-fdump-lang-class` over all 296 installed headers
+  shows no size, alignment, offset or vtable difference. A C++17
+  `tools/package` consumer, DART's 176 tests built at C++17 and two
+  determinism drivers (bit-identical checkpoints) all pass against the C++20
+  libraries; `abicompat` accepts the gz-physics 8 plugin. `abidiff` still
+  exits 12, on weak template instantiations and on libstdc++'s
+  dialect-dependent base classes of `std::atomic<double>` and
+  `std::optional`, so gate 3's "no exported-symbol or layout difference"
+  cannot pass as written. The spike also found a hazard `abidiff` cannot
+  see: `DART_STRING_TYPE` defines a function-local `static const
+  std::string` that C++20 constant-initializes and C++17 initializes behind
+  a guard. With a C++17 executable on C++20 libraries, the string is lost
+  when library code reads it first (reproduced on `CAllocator`). Fix it
+  before DEP-21, and replace gate 3 with scripted checks: identical
+  exported global symbols, no class size or alignment change in the
+  installed-header closure, no exported object moving between sections, and
+  `abidiff` as an informational report.
