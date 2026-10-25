@@ -36,7 +36,7 @@ def test_wheel_smoke_numpy_floor_and_current(monkeypatch, tmp_path, version):
     assert ("numpy==1.26.4" in install) == (version[:2] == (3, 12))
     assert str(wheel) in install
     smoke, _ = next(call for call in calls if call[1]["stage"] == "native smoke")
-    assert smoke[-1] == module.SMOKE_TEST
+    assert smoke[-2:] == [module.SMOKE_TEST, str(SCRIPT.parents[1] / "data")]
 
 
 def test_smoke_environment_drops_conda_libraries_and_graphics_overrides(

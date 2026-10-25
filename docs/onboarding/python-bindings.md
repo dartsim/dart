@@ -561,6 +561,10 @@ The Linux x86_64 size is after `auditwheel repair --strip`, which cut main's
 21,303,992-byte wheel by 1,021,842 compressed and 5,936,768 unpacked bytes. The
 Linux limit stays at 23,000,000 bytes, which now leaves 13% headroom, close to
 macOS (14%) and Windows (15%).
+Moving the Linux wheels from sdformat 15.3.0, gz-math 8.4.0 and gz-utils
+3.1.1 to sdformat 16.1.0, gz-math 9.3.0 and gz-utils 4.0.0 added 5,314
+compressed bytes (14,332 unpacked) in a build without `--strip`.
+
 The macOS/Windows baselines are main's
 [nightly run 40095159727](https://github.com/dartsim/dart/actions/runs/40095159727),
 not newly built artifacts from this change. That run's Linux aarch64 wheel
@@ -620,6 +624,16 @@ restores displaced files even if the smoke is killed by its timeout. Outputs
 are in `dist/`.
 The source checkout is mounted read-only; temporary container builds avoid
 reusing host CMake caches.
+Linux wheels build assimp with only its Collada (`.dae`, `.zae`), STL, OBJ and
+glTF 2.0 (`.gltf`, `.glb`) importers. DART's samples, tests and robot catalog
+use the first three, `MeshShape` converts TriMesh geometry to assimp through
+OBJ, and glTF carries the PBR materials the renderer reads. Exporters are off,
+but export support stays because `MeshShape::clone()` uses `aiCopyScene()`.
+macOS and Windows wheels bundle conda-forge's full assimp and still load the
+other formats, such as FBX, PLY, 3DS, Blender and glTF 1.0; Linux wheels
+reject them. In a build without `--strip`, the allowlist shrank the bundled
+assimp from 4,824,327 to 1,204,114 compressed bytes and the x86_64 wheel from
+21,303,988 to 17,683,778.
 For a curl or OpenSSL security update, bump the version and SHA-256 in
 `Dockerfile.manylinux_2_28`, refresh notices if their license texts changed,
 refresh the Pixi lockfile for source builds and future macOS/Windows wheels,
@@ -663,8 +677,10 @@ a root Linux container with `/.dockerenv` or `/run/.containerenv`.
 The repaired-wheel smoke test requires all four parser APIs and, on Linux,
 the model retriever, and constructs a
 `dartpy.gui` interactive frame and a viewer with a world node without opening a
-display. It also parses an inline URDF model, so missing IO or GUI support fails
-acceptance. On Linux it also downloads a manifest-pinned model from a local HTTPS
+display. It also parses inline URDF models, one with a Collada, an STL and an
+OBJ mesh from the checkout's `data/` that it deep-clones, and converts a TriMesh
+to assimp, so missing IO, GUI or mesh-importer support fails acceptance. On
+Linux it also downloads a manifest-pinned model from a local HTTPS
 server with `CURL_CA_BUNDLE` set to the test CA, rejects that server without
 the CA, and rejects its CA-trusted certificate when requested as `127.0.0.1`
 instead of `localhost`. Both rejections must report TLS verification errors

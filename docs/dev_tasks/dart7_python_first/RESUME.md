@@ -60,19 +60,19 @@ then decided the program's open questions; see
 [Re-prioritization](decisions.md#re-prioritization-2026-10-19). Work runs in
 parallel tracks, Python first:
 
-1. Python API (M5), designed first under one naming rulebook: binding fixes,
-   an API-surface ratchet, snapshot bindings, the package layout, read-only
-   arrays, errors and logging, `Transform` and `Rotation`, then the naming
-   rulebook, a vertical slice of the facade and the remaining API areas, with
-   the codemod, stubs, migration guide and API reference generated from the
-   old-to-new mapping. Approved decisions fix the central public names of the
-   snapshot, package, arrays, errors and transform packets: the `dartpy`
-   package (D4, D6), `dartpy.experimental` (D22), `capture_state` and
-   `restore_state` (the design doc's `World` surface, under D11), the `dartpy` logger and the error classes the design
-   doc names (D22), and `Transform` and `Rotation` (D28) with their named
-   quaternion orders (D29). The rulebook adopts those names. Every other public
-   name these packets add, including `WorldState`, is provisional and follows
-   the rulebook once it is approved.
+1. Python API (M5), designed first under one naming rulebook: binding fixes, an
+   API-surface ratchet, snapshot bindings, the package layout, read-only arrays,
+   errors and logging, `Transform` and `Rotation`, then the naming rulebook
+   (approved on 2026-10-24), a vertical slice of the facade and the remaining
+   API areas, with the codemod, stubs, migration guide and API reference
+   generated from the old-to-new mapping. Approved decisions fix the central
+   public names of the snapshot, package, arrays, errors and transform packets:
+   the `dartpy` package (D4, D6), `dartpy.experimental` (D22), `capture_state`
+   and `restore_state` (the design doc's `World` surface, under D11), the
+   `dartpy` logger (D22), and `Transform` and `Rotation` (D28) with their named
+   quaternion orders (D29). The rulebook adopts those names, and builtin errors
+   replace the errors packet's classes. Every other public name these packets
+   add, including `WorldState`, follows the rulebook.
    Every native feature ships its Python binding and acceptance test.
 2. Native core (M1): compile and edit, counted stepping, the remapping clone
    and `WorldBatch` with its own executor, then actuators and servos, sensors
@@ -111,7 +111,7 @@ Merged since 2026-10-19:
    groups and the tracked special methods.
 2. Counted stepping (M1d), re-qualified on current `main`, then the
    remapping clone and `WorldBatch`.
-3. The naming rulebook, then the facade slice.
+3. The facade slice, under the approved naming rulebook.
 4. The typed solver policy with its per-solver parameters (M1e), and the
    written `World` and solver contract.
 5. Add the macOS and Windows Python 3.15 wheels to 6.20.x once conda-forge's

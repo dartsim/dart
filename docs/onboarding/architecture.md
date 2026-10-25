@@ -84,6 +84,21 @@ dispatches to private, non-virtual stages that share a private
   returns true. Otherwise `advanceVelocities`, `solveConstraints`,
   `advancePositions`, and `finishDeactivationStep` run in that order.
 
+```mermaid
+flowchart TD
+    step["World::step"] --> begin["beginStep"]
+    begin --> mode{"Deactivation on?"}
+    mode -- No --> full["stepWithoutDeactivation"]
+    mode -- Yes --> rest{"tryAllRestingFastPath:<br/>no contacts in the<br/>last solve, and the<br/>all-resting check passes?"}
+    rest -- "Yes: advance the clock,<br/>skip integration and solve" --> done["End of World::step"]
+    rest -- No --> vel["advanceVelocities"]
+    vel --> solve["solveConstraints"]
+    solve --> pos["advancePositions"]
+    pos --> fin["finishDeactivationStep"]
+    fin --> done
+    full --> done
+```
+
 Every path returns through the end of `World::step`, the one completed-step
 boundary. The constraint solver runs once per step outside the fast path and
 never on it. `StepContext` carries nothing to the next step; it keeps the

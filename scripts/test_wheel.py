@@ -85,6 +85,31 @@ with tempfile.TemporaryDirectory() as sdf_directory:
     assert sdf_skeleton.getNumBodyNodes() == 1
     assert sdf_skeleton.getBodyNode(0).getMass() == 1.0
 
+print("Native smoke: mesh importers", flush=True)
+# Linux wheels build only some assimp importers; load each sample format, then
+# deep-clone it and convert a TriMesh to assimp (through the OBJ importer).
+meshes = (
+    "test/tetra_cm.dae",
+    "urdf/wam/meshes/wam/wam_base_collision.STL",
+    "obj/BoxSmall.obj",
+)
+visuals = "".join(
+    f'<visual><geometry><mesh filename="{mesh}"/></geometry></visual>'
+    for mesh in meshes
+)
+mesh_skeleton = loader.parseSkeletonString(
+    f'<robot name="meshes"><link name="base">{visuals}</link></robot>',
+    str(Path(sys.argv[1]) / "meshes.urdf"),
+)
+assert mesh_skeleton is not None, "a sample mesh failed to load"
+for copy in (mesh_skeleton, mesh_skeleton.clone()):
+    body = copy.getBodyNode(0)
+    assert body.getNumShapeNodes() == len(meshes)
+    for index in range(len(meshes)):
+        assert body.getShapeNode(index).getShape().tri_mesh.num_triangles > 0
+tri_mesh = dart.math.TriMesh(np.eye(3), [[0, 1, 2]])
+assert len(dart.dynamics.MeshShape([1, 1, 1], tri_mesh).mesh_vertex_groups) == 1
+
 frame = InteractiveFrame(dart.dynamics.Frame.World())
 shapes = frame.getShapeFrames()
 assert isinstance(shapes, list)
@@ -244,7 +269,16 @@ def test_wheel(wheel_path: Path, *, test_ca_fallback: bool = False) -> None:
             stage="wheel installation",
         )
         run_command(
-            [str(python_path), "-I", "-u", "-X", "faulthandler", "-c", SMOKE_TEST],
+            [
+                str(python_path),
+                "-I",
+                "-u",
+                "-X",
+                "faulthandler",
+                "-c",
+                SMOKE_TEST,
+                str(Path(__file__).resolve().parents[1] / "data"),
+            ],
             stage="native smoke",
             timeout=120,
             env=_smoke_environment(),

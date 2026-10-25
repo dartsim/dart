@@ -37,7 +37,9 @@ Standard Pixi environments use sdformat 16.1 or newer within major 16 and
 urdfdom 6. SDFormat 16 [shares schema descriptions](https://github.com/gazebosim/sdformat/pull/1589),
 avoiding repeated schema copies when loading large worlds. The Ionic
 environment uses sdformat 16 for DART and 15 for Gazebo; the isolated Harmonic
-and Jetty lanes use 14 and 16 respectively.
+and Jetty lanes use 14 and 16 respectively. Wheels bundle sdformat 16 on every
+platform: conda-forge's on macOS and Windows, and a pinned 16.1.0 source build
+in the Linux image.
 SDF-on builds retain the public `dart::utils::SdfParser` entrypoints and options.
 Authored world gravity, physics timestep and joint limits, including effort and
 velocity, are honored. Existing controllers that relied on ignored limits must

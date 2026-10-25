@@ -100,9 +100,9 @@ gh pr checks <PR_NUMBER>
    - Ensure transient visual evidence (screenshots, headless renders, GIFs,
      videos) is hosted as GitHub PR/issue Markdown attachments
      (`https://github.com/user-attachments/assets/...`), never as release assets
-     or tags or committed to the branch; if evidence files were committed only
-     for the PR body, remove them and link an attachment URL instead (ask a
-     maintainer to upload when tooling cannot).
+     or tags, and never committed to the branch. If evidence files were
+     committed only for the PR body, remove them and link an attachment URL
+     instead. Ask a maintainer to upload when tooling cannot.
    - For claim-dependent 3D behavior, require `Visual verification` through
      `dart-verify-sim` per `docs/ai/verification.md`, or a stated reason visual
      corroboration is unavailable/irrelevant and named replacement evidence.
@@ -176,16 +176,18 @@ gh pr checks <PR_NUMBER>
      `gh pr ready <PR_NUMBER>`.
    - `mode=merge` gate: before any merge, re-run local validation on the
      current head after the latest pushed change (`pixi run test-all`, plus
-     the Gazebo gate when downstream compatibility could be affected); merge
-     only when lifecycle steps 3-5 hold, the milestone is set, an
-     independent review recorded a clean result on the current post-fix head
-     (after findings, a clean re-review; the docs-only/mechanical exemption
-     in step 4 above also satisfies this), and GitHub reports it mergeable.
+     the Gazebo gate when downstream compatibility could be affected). Merge
+     only when lifecycle steps 3-5 hold and the milestone is set. An
+     independent review must have recorded a clean result on the current
+     post-fix head (after findings, a clean re-review; the docs-only/mechanical
+     exemption in step 4 above also satisfies this). GitHub must report the PR
+     mergeable.
    - The `maintainer-approved` label is the explicit approval (lifecycle step
-     4). It must still be on the PR (`gh pr view --json labels`); its latest
+     4). It must still be on the PR (`gh pr view --json labels`). Its latest
      `labeled` event (`gh api --paginate repos/dartsim/dart/issues/<PR>/events`)
-     must have the maintainer as `actor` and follow any `head_ref_force_pushed`,
-     `base_ref_changed` or `reopened` event and the latest `pull_request` run
+     must have the maintainer as `actor`. That event must follow any
+     `head_ref_force_pushed`, `base_ref_changed` or `reopened` event, and the
+     latest `pull_request` run
      for this PR (`gh api "repos/dartsim/dart/actions/runs?event=pull_request&
      head_sha=<SHA>"`, `pull_requests[].number`) on the last commit that is not
      a conflict-free base merge, or on the first later commit with one. If none
