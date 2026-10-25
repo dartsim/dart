@@ -65,6 +65,9 @@ jobs:
   toolchain:
     uses: ./.github/workflows/ci_toolchain.yml
 
+  stock-noble:
+    uses: ./.github/workflows/ci_stock_noble.yml
+
   collision-fetch:
     name: CMake 4 ODE and Bullet fetch fallbacks
     runs-on: ubuntu-24.04
@@ -159,6 +162,7 @@ jobs:
       - filament
       - freebsd
       - toolchain
+      - stock-noble
       - collision-fetch
       - simd
       - gz-physics

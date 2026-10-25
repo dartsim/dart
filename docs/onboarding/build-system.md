@@ -75,6 +75,43 @@ System Tracy must be 0.11.1 or newer when it reports a version (CMake
 variables, or the selected `Tracy::TracyClient` target's `common/TracyVersion.hpp`);
 upstream installs no version file, so a versionless package is accepted.
 
+## Support Tiers
+
+Ubuntu 24.04 LTS is the oldest supported platform. What a platform builds
+depends on how much of the dependency set it supplies:
+
+| Tier | Environment | What builds | Enforced by |
+| ---- | ----------- | ----------- | ----------- |
+| 1 | Stock Ubuntu 24.04: apt packages plus OSRF's sdformat | `dart` and `dart-io`, headless | The nightly `CI Stock Ubuntu 24.04 (apt)` lane |
+| 2 | Ubuntu 24.04 plus DART's fallbacks (network at configure, Clang 20, pip nanobind and scikit-build-core) | Adds `dart-gui` and dartpy | No lane yet |
+| 3 | Pixi, conda-forge and wheels | Everything | The Pixi lanes and the wheel builds |
+
+The Tier 1 lane is `.github/workflows/ci_stock_noble.yml`, which `nightly.yml`
+calls every night. A pull request that changes the file runs it too, and
+`gh workflow run ci_stock_noble.yml --ref <branch>` runs it alone. In an
+`ubuntu:24.04` container it installs the compiler, CMake, Ninja and every
+dependency from the Ubuntu archive, then `libsdformat14-dev` from the OSRF apt
+repository: the archive has no sdformat, and 14 (from 14.8) is the oldest major
+DART accepts. It configures with `DART_USE_SYSTEM_DEPENDENCIES=ON`,
+`DART_BUILD_GUI=OFF`, `DART_BUILD_DARTPY=OFF` and `DART_BUILD_UTILS_ASSETS=ON`.
+`DART_REQUIRE_OPTIONAL_DEPENDENCIES=ON` fails the configure if SDF, ODE or
+Bullet is missing, and `FETCHCONTENT_FULLY_DISCONNECTED=ON` fails it if
+anything would be fetched, so the lane cannot go green on less than it claims.
+It builds `all`, `tests` and the benchmarks, with the Release default of
+warnings as errors, against the archive's GoogleTest 1.14 and Benchmark 1.8.3,
+then runs CTest. The job caches the compiler output (ccache) between nights.
+To reproduce it, run its steps by hand in
+`docker run --rm -it -v "$PWD":/src -w /src ubuntu:24.04 bash`.
+
+The lane excludes `test_Distance`, an expected external failure. Ubuntu's FCL
+0.7.0 is built with assertions on, and libccd's GJK distance of two touching
+ellipsoids aborts in `doSimplex2` ("A is not in region 1") in
+`Distance.testBasicInterface` and `Distance.Options`; the file's other three
+cases pass. DART fixes only the FCL it builds itself, in the Linux wheel image
+(see the FCL note in `docs/readthedocs/dart/developer_guide/build.rst`), so
+system FCL stays unpatched. Remove the exclusion when the distribution's FCL
+stops aborting.
+
 ## Test Tooling
 
 With `BUILD_TESTING=ON` and the default `DART_USE_SYSTEM_GOOGLETEST=OFF` and

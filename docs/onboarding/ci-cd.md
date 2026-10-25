@@ -24,6 +24,7 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | `ci_simd.yml`                     | CI SIMD Multi-Arch           | PR/push touching SIMD or DART collision sources, nightly | SIMD instruction-level matrix (scalar/SSE4.2/AVX/AVX2) on x86_64; NEON is covered by `ci_macos.yml` arm64 jobs |
 | `ci_freebsd.yml`                  | CI FreeBSD (VM)              | nightly, dispatch               | FreeBSD build + test in a VM |
 | `ci_toolchain.yml`                | CI Toolchain (Linux)         | nightly, dispatch               | Ubuntu 24.04 floor (gcc 13, clang 18) and newest (gcc 16, clang 19) build + test |
+| `ci_stock_noble.yml`              | CI Stock Ubuntu 24.04 (apt)  | nightly, dispatch, PRs changing it | Tier 1 of the [support tiers](build-system.md#support-tiers): the core and `dart-io` built and tested without pixi in an `ubuntu:24.04` container, from apt packages plus OSRF's sdformat |
 | `codeql.yml`                      | CodeQL                       | nightly, dispatch               | Static security analysis |
 | `publish_dartpy.yml`              | Publish dartpy               | nightly, version tags, dispatch | Build, repair, verify, and test wheels; publish from version tags |
 | `nightly.yml`                     | Nightly                      | daily, on demand                | Everything above, on `main`; files `nightly-failure` issues |
@@ -411,6 +412,9 @@ CI for a PR push or a `main` commit should finish within 30 minutes. A job
 that would push it past that, without catching failures the per-PR jobs miss,
 runs nightly instead: the VS 2022 baseline, the Filament Windows leg, and the
 Windows build-requirement checks (CI Linux runs those on every PR).
+
+The `stock-noble` group (`ci_stock_noble.yml`) does not use pixi: reproduce it
+in Docker as the [support tiers](build-system.md#support-tiers) describe.
 
 Useful commands:
 

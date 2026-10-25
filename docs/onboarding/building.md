@@ -19,7 +19,9 @@ Ubuntu 24.04 LTS version. `DART_BUILD_UTILS_ASSETS=ON` builds require OpenSSL
 Crypto 3.0.13 or newer, also the Ubuntu 24.04 LTS version. Installed consumers
 (`find_package(DART)`) still only need CMake 3.22.1. `release-6.20` keeps
 Ubuntu 22.04. The platform table is in
-`docs/readthedocs/dart/developer_guide/build.rst`.
+`docs/readthedocs/dart/developer_guide/build.rst`. Stock Ubuntu 24.04 packages
+plus OSRF's sdformat build `dart` and `dart-io`, as the nightly apt lane checks;
+see the [support tiers](build-system.md#support-tiers).
 
 Pixi installs `sccache` and DART automatically falls back to `ccache` when that
 is the available launcher. Configure tasks leave compiler caching enabled by
