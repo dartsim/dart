@@ -141,7 +141,7 @@ void dart_testing(nb::module_& m)
   // non-std exception.
   sm.def(
       "throw_",
-      [](const std::string& kind) {
+      [](const std::string& kind, const std::string& message) {
         if (kind == "int")
           throw 42;
         if (kind == "bad_alloc")
@@ -149,18 +149,27 @@ void dart_testing(nb::module_& m)
         if (kind == "exception")
           throw std::exception();
         if (kind == "logic_error")
-          throw std::logic_error("logic");
+          throw std::logic_error(message);
+        if (kind == "invalid_argument")
+          throw std::invalid_argument(message);
+        if (kind == "length_error")
+          throw std::length_error(message);
+        if (kind == "domain_error")
+          throw std::domain_error(message);
+        if (kind == "range_error")
+          throw std::range_error(message);
         if (kind == "out_of_range")
-          throw std::out_of_range("out of range");
+          throw std::out_of_range(message);
         if (kind == "overflow_error")
-          throw std::overflow_error("overflow");
+          throw std::overflow_error(message);
         if (kind == "runtime_error")
-          throw std::runtime_error("runtime");
+          throw std::runtime_error(message);
         if (kind == "underflow_error")
-          throw std::underflow_error("underflow");
+          throw std::underflow_error(message);
         throw std::invalid_argument("unknown exception kind: " + kind);
       },
-      nb::arg("kind"));
+      nb::arg("kind"),
+      nb::arg("message") = "test exception");
 }
 
 } // namespace dart::python
