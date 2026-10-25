@@ -72,15 +72,16 @@ RUN git clone --depth 1 https://github.com/ros/console_bridge.git -b '1.0.2' \
     && cmake --build console_bridge/build --target install -j${NUM_CORES} \
     && rm -rf console_bridge
 
-# urdfdom_headers
-RUN git clone --depth 1 https://github.com/ros/urdfdom_headers.git -b '1.1.1' \
+# urdfdom 6.0.1 uses the .hpp headers introduced in urdfdom_headers 3.0.1;
+# keep 3.0.1 even though upstream urdfdom still declares a 3.0.0 floor.
+RUN git clone --depth 1 https://github.com/ros/urdfdom_headers.git -b '3.0.1' \
     && mkdir -p urdfdom_headers/build \
     && cmake urdfdom_headers -B urdfdom_headers/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_TESTING=OFF \
     && cmake --build urdfdom_headers/build --target install -j${NUM_CORES} \
     && rm -rf urdfdom_headers
 
 # urdfdom
-RUN git clone --depth 1 https://github.com/ros/urdfdom.git -b '4.0.1' \
+RUN git clone --depth 1 https://github.com/ros/urdfdom.git -b '6.0.1' \
     && mkdir -p urdfdom/build \
     && cmake urdfdom -B urdfdom/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_TESTING=OFF \
     && cmake --build urdfdom/build --target install -j${NUM_CORES} \
