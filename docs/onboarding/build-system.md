@@ -53,7 +53,8 @@ The umbrella defaults to `OFF`; other dependency switches keep their existing
 defaults. ODE and Bullet already default to system packages. Each option keeps
 its cached value: set the umbrella on the first configure of a fresh
 build tree, or explicitly set each per-dependency switch when reconfiguring.
-An explicit per-dependency `-D` always wins over the umbrella.
+An explicit per-dependency `-D` always wins over the umbrella. Packagers start
+from [Packaging DART 7](building.md#packaging-dart-7).
 
 For offline builds, set `FETCHCONTENT_FULLY_DISCONNECTED=ON` and either use
 installed dependencies through their system switches or pre-seed source

@@ -78,9 +78,9 @@ including Ubuntu 22.04.
 Manual builds require CMake 3.28 or newer and pkg-config 0.29.2 or newer.
 Ninja is the Pixi default; other CMake generators can work. Pixi supplies
 newer tool and dependency versions than these minimum source requirements.
-Isolated Python package builds use ``setuptools >= 84.0.0``,
-``wheel >= 0.48.0``, ``ninja >= 1.13.2``, and the existing CMake
-``>= 4.4.4, < 4.4.5`` constraint from ``pyproject.toml``.
+Isolated Python package builds use ``scikit-build-core >= 1.1.1``, which
+provides CMake 3.28 or newer (``cmake.version`` in ``pyproject.toml``) and
+Ninja when they are missing.
 
 Library requirements
 --------------------
