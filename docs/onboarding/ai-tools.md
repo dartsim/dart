@@ -166,24 +166,36 @@ git push -u origin "HEAD:${branch}"
 
 ## PR Lifecycle
 
+```mermaid
+flowchart TD
+    draft["Draft: post @codex review"] --> clean{"Clean Codex review<br/>of the head and green CI?"}
+    clean -- "No: fix, request a new review" --> draft
+    clean -- Yes --> ready["Mark ready: Codex reviews again"]
+    ready --> gate{"Green CI, clean review, and<br/>maintainer-approved label<br/>on the current head?"}
+    gate -- No --> fix["Fix findings and request<br/>a new review, or wait for<br/>the maintainer's label"]
+    fix --> gate
+    gate -- Yes --> merge["Squash-merge"]
+```
+
 Agent-authored PRs on `main` and `release-*` follow these steps. Each GitHub
 mutation still needs explicit maintainer/user approval: a `manage <PR>` request
 covers the routine ones (see `dart-manage-pr`), and step 4 defines merge
-approval.
+approval. The diagram above is a map; the numbered steps hold the rules.
 
 1. Open the PR as a draft and post one top-level `@codex review`.
 2. Leave draft only when Codex has reviewed the current head without findings
-   and CI is green. Copilot review requests are ignored for this repository.
-   `github-code-quality[bot]` reviews only PRs to the default branch
-   (`main`); address its findings there too.
-   Compare the `Reviewed commit` in Codex's result with the PR head; if a push
-   moved the head past it, post a new `@codex review` for the new head before
-   leaving draft. Fix findings as "AI Review Comments" describes. Address every
-   Codex review on the PR, not only the one you requested: Codex also reviews
-   automatically when a PR starts out ready for review and when it leaves
-   draft, one head can get several reviews with different findings, and
-   findings arrive either as inline suggestions in a "Codex Review" review or
-   as a top-level comment.
+   and CI is green. Compare the `Reviewed commit` in Codex's result with the PR
+   head; if a push moved the head past it, post a new `@codex review` for the
+   new head before leaving draft. Fix findings as "AI Review Comments"
+   describes.
+
+   Address every Codex review on the PR, not only the one you requested. Codex
+   also reviews automatically when a PR starts out ready for review and when it
+   leaves draft. One head can get several reviews with different findings.
+   Findings arrive either as inline suggestions in a "Codex Review" review or
+   as a top-level comment. Copilot review requests are ignored for this
+   repository. `github-code-quality[bot]` reviews only PRs to the default
+   branch (`main`); address its findings there too.
 3. When that gate passes, run `gh pr ready <PR>`. This hands the PR to the
    maintainer and triggers one more Codex review, listed as
    `Draft marked ready` in Codex's review summary comment. Do not merge until
@@ -208,8 +220,9 @@ approval.
    commits. Fix AI review findings that arrive after the merge in a follow-up
    PR.
 5. Merge a series in dependency order, noted in each PR body. Release branches
-   require PR branches to be up to date, so before merging each PR, merge the
-   latest base into its branch as "PR Branches" describes, push it under the
-   same explicit approval, post a new `@codex review` for that head, and wait
-   for green CI and a clean Codex review of it: a base merge also changes the
-   reviewed head.
+   require PR branches to be up to date. Before merging each PR:
+   - merge the latest base into its branch as "PR Branches" describes;
+   - push it under the same explicit approval;
+   - post a new `@codex review` for that head; and
+   - wait for green CI and a clean Codex review of it, because a base merge
+     also changes the reviewed head.

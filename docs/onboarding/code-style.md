@@ -1,6 +1,7 @@
 # Code Style
 
-Follow the existing style in nearby files.
+Follow the existing style in nearby files. For prose, such as docs, PR text,
+and reports, follow [Writing Style](contributing.md#writing-style).
 
 - Use two-space indentation in C++.
 - Use project naming conventions already present in the touched module.
