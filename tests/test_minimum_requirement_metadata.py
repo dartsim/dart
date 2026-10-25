@@ -218,6 +218,8 @@ def test_noble_fallbacks_lane_builds_gui_and_dartpy_with_fallbacks():
     runs = {
         step["name"]: step.get("run", "") for step in job["steps"] if "name" in step
     }
+    # Root in the container does not own the checkout, and dartpy tests run git.
+    assert "safe.directory" in runs["Trust the checkout for git"]
     # The lane starts from the Tier 1 package list, so a new dependency added
     # there fails this test instead of the next nightly configure.
     stock = workflow_job("ci_stock_noble.yml", "stock-noble")

@@ -10,8 +10,8 @@
 # To reproduce it, run the steps below in
 # `docker run --rm -it -v "$PWD":/src -w /src ubuntu:24.04 bash`. A dartpy test
 # runs `git rev-parse`, so mount a regular clone (not a linked worktree) and
-# run `git config --global --add safe.directory /src` first, as
-# actions/checkout does in CI.
+# run `git config --global --add safe.directory /src` first, as the
+# "Trust the checkout for git" step does in CI.
 
 name: CI Ubuntu 24.04 with fallbacks
 
@@ -133,6 +133,12 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v7
+
+      # actions/checkout trusts the workspace only in a temporary git config,
+      # and root in this container does not own the checkout. dartpy tests
+      # run git, so trust it for the later steps.
+      - name: Trust the checkout for git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Restore compiler cache
         uses: actions/cache/restore@v6
