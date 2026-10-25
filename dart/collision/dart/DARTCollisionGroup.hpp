@@ -43,12 +43,14 @@ class DARTCollisionObject;
 
 namespace detail {
 struct DARTCollisionGroupEngineData;
+struct DARTCollisionDetectorAccessor;
 } // namespace detail
 
 class DARTCollisionGroup : public CollisionGroup
 {
 public:
   friend class DARTCollisionDetector;
+  friend struct detail::DARTCollisionDetectorAccessor;
 
   DARTCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 

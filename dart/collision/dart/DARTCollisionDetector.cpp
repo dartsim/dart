@@ -220,7 +220,7 @@ std::size_t getManifoldCacheId(const CollisionObject* object)
     return 0u;
   }
 
-  return static_cast<std::size_t>(reinterpret_cast<std::uintptr_t>(object));
+  return detail::DARTCollisionObjectAccessor::manifoldId(dartObject);
 }
 
 //==============================================================================
@@ -282,6 +282,7 @@ struct DetectorEngineState
   CollisionThreadPool collisionThreadPool;
   std::atomic<std::size_t> numCollisionThreads{1u};
   std::atomic<bool> softFaceInteriorContactsEnabled{false};
+  std::size_t nextManifoldId = 1;
   native::PersistentManifoldCache manifoldCache;
   native::CollisionResult narrowphaseScratch;
   ScratchCollisionResult softPairScratch;
@@ -1194,6 +1195,23 @@ std::size_t DARTCollisionDetector::getNumCollisionObjectEngineData() const
   const auto* manager = static_cast<const DARTCollisionObjectManager*>(
       mCollisionObjectManager.get());
   return manager->getNumCollisionObjectEngineData();
+}
+
+//==============================================================================
+std::size_t DARTCollisionDetector::allocateManifoldId()
+{
+  auto* manager
+      = static_cast<DARTCollisionObjectManager*>(mCollisionObjectManager.get());
+  return manager->getEngineState().nextManifoldId++;
+}
+
+//==============================================================================
+std::size_t detail::DARTCollisionDetectorAccessor::manifoldId(
+    const CollisionGroup& group, std::size_t index)
+{
+  return getManifoldCacheId(
+      static_cast<const DARTCollisionGroup&>(group).mCollisionObjects.at(
+          index));
 }
 
 //==============================================================================
