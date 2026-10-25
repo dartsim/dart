@@ -137,7 +137,15 @@ dart_add_library(dart ${dart_core_headers} ${dart_core_sources})
 # include guard lets the first inclusion decide. Define it for every source so a
 # unity batch whose other files include the header first still gets it.
 target_compile_definitions(dart PRIVATE dLCP_FAST)
-target_compile_definitions(dart PUBLIC ${dart_core_compile_definitions})
+set(dart_core_dependency_scope PUBLIC)
+if(BUILD_SHARED_LIBS)
+  set(dart_core_dependency_scope PRIVATE)
+endif()
+target_compile_definitions(
+  dart
+  ${dart_core_dependency_scope}
+  ${dart_core_compile_definitions}
+)
 target_include_directories(
   dart
   BEFORE
@@ -155,8 +163,30 @@ target_link_libraries(
     Eigen3::Eigen
     fcl
     assimp
+    ${dart_core_dependency_scope}
     ${dart_core_link_libraries}
 )
+
+if(
+  BUILD_SHARED_LIBS
+  AND
+    (
+      (HAVE_BULLET AND NOT DART_USE_SYSTEM_BULLET)
+      OR (HAVE_ODE AND NOT DART_USE_SYSTEM_ODE)
+    )
+)
+  if(APPLE)
+    set_property(
+      TARGET dart
+      PROPERTY INSTALL_RPATH "@loader_path;${CMAKE_INSTALL_RPATH}"
+    )
+  elseif(UNIX)
+    set_property(
+      TARGET dart
+      PROPERTY INSTALL_RPATH "$ORIGIN;${CMAKE_INSTALL_RPATH}"
+    )
+  endif()
+endif()
 
 # assimp version detection for conditional compilation
 if(ASSIMP_VERSION_MAJOR)

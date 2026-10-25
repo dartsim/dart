@@ -533,11 +533,15 @@ size and rejects wheels above these compressed-byte budgets:
 
 | Platform | Recorded wheel size (bytes) | Maximum (bytes) |
 | --- | ---: | ---: |
-| Linux x86_64 | 21,303,502 | 23,000,000 |
+| Linux x86_64 | 20,282,150 | 23,000,000 |
 | Linux aarch64 | Not yet measured locally | 23,000,000 |
 | macOS arm64 (retriever off) | 14,083,197 | 16,000,000 |
 | Windows x64 (retriever off) | 12,597,754 | 14,500,000 |
 
+The Linux x86_64 size is after `auditwheel repair --strip`, which cut main's
+21,303,992-byte wheel by 1,021,842 compressed and 5,936,768 unpacked bytes. The
+Linux limit stays at 23,000,000 bytes, which now leaves 13% headroom, close to
+macOS (14%) and Windows (15%).
 The macOS/Windows baselines are main's
 [nightly run 40095159727](https://github.com/dartsim/dart/actions/runs/40095159727),
 not newly built artifacts from this change. That run's Linux aarch64 wheel
@@ -581,8 +585,13 @@ x86_64 or aarch64 hosts with Docker.
 The driver builds `docker/wheels/Dockerfile.manylinux_2_28`, which fetches each
 source-built native dependency as a release or tag archive checked with
 `sha256sum` (update the hash with the version). It compiles those dependencies and dartpy
-with the manylinux toolchain, requires `auditwheel repair --plat manylinux_2_28_<arch>`, and runs the wheel smoke
-test in a fresh manylinux 2.28 base container. The TLS smoke temporarily hides
+with the manylinux toolchain, requires `auditwheel repair --plat manylinux_2_28_<arch> --strip`, and runs the wheel smoke
+test in a fresh manylinux 2.28 base container. `--strip` drops the bundled
+libraries' symbol tables (about 1.0 MB compressed, 5.9 MB unpacked) and needs
+auditwheel 6.8.0 or newer, which strips before patching
+([pypa/auditwheel#716](https://github.com/pypa/auditwheel/issues/716)); the
+manylinux image provides it. nanobind already strips `dartpy._core`, so its
+exported symbols do not change. The TLS smoke temporarily hides
 curl's pinned default bundle and places the test CA in the Debian/Ubuntu search
 location alongside the real system roots, with `CURL_CA_BUNDLE` and
 `SSL_CERT_FILE` unset. It also rejects the test server with only the real system

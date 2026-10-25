@@ -63,6 +63,7 @@ test-package-core = { cmd = """
     cmake --install "build/$PIXI_ENVIRONMENT_NAME/cpp/core" &&
     cmake -G Ninja -S tools/package -B "build/$PIXI_ENVIRONMENT_NAME/package-consumer-core" \
         -DDART_DIR="$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/package-core/share/dart/cmake" \
+        -DDART_TEST_CORE_WITHOUT_COLLISION_PACKAGES=ON \
         -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" &&
     cmake --build "build/$PIXI_ENVIRONMENT_NAME/package-consumer-core" --parallel 2 &&
     ctest --test-dir "build/$PIXI_ENVIRONMENT_NAME/package-consumer-core" --output-on-failure

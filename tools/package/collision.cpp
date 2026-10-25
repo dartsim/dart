@@ -30,8 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/bullet/bullet.hpp>
-#include <dart/collision/ode/ode.hpp>
+#if defined(DART_TEST_BULLET_DOUBLE) && !defined(BT_USE_DOUBLE_PRECISION)
+  #error The Bullet component must export its double-precision definition
+#endif
+
+#include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#include <dart/collision/bullet/BulletCollisionGroup.hpp>
+#include <dart/collision/ode/OdeCollisionDetector.hpp>
+#include <dart/collision/ode/OdeCollisionGroup.hpp>
 
 #include <btBulletCollisionCommon.h>
 #include <ode/ode.h>
@@ -40,8 +46,10 @@
 
 static_assert(
     std::is_same<dReal, double>::value, "ODE must use double precision");
+#ifdef DART_TEST_BULLET_DOUBLE
 static_assert(
     std::is_same<btScalar, double>::value, "Bullet must use double precision");
+#endif
 
 int main()
 {

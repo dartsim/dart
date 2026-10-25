@@ -722,10 +722,13 @@ endforeach()
 if(HAVE_OCTOMAP)
   string(APPEND DART_PKG_EXTERNAL_DEPS ", octomap >= 1.9.7")
 endif()
+set(DART_BULLET_PKG_CFLAGS)
+set(DART_BULLET_PKG_LIBS)
+set(DART_BULLET_PKG_REQUIRES)
 if(HAVE_BULLET)
   set(bullet_pc bullet)
   if(BT_USE_DOUBLE_PRECISION)
-    string(APPEND DART_PKG_CFLAGS " -DBT_USE_DOUBLE_PRECISION")
+    string(APPEND DART_BULLET_PKG_CFLAGS " -DBT_USE_DOUBLE_PRECISION")
   endif()
   # Name the module of the libraries that DART links: bullet.pc describes the
   # unsuffixed ones, which may also be double precision.
@@ -743,8 +746,8 @@ if(HAVE_BULLET)
       if(DART_BULLET_PC_ERROR)
         message(FATAL_ERROR "${DART_BULLET_PC_ERROR}")
       endif()
-      string(APPEND DART_PKG_CFLAGS "${DART_BULLET_PC_CFLAGS}")
-      string(APPEND DART_PKG_PUBLIC_LIBS "${DART_BULLET_PC_LIBS}")
+      string(APPEND DART_BULLET_PKG_CFLAGS "${DART_BULLET_PC_CFLAGS}")
+      string(APPEND DART_BULLET_PKG_LIBS "${DART_BULLET_PC_LIBS}")
     endif()
   endif()
   if(bullet_pc)
@@ -753,13 +756,20 @@ if(HAVE_BULLET)
       set(bullet_pc_minimum ${DART_BULLET_MINIMUM_VERSION})
     endif()
     string(
-      APPEND DART_PKG_EXTERNAL_DEPS
-      ", ${bullet_pc} >= ${bullet_pc_minimum}"
+      APPEND DART_BULLET_PKG_REQUIRES
+      "${bullet_pc} >= ${bullet_pc_minimum}"
     )
   endif()
 endif()
-if(HAVE_ODE)
-  string(APPEND DART_PKG_EXTERNAL_DEPS ", ode >= 0.16.2")
+if(NOT BUILD_SHARED_LIBS)
+  if(DART_BULLET_PKG_REQUIRES)
+    string(APPEND DART_PKG_EXTERNAL_DEPS ", ${DART_BULLET_PKG_REQUIRES}")
+  endif()
+  string(APPEND DART_PKG_CFLAGS "${DART_BULLET_PKG_CFLAGS}")
+  string(APPEND DART_PKG_PUBLIC_LIBS "${DART_BULLET_PKG_LIBS}")
+  if(HAVE_ODE)
+    string(APPEND DART_PKG_EXTERNAL_DEPS ", ode >= 0.16.2")
+  endif()
 endif()
 set(PC_CONFIG_IN ${DART_SOURCE_DIR}/cmake/dart.pc.in)
 set(PC_CONFIG_OUT ${DART_BINARY_DIR}/cmake/dart.pc)
@@ -796,6 +806,37 @@ if(DART_VERBOSE)
 endif()
 configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @ONLY)
 install(FILES ${PC_CONFIG_OUT} DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+
+# Collision headers expose the backend SDKs; core-only shared consumers do not.
+foreach(backend bullet ode)
+  string(TOUPPER "${backend}" backend_upper)
+  if(NOT HAVE_${backend_upper})
+    continue()
+  endif()
+  set(DART_COLLISION_PC_REQUIRES "dart = ${DART_VERSION}")
+  set(DART_COLLISION_PC_CFLAGS)
+  set(DART_COLLISION_PC_LIBS)
+  # Static dart.pc already carries both backends' compile and link requirements.
+  if(backend STREQUAL "bullet" AND BUILD_SHARED_LIBS)
+    if(DART_BULLET_PKG_REQUIRES)
+      string(APPEND DART_COLLISION_PC_REQUIRES ", ${DART_BULLET_PKG_REQUIRES}")
+    endif()
+    set(DART_COLLISION_PC_CFLAGS "${DART_BULLET_PKG_CFLAGS}")
+    set(DART_COLLISION_PC_LIBS "${DART_BULLET_PKG_LIBS}")
+  elseif(BUILD_SHARED_LIBS)
+    string(APPEND DART_COLLISION_PC_REQUIRES ", ode >= 0.16.2")
+  endif()
+  set(PC_CONFIG_OUT "${DART_BINARY_DIR}/cmake/dart-collision-${backend}.pc")
+  configure_file(
+    "${DART_SOURCE_DIR}/cmake/dart_collision.pc.in"
+    "${PC_CONFIG_OUT}"
+    @ONLY
+  )
+  install(
+    FILES "${PC_CONFIG_OUT}"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+  )
+endforeach()
 
 # Install a Catkin 'package.xml' file. This is required by REP-136.
 install(
