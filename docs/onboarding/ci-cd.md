@@ -316,6 +316,28 @@ push's run. Each job's `SCCACHE_CACHE_SIZE` bounds its snapshot, and each job
 prints `sccache --show-stats`. Pixi environment caches are written only from
 `main`.
 
+The `Release` job in `ci_ubuntu.yml` is the self-hosted CPU pilot. It runs on
+the `dart-cpu` label only for `dartsim/dart` on `refs/heads/main` when the
+caller event is `push`, `schedule` or `workflow_dispatch` (the nightly caller
+included); every PR and other ref stays on `ubuntu-latest`, and the job name
+and required PR checks do not change. The runner group `dart-cpu-trusted` is
+restricted server-side to `ci_ubuntu.yml@refs/heads/main` in this repository,
+so the label (workflow routing) and the group (server-side refs) are separate
+controls: changing one does not widen the other. The runner is a container
+with 8 CPUs, 32 GiB, 512 PIDs, no GPU and no host mounts, sockets or
+credentials. It preinstalls the compiler, `libgl1-mesa-dev`, `gh`, fonts and
+Pixi, so the APT cache step runs only on GitHub-hosted runners. The checkout
+does not persist credentials. `DART_PARALLEL_JOBS=8` and
+`CTEST_PARALLEL_LEVEL=4` apply, and a root-owned toolchain file bounds every
+new build tree's compile and link work to one 8-job Ninja pool, so bare `-j`
+stays bounded. On the pilot, sccache objects persist under
+`~/.cache/dart-sccache/<prefix>`; the main cloud snapshot is not restored
+there. Main pushes stage a copy at the same `RUNNER_TEMP/sccache` path used
+by hosted restore, then save and prune cloud snapshots. The runner uses the
+hosted Linux workspace layout so absolute-path Pixi keys and compiler inputs
+can match, and installs `zstd` to match hosted archive compression. Compiler
+binaries and flags must also match for object hits.
+
 Windows also splits its build, because each MSVC cache miss is expensive. Its
 build runs as two parallel jobs, `windows-Release-cpp` (C++ tests) and
 `windows-Release-python` (dartpy), both required. Every main push saves a

@@ -75,6 +75,9 @@ jobs:
       - name: Test AI infrastructure
         run: pixi run test-ai-infra
 
+      - name: Test CPU runner policy
+        run: pixi run python -I scripts/run_pytest.py tests/test_ci_cpu_runner.py -q
+
       - name: Test wheel tooling
         run: pixi run test-wheel-tooling
 
@@ -269,7 +272,8 @@ jobs:
   # rebuild Release; the nightly coverage job is the Debug build.
   build:
     name: Release
-    runs-on: ubuntu-latest
+    # Trusted main runs use the self-hosted CPU pool; PRs stay on hosted runners.
+    runs-on: ${{ github.repository == 'dartsim/dart' && github.ref == 'refs/heads/main' && contains(fromJSON('["push","schedule","workflow_dispatch"]'), github.event_name) && 'dart-cpu' || 'ubuntu-latest' }}
     permissions:
       actions: write # Save compiler cache prunes superseded snapshots.
       contents: read
@@ -281,6 +285,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.11.2
@@ -298,6 +304,7 @@ jobs:
           part: Release
 
       - uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        if: runner.environment == 'github-hosted'
         with:
           packages: libgl1-mesa-dev
           version: "2"
