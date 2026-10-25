@@ -24,12 +24,12 @@ Priority order is document order. Active implementation handoff remains in
 - Next step: M0 exited on 2026-10-14. Four chains run in parallel, Python
   first: M5a's snapshot, package, arrays, errors and `Transform` packets (in
   review or merged; D4, D6, D11, D22, D28 and D29 fix their central public
-  names, and the rulebook governs the rest), then the naming rulebook, the facade slice and
-  the rulebook-driven API areas; compile and edit (M1b), counted stepping
-  (M1d), the remapping clone (M1i) and `WorldBatch`; the typed solver policy
-  (M1e), the written contract and the rigid domain boundary; and M6b through
-  checkpoint C2. Step-path PRs land in the program's order, each re-qualified
-  on current `main`; see the
+  names, and the rulebook governs the rest), then the facade slice and the
+  API areas under the approved naming rulebook; compile and edit (M1b),
+  counted stepping (M1d), the remapping clone (M1i) and `WorldBatch`; the
+  typed solver policy (M1e), the written contract and the rigid domain
+  boundary; and M6b through checkpoint C2. Step-path PRs land in the
+  program's order, each re-qualified on current `main`; see the
   [M1 packet table](../dev_tasks/dart7_python_first/RESUME.md).
 - Gate: Per-packet gates and two clean reviews; bit-identical refactors per
   detector; zero new steady-state allocations; Gazebo lanes for every core

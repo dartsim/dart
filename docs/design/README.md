@@ -19,6 +19,8 @@ For cross-bucket placement decisions, use
 | [`dart6_collision_backends.md`](dart6_collision_backends.md) | Current DART 6.20 collision-backend architecture, compatibility boundary, downstream gz obligations, and later backend lifecycle. |
 | [`dart6_deformable_body.md`](dart6_deformable_body.md) | DART 6.20 deformable-body compatibility, paper scope, performance evidence, and collision-backend decisions. |
 | [`dart7_python_api.md`](dart7_python_api.md) | DART 7 Python-first API rules (naming, vocabulary, arrays, transforms, modes, control, batching, rendering) and the core-engine contracts they rely on. |
+| [`dart7_python_cpp_differences.md`](dart7_python_cpp_differences.md) | Register of every semantic difference between the DART 7 Python API and the C++ API it binds, with the reason for each and whether C++ may adopt the Python behavior. |
+| [`dart7_python_naming.md`](dart7_python_naming.md) | DART 7 Python naming rulebook: the rules that area pull requests apply to give each public `dartpy` member its 7.0 name or drop it. |
 | [`dart8_dependencies.md`](dart8_dependencies.md) | DART 8 design for the dependencies DART 7 keeps only for the Gazebo-facing C++ API: optional assimp and FCL, Bullet and ODE facades, tinyxml2 out of installed headers, the 7.0 deprecations removed, a C++20 interface and a native voxel grid. |
 
 ## Placement Rules
