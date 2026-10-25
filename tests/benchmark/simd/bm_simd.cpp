@@ -873,7 +873,7 @@ BENCHMARK(BM_TransformPoints_DART_f32)
 BENCHMARK(BM_TransformPoints_DART_f32)
     ->Name("BM_TransformPoints_DART_f32_PointCloud")
     ->Arg(1 << 18)
-    ->Arg(1 << 20);
+    ->Arg(kMeshMax);
 
 // -----------------------------------------------------------------------------
 // Batch Dot Product (Contact Normal Processing)
