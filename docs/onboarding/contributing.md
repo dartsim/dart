@@ -28,48 +28,91 @@ Install the commit and push safety gates once per clone:
 pixi run install-hooks
 ```
 
-It installs a `pre-commit` git hook that runs the fast staged command below
-and blocks staged whitespace or relevant AI-infrastructure drift:
+The `pre-commit` git hook runs the fast staged command below. It blocks staged
+whitespace or relevant AI-infrastructure drift:
 
 ```bash
 pixi run python scripts/check_agent_hook.py --profile staged
 ```
 
-It also runs `scripts/check_local_paths.py --staged` to scan staged names and
-added lines. A managed `commit-msg` hook scans the message Git will publish,
-using the parent Git command, cleanup options and configuration. If that
-invocation cannot be read or parsed, it falls back to editor-template
-instructions. Comments and literal scissors that Git retains are scanned;
-without invocation or template evidence, every line is scanned.
+The hooks that `pixi run install-hooks` installs:
 
-The managed `pre-push` hook scans every updated ref's commit messages, file
-names and added lines, including commits created by cherry-pick, rebase,
-revert, `git am` and sequencer operations that skip commit hooks. It runs
-`scripts/check_local_paths.py --commit-range <base>..<local sha>` using the
-remote SHA for existing refs. New refs scan only the commits that no branch
-head or default HEAD advertised by the destination reaches (a head this clone
-lacks is fetched from the destination only when the clone tracks that branch),
-as one range when a single published base covers them and otherwise one commit
-at a time; a merge commit is still compared with its first parent, so content
-already published on a merged branch can be reported again. Missing
-existing-ref bases and default HEAD objects are fetched without changing refs
-or `FETCH_HEAD`; an empty remote or unrelated history scans all local history.
-Deletions skip scanning. Older branches without checkers and unavailable
-interpreters print a notice and skip scanning. If a checker is missing from
-the worktree but exists in HEAD (commit hooks) or the push base (pre-push), the
-hook runs its tracked version from a temporary file; recovery, lookup and scan
-errors block the operation. Temporary files are removed when the hook exits.
+- `pre-commit`: also runs `scripts/check_local_paths.py --staged`. That scan
+  checks staged names and added lines.
+- `commit-msg`: runs
+  `scripts/check_local_paths.py --commit-msg-file "$1" --git-pid "$PPID"`. It
+  scans the message that Git will publish.
+- `pre-push`: scans every updated ref (see below).
 
-Existing hooks are preserved as `<hook>.local` and chained; a foreign pre-push
-hook receives the same ref-update stdin as the managed hook.
-Emergency escape hatch:
-`DART_SKIP_HOOKS=1 git commit ...` or `DART_SKIP_HOOKS=1 git push ...`.
-Codex and Claude sessions also use tracked
-PreToolUse hooks for agent-issued `git commit` calls before `install-hooks` has
-been run. The PR Text workflow is the backstop for commits that use
-`--no-verify` or otherwise skip local hooks; it scans each PR commit as well
-as the PR title and body using the base branch's checker before merge. These
-fast checks do not replace `pixi run lint`.
+How the `commit-msg` hook reads the message:
+
+- The parent Git command, its cleanup options, and its configuration decide
+  which comments, scissors, and verbose diffs Git removes before publication.
+- If the hook cannot read or parse that invocation, it falls back to the
+  editor-template instructions.
+- Without invocation or template evidence, it scans every line.
+- It scans the comments and literal scissors that Git retains.
+
+How the `pre-push` hook works:
+
+- It reads Git's `<local ref> <local sha> <remote ref> <remote sha>` stdin.
+- For each updated ref, it runs
+  `scripts/check_local_paths.py --commit-range <base>..<local sha>`.
+- It scans every commit's message, file names, and added lines. This includes
+  commits from cherry-pick, rebase, revert, `git am`, imports, aliases, and
+  sequencer operations that skip commit hooks, and from alternate
+  `GIT_INDEX_FILE` indexes.
+- For an existing ref, `<base>` is the remote SHA.
+- A new ref scans only the commits that no branch head or default HEAD
+  advertised by the destination reaches. The hook fetches a head this clone
+  lacks only when the clone tracks that branch.
+- A new ref scans those commits as one range when a single published base
+  covers them. Otherwise it scans one commit at a time.
+- A merge commit is still compared with its first parent. The scan can report
+  content that a merged branch already published.
+- The hook fetches missing existing-ref bases and default HEAD objects
+  without changing refs or `FETCH_HEAD`.
+- An empty remote or unrelated history scans all local history.
+- A deletion skips scanning.
+- Findings and lookup or scan errors block the push.
+
+Hook environment:
+
+- Each hook selects a compatible interpreter. The `commit-msg` hook, the
+  `pre-push` hook, and the `pre-commit` staged path scan need Python 3.9+ and
+  the standard library only.
+- The `pre-commit` AI gate reselects Python with `tomllib` (3.11+) and the
+  Pixi-supplied Markdown parser. If none exists, it falls back to the staged
+  whitespace check, and the path scan still runs.
+- An older branch without the checkers, or a missing compatible interpreter,
+  prints a notice and skips the message and `pre-push` scans. The `pre-commit`
+  hook keeps its staged whitespace fallback.
+- If a checker is missing from the worktree but exists in HEAD (commit hooks)
+  or the push base (`pre-push`), the hook runs its tracked version from a
+  temporary file. Recovery, lookup, and scan errors block the operation. The
+  hook removes the temporary files when it exits.
+- `pixi run install-hooks` moves an existing hook to `<hook>.local`. The
+  managed hook chains it when it is executable. A foreign `pre-push` hook
+  receives the same ref-update stdin as the managed hook, and its failure
+  blocks the push.
+- All hooks share the foreign-hook chaining, `DART_SKIP_HOOKS=1`, and
+  `DART_HOOK_DRY_RUN=1`.
+- Emergency escape hatch: `DART_SKIP_HOOKS=1 git commit ...` or
+  `DART_SKIP_HOOKS=1 git push ...`.
+
+Codex and Claude sessions also use tracked PreToolUse hooks for agent-issued
+`git commit` calls. These hooks apply before `install-hooks` has been run.
+
+The PR Text workflow is the backstop for commits that use `--no-verify` or
+otherwise skip local hooks.
+
+- It scans each PR commit's messages, names, and added lines.
+- It scans the PR title and body.
+- It uses the base branch's checker before merge.
+- GitHub may omit this workflow for SHA-like branch names. Those PRs rely on
+  CI's tracked-file scan and review.
+
+These fast checks do not replace `pixi run lint`.
 
 For C++ or Python changes, also run `pixi run build` and focused tests. For
 Gazebo/gz-physics compatibility surfaces, run:

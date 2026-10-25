@@ -19,11 +19,11 @@ Follow the existing style in nearby files.
   nightly `Unity name clashes` job compiles each target as a single unity
   file, so it reports a clash before a source-list change exposes it.
 - A class that inherits `Frame` (or any base aligned above 8 bytes) virtually
-  declares `alignas(<that base>)`, and a generic virtual-inheritance helper
-  such as `common::Virtual<T>` declares `alignas(T)`, so the non-virtual part
-  is as aligned as the class: GCC's base-object constructors assume the full
-  alignment of `this` (dartsim/dart#3447; see the comments at those
-  declarations). `UNIT_dynamics_FrameBaseAlignment` checks a fixed list of
+  declares `alignas(<that base>)`. A generic virtual-inheritance helper such as
+  `common::Virtual<T>` declares `alignas(T)`. These declarations keep the
+  non-virtual part as aligned as the class, because GCC's base-object
+  constructors assume the full alignment of `this` (dartsim/dart#3447; see the
+  comments at those declarations). `UNIT_dynamics_FrameBaseAlignment` checks a fixed list of
   Frame-family classes; add new ones to that list.
 
 Run `pixi run lint` before committing.

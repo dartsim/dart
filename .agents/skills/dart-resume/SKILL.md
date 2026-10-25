@@ -90,13 +90,13 @@ evidence ledger first, not as cleanup inventory:
 - For active solver/paper implementations, keep the plan or dev-task resume
   surface explicit about the completed slice, the next missing paper-parity
   gap, and why focused green tests are not a full paper-completion claim.
-- If the task is being completed, run a completion audit before finalizing:
-  identify the exact `docs/dev_tasks/<task>/` folder, inspect it for remaining
-  plans/evidence/decisions, promote any durable dashboard, evidence matrix, API
-  inventory, migration map, long-lived decision, or deferred-but-real work into
-  release/onboarding/AI docs, update any durable status surface when the task
-  changes roadmap state, then remove the dev-task folder
-  completely in the completing change.
+- If the task is being completed, run a completion audit before finalizing.
+  Identify the exact `docs/dev_tasks/<task>/` folder and inspect it for
+  remaining plans/evidence/decisions. Promote any durable dashboard, evidence
+  matrix, API inventory, migration map, long-lived decision, or
+  deferred-but-real work into release/onboarding/AI docs. Update any durable
+  status surface when the task changes roadmap state. Then remove the dev-task
+  folder completely in the completing change.
 - If remaining work is real but blocked by a substantial design decision,
   maintainer direction, external dependency, or scope boundary that should not
   be resolved in the current session, ask the human before retiring the folder
