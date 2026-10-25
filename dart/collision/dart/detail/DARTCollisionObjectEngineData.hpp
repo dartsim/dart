@@ -36,8 +36,11 @@
 #include <dart/collision/dart/DARTCollisionObject.hpp>
 #include <dart/collision/dart/shapes/Shape.hpp>
 
+#include <array>
 #include <limits>
 #include <memory>
+
+#include <cstddef>
 
 namespace dart {
 namespace collision {
@@ -45,6 +48,20 @@ namespace detail {
 
 struct DARTCollisionObjectAccessor
 {
+  static std::array<std::ptrdiff_t, 2> memberOffsets(
+      const DARTCollisionObject* object)
+  {
+    const auto* start = reinterpret_cast<const char*>(object);
+    return {
+        {reinterpret_cast<const char*>(&object->mCachedShape) - start,
+         reinterpret_cast<const char*>(&object->mManifoldId) - start}};
+  }
+
+  static std::size_t manifoldId(const DARTCollisionObject* object)
+  {
+    return object->mManifoldId;
+  }
+
   static const native::Shape* getShape(const DARTCollisionObject* object)
   {
     return object->getEngineShape();

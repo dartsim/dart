@@ -168,6 +168,8 @@ private:
 
   std::size_t getNumCollisionObjectEngineData() const;
 
+  std::size_t allocateManifoldId();
+
   static Registrar<DARTCollisionDetector> mRegistrar;
 };
 

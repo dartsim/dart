@@ -179,7 +179,7 @@ private:
 
   void refreshSoftFaceBvhBounds();
 
-  // Keep the pre-consolidation DART 6.20 layout and public cache accessors.
+  // Keep the DART 6.20 cache prefix and public cache accessors.
   // New consolidated-engine state lives in DARTCollisionObjectEngineData.
   dynamics::ConstShapePtr mCachedShape;
   const std::string* mCachedShapeType{nullptr};
@@ -201,6 +201,9 @@ private:
   std::vector<int> mCachedSoftFaceBvhIndices;
   bool mCachedSoftFacesDirty{false};
   bool mCachedSoftFaceTopologyDirty{false};
+
+  // Detector-local creation order, independent of storage addresses.
+  std::size_t mManifoldId{0};
 };
 
 } // namespace collision

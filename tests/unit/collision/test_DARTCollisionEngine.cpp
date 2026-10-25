@@ -74,6 +74,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <new>
 #include <set>
 #include <string>
 #include <thread>
@@ -1361,6 +1362,12 @@ TEST(DARTCollisionDetector, DestroyingObjectDropsPersistentManifoldCache)
   ASSERT_NE(nullptr, nativeObject2);
 
   auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
+  EXPECT_EQ(
+      collision::detail::DARTCollisionDetectorAccessor::manifoldId(*group, 0),
+      1u);
+  EXPECT_EQ(
+      collision::detail::DARTCollisionDetectorAccessor::manifoldId(*group, 1),
+      2u);
   collision::CollisionOption option(true, 4u, nullptr);
   collision::CollisionResult result;
   ASSERT_TRUE(detector->collide(group.get(), option, &result));
@@ -2138,4 +2145,86 @@ TEST(DARTCollisionDetector, SameTypeShapeSwapRebuildsNativeShape)
       Eigen::Vector3d(-1.25, -1.25, -1.25), nativeObject->getEngineAabb().min);
   EXPECT_EQ(
       Eigen::Vector3d(1.25, 1.25, 1.25), nativeObject->getEngineAabb().max);
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, CreationOrderOrientsManifoldsAgainstAddressOrder)
+{
+  class ReverseAddressDetector : public collision::DARTCollisionDetector
+  {
+  public:
+    ReverseAddressDetector()
+    {
+      for (int i = 0; i < 2; ++i)
+        slots.push_back(::operator new(sizeof(ExposedDARTCollisionObject)));
+      std::sort(slots.begin(), slots.end(), std::less<void*>());
+    }
+    ~ReverseAddressDetector() override
+    {
+      for (auto* slot : slots)
+        ::operator delete(slot);
+    }
+
+  private:
+    std::unique_ptr<collision::CollisionObject> createCollisionObject(
+        const dynamics::ShapeFrame* frame) override
+    {
+      auto* slot = slots.back();
+      slots.pop_back();
+      return std::unique_ptr<collision::CollisionObject>(
+          new (slot) ExposedDARTCollisionObject(this, frame));
+    }
+    std::vector<void*> slots;
+  };
+  auto detector = std::make_shared<ReverseAddressDetector>();
+  auto first = makeFrame(std::make_shared<dynamics::SphereShape>(0.5));
+  auto second = makeFrame(
+      std::make_shared<dynamics::SphereShape>(0.5), Eigen::Vector3d(0.8, 0, 0));
+  auto group = detector->createCollisionGroup(first.get(), second.get());
+  collision::CollisionResult result;
+  ASSERT_TRUE(detector->collide(
+      group.get(), collision::CollisionOption(true, 4, nullptr), &result));
+  ASSERT_EQ(result.getNumContacts(), 1u);
+  const auto& contact = result.getContact(0);
+  const auto* a = static_cast<const collision::DARTCollisionObject*>(
+      contact.collisionObject1);
+  const auto* b = static_cast<const collision::DARTCollisionObject*>(
+      contact.collisionObject2);
+  const auto* firstObject = a->getShapeFrame() == first.get() ? a : b;
+  const auto* secondObject = a == firstObject ? b : a;
+  ASSERT_TRUE(std::less<const collision::DARTCollisionObject*>()(
+      secondObject, firstObject));
+  const auto* cached = detector->getCachedContact(a, b, contact.userData);
+  ASSERT_NE(cached, nullptr);
+  EXPECT_TRUE(cached->localPointA.isApprox(
+      first->getTransform().inverse() * contact.point, 0));
+  EXPECT_TRUE(cached->localPointB.isApprox(
+      second->getTransform().inverse() * contact.point, 0));
+  const auto firstIndex = [&] {
+    for (std::size_t i = 0; i < group->getNumShapeFrames(); ++i)
+      if (group->getShapeFrame(i) == first.get())
+        return i;
+    ADD_FAILURE() << "Missing first ShapeFrame";
+    return group->getNumShapeFrames();
+  };
+  const auto id = collision::detail::DARTCollisionDetectorAccessor::manifoldId(
+      *group, firstIndex());
+  auto replacement = std::make_shared<dynamics::SphereShape>(0.6);
+  first->setShape(replacement);
+  ASSERT_TRUE(detector->collide(
+      group.get(), collision::CollisionOption(true, 4, nullptr), &result));
+  ASSERT_EQ(firstObject->getCachedShape(), replacement.get());
+  EXPECT_EQ(
+      collision::detail::DARTCollisionDetectorAccessor::manifoldId(
+          *group, firstIndex()),
+      id);
+  ASSERT_EQ(result.getNumContacts(), 1u);
+  const auto& swappedContact = result.getContact(0);
+  cached = detector->getCachedContact(
+      firstObject, secondObject, swappedContact.userData);
+  ASSERT_NE(cached, nullptr);
+  EXPECT_TRUE(cached->localPointA.isApprox(
+      first->getTransform().inverse() * swappedContact.point, 0));
+  EXPECT_TRUE(cached->localPointB.isApprox(
+      second->getTransform().inverse() * swappedContact.point, 0));
 }
