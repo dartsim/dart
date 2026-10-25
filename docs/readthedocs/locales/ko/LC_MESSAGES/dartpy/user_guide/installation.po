@@ -9,8 +9,8 @@ msgstr ""
 "Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
 "7.0.0-alpha0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-01-26 00:00-0800\n"
-"PO-Revision-Date: 2025-01-26 00:00-0800\n"
+"POT-Creation-Date: 2026-10-25 00:00-0700\n"
+"PO-Revision-Date: 2026-10-25 00:00-0700\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
 "Language-Team: ko <LL@li.org>\n"
@@ -24,83 +24,130 @@ msgstr ""
 msgid "Installation"
 msgstr "설치"
 
-#: ../../dartpy/user_guide/installation.rst:4
-msgid ""
-"To install the Python bindings for DART using the `dartpy` package from "
-"PyPI, you can use the following command:"
+#: ../../dartpy/user_guide/installation.rst:5
+msgid "Quick install commands"
+msgstr "빠른 설치 명령"
+
+#: ../../dartpy/user_guide/installation.rst:7
+msgid "For packaged dartpy bindings, use one of the package channels below:"
 msgstr ""
-"PyPI의 `dartpy` 패키지를 사용하여 DART의 Python 바인딩을 설치하려면 "
-"다음 명령어를 사용하세요:"
+"패키지로 배포되는 dartpy 바인딩은 아래 패키지 채널 중 하나를 사용하세요:"
 
-#: ../../dartpy/user_guide/installation.rst:11
-msgid "The following operating systems are currently supported:"
-msgstr "현재 다음 운영 체제가 지원됩니다:"
+#: ../../dartpy/user_guide/installation.rst:18
+msgid "Supported PyPI wheel lanes"
+msgstr "지원되는 PyPI wheel 빌드"
 
-#: ../../dartpy/user_guide/installation.rst:14
-msgid "Operating System"
-msgstr "운영 체제"
+#: ../../dartpy/user_guide/installation.rst:20
+msgid ""
+"The release branch's ``publish_dartpy.yml`` workflow builds these PyPI "
+"wheel lanes. Wheel versions are sourced from ``package.xml`` and are "
+"published from matching version tags."
+msgstr ""
+"릴리스 브랜치의 ``publish_dartpy.yml`` 워크플로가 다음 PyPI wheel을 "
+"빌드합니다. wheel 버전은 ``package.xml``\\ 에서 가져오며, 일치하는 버전 "
+"태그에서 게시됩니다."
 
-#: ../../dartpy/user_guide/installation.rst:14
-msgid "Python 3.7"
-msgstr "Python 3.7"
+#: ../../dartpy/user_guide/installation.rst:28
+msgid "Platform"
+msgstr "플랫폼"
 
-#: ../../dartpy/user_guide/installation.rst:14
-msgid "Python 3.8"
-msgstr "Python 3.8"
+#: ../../dartpy/user_guide/installation.rst:29
+msgid "CPython wheels built by this branch"
+msgstr "이 브랜치가 빌드하는 CPython wheel"
 
-#: ../../dartpy/user_guide/installation.rst:14
-msgid "Python 3.9"
-msgstr "Python 3.9"
+#: ../../dartpy/user_guide/installation.rst:30
+msgid "Linux x86_64 and aarch64"
+msgstr "Linux x86_64 및 aarch64"
 
-#: ../../dartpy/user_guide/installation.rst:14
-msgid "Python 3.10"
-msgstr "Python 3.10"
+#: ../../dartpy/user_guide/installation.rst:31
+#: ../../dartpy/user_guide/installation.rst:33
+#: ../../dartpy/user_guide/installation.rst:35
+msgid "One ``cp312-abi3`` wheel for 3.12 and newer"
+msgstr "3.12 이상을 위한 ``cp312-abi3`` wheel 1개"
 
-#: ../../dartpy/user_guide/installation.rst:14
-msgid "Python 3.11"
-msgstr "Python 3.11"
-
-#: ../../dartpy/user_guide/installation.rst:17
-msgid "Linux x86_64"
-msgstr "Linux x86_64"
-
-#: ../../dartpy/user_guide/installation.rst:17
-msgid "O"
-msgstr "O"
-
-#: ../../dartpy/user_guide/installation.rst:19
-msgid "Linux arm64"
-msgstr "Linux arm64"
-
-#: ../../dartpy/user_guide/installation.rst:19
-msgid "X"
-msgstr "X"
-
-#: ../../dartpy/user_guide/installation.rst:21
-msgid "macOS x86_64"
-msgstr "macOS x86_64"
-
-#: ../../dartpy/user_guide/installation.rst:23
+#: ../../dartpy/user_guide/installation.rst:32
 msgid "macOS arm64"
 msgstr "macOS arm64"
 
-#: ../../dartpy/user_guide/installation.rst:25
+#: ../../dartpy/user_guide/installation.rst:34
 msgid "Windows x86_64"
 msgstr "Windows x86_64"
 
-#: ../../dartpy/user_guide/installation.rst:27
-msgid "Windows arm64"
-msgstr "Windows arm64"
+#: ../../dartpy/user_guide/installation.rst:36
+msgid "Other Python versions or platforms"
+msgstr "그 밖의 Python 버전 또는 플랫폼"
 
-#: ../../dartpy/user_guide/installation.rst:32
+#: ../../dartpy/user_guide/installation.rst:37
 msgid ""
-"This table may not be up-to-date. For the latest information on the "
-"availability of the Python bindings for DART, please refer to the dartpy "
-"package on PyPI: https://pypi.org/project/dartpy/. If you would like to "
-"use dartpy on an unsupported OS or Python version, please let us know so "
-"we can consider adding support."
+"Build from source with Python 3.12 or newer, or use conda-forge/Pixi when "
+"packages are available there"
 msgstr ""
-"이 표는 최신 정보가 아닐 수 있습니다. DART Python 바인딩의 가용성에 대한 "
-"최신 정보는 PyPI의 dartpy 패키지를 참조하세요: https://pypi.org/project/dartpy/. "
-"지원되지 않는 OS 또는 Python 버전에서 dartpy를 사용하고 싶으시다면 "
-"알려주시면 지원 추가를 고려하겠습니다."
+"Python 3.12 이상으로 소스에서 빌드하거나, conda-forge/Pixi에 패키지가 "
+"있으면 그것을 사용하세요"
+
+#: ../../dartpy/user_guide/installation.rst:40
+msgid ""
+"The source-build platform requirements in the :doc:`DART build guide "
+"</dart/developer_guide/build>` differ from the wheel runtime requirements. "
+"Current macOS arm64 wheels target macOS 15.0. Linux wheels, including "
+"their bundled dependencies, are built with the manylinux 2.28 toolchain "
+"and tagged ``manylinux_2_28``. The ``abi3`` wheels use CPython's stable "
+"ABI, so pip installs the same wheel on Python 3.12, 3.13, and later "
+"releases."
+msgstr ""
+":doc:`DART 빌드 가이드 </dart/developer_guide/build>`\\ 의 소스 빌드 "
+"플랫폼 요구 사항은 wheel 런타임 요구 사항과 다릅니다. 현재 macOS arm64 "
+"wheel은 macOS 15.0을 대상으로 합니다. 번들된 의존성을 포함한 Linux wheel은 "
+"manylinux 2.28 툴체인으로 빌드하며 ``manylinux_2_28`` 태그가 붙습니다. "
+"``abi3`` wheel은 CPython의 안정 ABI를 사용하므로, pip는 Python 3.12, 3.13 "
+"및 이후 릴리스에 같은 wheel을 설치합니다."
+
+#: ../../dartpy/user_guide/installation.rst:49
+msgid "Building from source"
+msgstr "소스에서 빌드하기"
+
+#: ../../dartpy/user_guide/installation.rst:51
+msgid ""
+"The package requires Python 3.12 or newer and NumPy 1.26.4 or newer. ``pip "
+"install .`` builds it with scikit-build-core (``pyproject.toml``), which "
+"requires a matching C++ toolchain, CMake 3.28 or newer, Ninja, and the "
+"DART dependencies described in the :doc:`DART build guide "
+"</dart/developer_guide/build>`. Isolated ``pip`` builds install the tool "
+"requirements from ``pyproject.toml``. Linux source installs also enable "
+"``utils-assets`` and require the libcurl >= 8.5 and OpenSSL Crypto >= "
+"3.0.13 development packages (for example, ``libcurl4-openssl-dev`` and "
+"``libssl-dev`` on Debian/Ubuntu). macOS and Windows source installs need "
+"those libraries when explicitly enabling ``DART_BUILD_UTILS_ASSETS``. "
+"Stock packages meet these floors on Ubuntu 24.04 or newer; Debian 12 "
+"(libcurl 7.88.1) and Ubuntu 22.04 (libcurl 7.81, OpenSSL 3.0.2) are too "
+"old. To omit the retriever and these development packages, use "
+"``CMAKE_ARGS=-DDART_BUILD_UTILS_ASSETS=OFF pip install .``."
+msgstr ""
+"이 패키지에는 Python 3.12 이상과 NumPy 1.26.4 이상이 필요합니다. ``pip "
+"install .``\\ 은 scikit-build-core(``pyproject.toml``)로 빌드하며, 이를 "
+"위해 호환되는 C++ 툴체인, CMake 3.28 이상, Ninja, 그리고 :doc:`DART 빌드 "
+"가이드 </dart/developer_guide/build>`\\ 에 설명된 DART 의존성이 "
+"필요합니다. 격리된 ``pip`` 빌드는 ``pyproject.toml``\\ 의 도구 요구 사항을 "
+"설치합니다. Linux 소스 설치는 ``utils-assets``\\ 도 활성화하며 libcurl >= "
+"8.5와 OpenSSL Crypto >= 3.0.13 개발 패키지가 필요합니다(예: "
+"Debian/Ubuntu의 ``libcurl4-openssl-dev``\\ 와 ``libssl-dev``). macOS와 "
+"Windows의 소스 설치는 ``DART_BUILD_UTILS_ASSETS``\\ 를 명시적으로 활성화할 "
+"때 이 라이브러리가 필요합니다. 배포판 기본 패키지는 Ubuntu 24.04 이상에서 "
+"이 최소 요건을 충족하며, Debian 12(libcurl 7.88.1)와 Ubuntu 22.04(libcurl "
+"7.81, OpenSSL 3.0.2)는 너무 오래되었습니다. 리트리버와 이 개발 패키지를 "
+"제외하려면 ``CMAKE_ARGS=-DDART_BUILD_UTILS_ASSETS=OFF pip install .``\\ 을 "
+"사용하세요."
+
+#: ../../dartpy/user_guide/installation.rst:65
+msgid ""
+"dartpy always includes ``dartpy.gui``. The wheel build uses DART's pinned "
+"private Filament SDK on Linux, macOS arm64, and 64-bit Windows. "
+"Configuring downloads that SDK; on Linux it is compiled from source, which "
+"also needs Clang 20 or newer. Other platforms need an installed Filament "
+"1.77.3 SDK, found through ``Filament_ROOT`` or the CMake prefix path."
+msgstr ""
+"dartpy는 항상 ``dartpy.gui``\\ 를 포함합니다. wheel 빌드는 Linux, macOS "
+"arm64, 64비트 Windows에서 DART가 고정해 둔 전용 Filament SDK를 사용합니다. "
+"구성(configure) 시 이 SDK를 내려받으며, Linux에서는 소스에서 컴파일하므로 "
+"Clang 20 이상도 필요합니다. 다른 플랫폼에서는 설치된 Filament 1.77.3 SDK가 "
+"필요하며, ``Filament_ROOT``\\ 나 CMake 프리픽스 경로로 찾습니다."
