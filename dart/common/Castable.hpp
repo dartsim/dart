@@ -39,8 +39,11 @@
   /** Returns type string. */                                                  \
   [[nodiscard]] static const std::string& getStaticType()                      \
   {                                                                            \
-    static const std::string type = #type_name;                                \
-    return type;                                                               \
+    /* A heap string is never constant-initialized, so C++17 and C++20 */      \
+    /* copies of this function initialize it alike. Its name differs from */   \
+    /* the old `type` object so copies from older headers stay separate. */    \
+    static const std::string& staticType = *new std::string(#type_name);       \
+    return staticType;                                                         \
   }                                                                            \
                                                                                \
   [[nodiscard]] const std::string& getType() const override                    \
