@@ -1,6 +1,7 @@
 """Check package support boundaries and native baseline CI coverage."""
 
 import os
+import re
 import subprocess
 import sys
 import tomllib
@@ -49,6 +50,26 @@ def test_libcurl_requirement_metadata():
     )
     assert "8.4.0" not in versions
     assert "8.5.0" in versions
+
+
+def test_tracy_requirement_metadata():
+    cmake = (ROOT / "cmake/DARTFindDependencies.cmake").read_text()
+    block = cmake[
+        cmake.index("if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)") : cmake.index(
+            "# Deprecated compatibility option"
+        )
+    ]
+    system = re.search(r"find_package\(Tracy (\d+\.\d+\.\d+) CONFIG REQUIRED\)", block)
+    fetched = re.search(
+        r"URL https://github\.com/wolfpld/tracy/archive/refs/tags/"
+        r"v(\d+\.\d+\.\d+)\.tar\.gz\s+URL_HASH\s+SHA256=[0-9a-f]{64}\s+"
+        r"TLS_VERIFY ON\b",
+        block,
+    )
+    assert system and fetched and "GIT_REPOSITORY" not in block
+    assert system.group(1) == fetched.group(1)
+    docs = (ROOT / "docs/readthedocs/dart/developer_guide/build.rst").read_text()
+    assert re.search(rf"\* - Tracy\n\s+- {re.escape(system.group(1))}\n", docs)
 
 
 def test_package_metadata_support_boundaries():

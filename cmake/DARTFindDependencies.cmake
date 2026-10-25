@@ -54,81 +54,43 @@ endif()
 
 if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)
   if(DART_USE_SYSTEM_TRACY)
-    # Installed Tracy packages ship no CMake version file, so an unversioned
-    # package is accepted; a reported or header-declared version needs 0.11.1.
-    find_package(Tracy CONFIG REQUIRED)
-    set(_dart_tracy_version "")
-    foreach(_name Tracy_VERSION TRACY_VERSION TRACY_VERSION_STRING)
-      if(_dart_tracy_version STREQUAL "" AND NOT "${${_name}}" STREQUAL "")
-        set(_dart_tracy_version "${${_name}}")
-        set(_dart_tracy_source "${_name}")
-      endif()
-    endforeach()
-    if(_dart_tracy_version STREQUAL "" AND TARGET Tracy::TracyClient)
-      # Upstream declares the version in common/TracyVersion.hpp as an enum.
-      get_target_property(
-        _dart_tracy_dirs
-        Tracy::TracyClient
-        INTERFACE_INCLUDE_DIRECTORIES
+    # 0.14.1 is the first Tracy release whose package reports its version. Its
+    # version file accepts only the same minor series, which is also the series
+    # a matching viewer must come from.
+    find_package(Tracy 0.14.1 CONFIG REQUIRED)
+    # Since Tracy 0.14 the client library is an empty stub unless it was built
+    # with TRACY_ENABLE, which the imported target then exports.
+    get_target_property(
+      _dart_tracy_defines
+      Tracy::TracyClient
+      INTERFACE_COMPILE_DEFINITIONS
+    )
+    if(NOT "TRACY_ENABLE" IN_LIST _dart_tracy_defines)
+      message(
+        FATAL_ERROR
+        "Found Tracy ${Tracy_VERSION} built without TRACY_ENABLE, so its client library is empty. Rebuild Tracy with -DTRACY_ENABLE=ON, or set DART_USE_SYSTEM_TRACY=OFF to fetch it."
       )
-      foreach(_dir IN LISTS _dart_tracy_dirs)
-        if(_dir MATCHES "^\\$<BUILD_INTERFACE:(.*)>$")
-          set(_dir "${CMAKE_MATCH_1}")
-        endif()
-        if(
-          _dart_tracy_version STREQUAL ""
-          AND EXISTS "${_dir}/common/TracyVersion.hpp"
-        )
-          file(READ "${_dir}/common/TracyVersion.hpp" _dart_tracy_header)
-          set(_dart_tracy_source "${_dir}/common/TracyVersion.hpp")
-          set(_dart_tracy_parts "")
-          foreach(_part Major Minor Patch)
-            if(
-              _dart_tracy_header MATCHES "${_part}[ \t\r\n]*=[ \t\r\n]*([0-9]+)"
-            )
-              list(APPEND _dart_tracy_parts "${CMAKE_MATCH_1}")
-            endif()
-          endforeach()
-          list(LENGTH _dart_tracy_parts _dart_tracy_count)
-          if(NOT _dart_tracy_count EQUAL 3)
-            message(
-              FATAL_ERROR
-              "Cannot read the Tracy version from ${_dart_tracy_source}; DART needs Tracy >= 0.11.1."
-            )
-          endif()
-          string(REPLACE ";" "." _dart_tracy_version "${_dart_tracy_parts}")
-        endif()
-      endforeach()
     endif()
-    if(NOT _dart_tracy_version STREQUAL "")
-      if(NOT _dart_tracy_version MATCHES "^[0-9]+(\\.[0-9]+)*")
-        message(
-          FATAL_ERROR
-          "Cannot parse Tracy version '${_dart_tracy_version}' from ${_dart_tracy_source}; DART needs Tracy >= 0.11.1."
-        )
-      endif()
-      if(CMAKE_MATCH_0 VERSION_LESS 0.11.1)
-        message(
-          FATAL_ERROR
-          "Found Tracy ${_dart_tracy_version}; DART needs Tracy >= 0.11.1."
-        )
-      endif()
-    endif()
-    unset(_dart_tracy_version)
-    unset(_dart_tracy_source)
-    unset(_dart_tracy_dirs)
-    unset(_dart_tracy_header)
-    unset(_dart_tracy_parts)
-    unset(_dart_tracy_count)
+    unset(_dart_tracy_defines)
   else()
     include(FetchContent)
+    # Extract with current timestamps on CMake 3.24+ so archive updates rebuild.
+    set(dart_tracy_timestamp)
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
+      set(dart_tracy_timestamp DOWNLOAD_EXTRACT_TIMESTAMP FALSE)
+    endif()
     FetchContent_Declare(
       tracy
-      GIT_REPOSITORY https://github.com/wolfpld/tracy.git
-      GIT_TAG v0.11.1
-      GIT_SHALLOW TRUE
-      GIT_PROGRESS TRUE
+      URL https://github.com/wolfpld/tracy/archive/refs/tags/v0.14.1.tar.gz
+      URL_HASH
+        SHA256=bf4af567e9c7524d07f3caa745fad02fb33bd5694f11910750382d1efbb251c1
+      TLS_VERIFY ON
+      ${dart_tracy_timestamp}
     )
+    # Tracy 0.14 builds an empty client unless TRACY_ENABLE is set. A normal
+    # variable (CMP0077) enables it in DART's scope only, leaving a parent
+    # project's TRACY_ENABLE alone.
+    set(TRACY_ENABLE ON)
     FetchContent_MakeAvailable(tracy)
     dart_check_fetchcontent(tracy DART_USE_SYSTEM_TRACY)
     if(MSVC)

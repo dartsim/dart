@@ -552,14 +552,18 @@ pixi run -e profile cmake --build build/profile/cpp/Release \
 ```
 
 `config-tracy` enables `DART_BUILD_PROFILE=ON`, keeps the text backend enabled,
-sets `DART_PROFILE_TRACY=ON`, and uses the system Tracy package from the Pixi
-profile environment. The build directory is `build/profile/cpp/Release`.
+sets `DART_PROFILE_TRACY=ON`, and fetches Tracy 0.14.1 from a SHA-256-verified
+tag archive, so the first configure needs network access. The build
+directory is `build/profile/cpp/Release`. `DART_USE_SYSTEM_TRACY=ON` uses an
+installed Tracy instead if it is 0.14.1 or a later 0.14 release built with
+`TRACY_ENABLE=ON`; conda-forge's 0.14.1 client is built without it, so configure
+rejects that package.
 
-Start the viewer in a separate terminal:
-
-```bash
-pixi run -e profile tracy
-```
+Start a Tracy 0.14 viewer in a separate terminal. Its minor version must match
+the client's, and the profile environment ships none: conda-forge's 0.14.1
+viewer needs GLFW 3.5 (and, off Windows, a pre-release libcapstone), while the
+Filament feature pins GLFW 3.4. Use the 0.14.1 release binaries from the Tracy
+project (Linux needs Wayland) or a package manager's Tracy 0.14.
 
 For short-lived command-line runs, keep the process alive long enough for Tracy
 to connect:
@@ -669,6 +673,8 @@ Detailed rejected measurements remain in Git history.
   `pixi run -e profile config-tracy`.
 - If a short run exits before the Tracy viewer captures it, set
   `TRACY_NO_EXIT=1`.
+- If the viewer refuses the connection as an incompatible version, use a
+  Tracy 0.14 viewer; the client is 0.14.1.
 - Reconfigure when switching between default and Tracy builds. They use separate
   Pixi environment build directories, so stale binaries are easy to spot by
   path.
