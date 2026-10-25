@@ -203,6 +203,60 @@ def test_stock_noble_lane_builds_core_and_io_from_distribution_packages():
     assert "stock-noble" in workflow_job("nightly.yml", "report")["needs"]
 
 
+def apt_packages(run):
+    block = re.search(r"packages=\((.*?)\n\s*\)", run, re.DOTALL).group(1)
+    lines = (line.strip() for line in block.splitlines())
+    return {line for line in lines if line and not line.startswith("#")}
+
+
+def test_noble_fallbacks_lane_builds_gui_and_dartpy_with_fallbacks():
+    job = workflow_job("ci_noble_fallbacks.yml", "noble-fallbacks")
+    assert job["runs-on"] == "ubuntu-24.04"
+    assert job["container"] == "ubuntu:24.04"
+    # Tier 2 is "nothing from pixi": a pixi step would hide a distribution gap.
+    assert "pixi" not in str(job).lower()
+    runs = {
+        step["name"]: step.get("run", "") for step in job["steps"] if "name" in step
+    }
+    # Root in the container does not own the checkout, and dartpy tests run git.
+    assert "safe.directory" in runs["Trust the checkout for git"]
+    # The lane starts from the Tier 1 package list, so a new dependency added
+    # there fails this test instead of the next nightly configure.
+    stock = workflow_job("ci_stock_noble.yml", "stock-noble")
+    tier1 = next(
+        step["run"] for step in stock["steps"] if "packages=(" in step.get("run", "")
+    )
+    tier2 = apt_packages(runs["Install the toolchain and dependencies from apt"])
+    assert apt_packages(tier1) <= tier2
+    # clang-20 builds the Filament SDK, libgl-dev pulls in the GL/glx.h that
+    # Filament includes, and test_GuiParity loads DejaVu Sans by default.
+    gui_only = {"clang-20", "libgl-dev", "fonts-dejavu-core", "mesa-vulkan-drivers"}
+    assert gui_only <= tier2
+    assert "libsdformat14-dev" in runs["Install sdformat from the OSRF repository"]
+    # Apt names Lavapipe's ICD lvp_icd.json; conda adds the architecture.
+    assert job["env"]["VK_DRIVER_FILES"] == "/usr/share/vulkan/icd.d/lvp_icd.json"
+    # The Filament and GLFW switches are explicit, so the lane keeps testing the
+    # fallbacks if their defaults change.
+    configure = runs["Configure"]
+    for option in (
+        "DART_USE_SYSTEM_DEPENDENCIES=ON",
+        "DART_REQUIRE_OPTIONAL_DEPENDENCIES=ON",
+        "DART_BUILD_GUI=ON",
+        "DART_BUILD_DARTPY=ON",
+        "DART_USE_SYSTEM_FILAMENT=OFF",
+        "DART_USE_SYSTEM_GLFW=OFF",
+        "DART_ENABLE_GUI_SMOKE_TESTS=ON",
+    ):
+        assert f"-D{option}" in configure
+    assert "--target all tests dartpy dartpy_gc_test" in runs["Build"]
+    # Ubuntu's FCL aborts in test_Distance; no other test may be excluded.
+    assert "-E '^test_Distance$'" in runs["Test"]
+    assert "-LE gui-device" in runs["Test"]
+    nightly = workflow_job("nightly.yml", "noble-fallbacks")
+    assert nightly["uses"] == "./.github/workflows/ci_noble_fallbacks.yml"
+    assert "noble-fallbacks" in workflow_job("nightly.yml", "report")["needs"]
+
+
 def test_windows_matrix_preserves_required_checks_and_selects_vs2022():
     job = workflow_job("ci_windows.yml", "build")
     rows = {row["name"]: row for row in job["strategy"]["matrix"]["include"]}

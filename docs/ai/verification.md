@@ -116,7 +116,8 @@ DART renders off-screen through `dart::gui::Viewer` with
 `setUpViewForCapture`. Linux capture uses Vulkan without an X11 or Wayland
 display; a suitable Vulkan GPU driver or Mesa Lavapipe software driver is
 required. To force Lavapipe, set `VK_DRIVER_FILES` to the Pixi environment's
-`$CONDA_PREFIX/share/vulkan/icd.d/lvp_icd.x86_64.json`. Native-window tests
+`$CONDA_PREFIX/share/vulkan/icd.d/lvp_icd.x86_64.json`, or to apt's
+`/usr/share/vulkan/icd.d/lvp_icd.json`. Native-window tests
 (`ctest --test-dir build/<env>/cpp/Release -L filament-native`, or
 `ctest --test-dir build/<env>/cpp -C Release -L filament-native` on Windows)
 still need a desktop session or Xvfb on Linux, where windows use X11 (XWayland

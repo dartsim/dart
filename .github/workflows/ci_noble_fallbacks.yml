@@ -1,0 +1,227 @@
+# Tier 2 of the support tiers (docs/onboarding/build-system.md): build and test
+# the GUI and dartpy on a stock Ubuntu 24.04 image with DART's fallbacks. The
+# Ubuntu archive supplies the compiler, libraries and Python. Configure fetches
+# what 24.04 lacks or ships too old (GLFW 3.4, Dear ImGui, nanobind 3.1) and
+# builds the private Filament SDK from source with the archive's Clang 20.
+# Nothing comes from pixi or pip. The other Linux lanes take their libraries
+# from pixi, so only this lane and the Tier 1 lane (ci_stock_noble.yml) notice
+# when a distribution package or a fallback stops working.
+#
+# To reproduce it, run the steps below in
+# `docker run --rm -it -v "$PWD":/src -w /src ubuntu:24.04 bash`. A dartpy test
+# runs `git rev-parse`, so mount a regular clone (not a linked worktree) and
+# run `git config --global --add safe.directory /src` first, as the
+# "Trust the checkout for git" step does in CI.
+
+name: CI Ubuntu 24.04 with fallbacks
+
+on:
+  # nightly.yml calls this every night, and a pull request that changes this
+  # file runs it; dispatch it to check a branch on demand.
+  pull_request:
+    branches:
+      - "**"
+    paths:
+      - ".github/workflows/ci_noble_fallbacks.yml"
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Protected branches (main, release-*) should finish every post-merge run.
+  # GitHub's default concurrency queue keeps only one pending run, so use a
+  # run-specific group on release refs while keeping PR/topic refs cancellable.
+  group: >-
+    ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-'))
+        && format('ci-noble-fallbacks-{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
+        || format('ci-noble-fallbacks-{0}-{1}', github.workflow, github.ref) }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' && !(github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-')) }}
+
+jobs:
+  noble-fallbacks:
+    name: GUI and dartpy with fallbacks
+    # Pin the versioned hosted label, not `ubuntu-latest`, which the dartsim
+    # self-hosted runners also carry (see ci_freebsd.yml): a container job needs
+    # the Docker of a GitHub-hosted runner.
+    runs-on: ubuntu-24.04
+    # Expect 35 to 45 minutes cold on the 4-vCPU hosted runner.
+    timeout-minutes: 120
+    container: ubuntu:24.04
+    defaults:
+      run:
+        shell: bash
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      # A full build caches about 100 MB, the Filament SDK included.
+      CCACHE_DIR: /ccache
+      CCACHE_MAXSIZE: 200M
+      # Apt names Lavapipe's ICD lvp_icd.json; conda names it lvp_icd.x86_64.json.
+      VK_DRIVER_FILES: /usr/share/vulkan/icd.d/lvp_icd.json
+    steps:
+      - name: Install the toolchain and dependencies from apt
+        run: |
+          echo 'Acquire::Retries "3";' > /etc/apt/apt.conf.d/80-retries
+          apt-get update
+          packages=(
+            # The Tier 1 lane's list. git must be present before the checkout
+            # and for the dartpy test that runs `git rev-parse`.
+            build-essential
+            ca-certificates
+            ccache
+            cmake
+            curl
+            git
+            libassimp-dev
+            libbenchmark-dev
+            libbullet-dev
+            libccd-dev
+            libcurl4-openssl-dev
+            libeigen3-dev
+            libfcl-dev
+            libgtest-dev
+            liboctomap-dev
+            libode-dev
+            libssl-dev
+            libtinyxml2-dev
+            liburdfdom-dev
+            liburdfdom-headers-dev
+            ninja-build
+            pkg-config
+            # The private Filament SDK needs Clang 20, which noble-updates has.
+            clang-20
+            # GLFW 3.4 builds against X11, and Filament includes GL/glx.h.
+            libgl-dev
+            libx11-dev
+            libxcursor-dev
+            libxext-dev
+            libxi-dev
+            libxinerama-dev
+            libxrandr-dev
+            # Texture decoding and PNG capture.
+            libjpeg-dev
+            libpng-dev
+            # dartpy takes nanobind from the fetch; the tests need NumPy and pytest.
+            python3-dev
+            python3-numpy
+            python3-pytest
+            # Test runtime: Lavapipe, Mesa's OpenGL for Xvfb windows, and the
+            # font that test_GuiParity loads by default.
+            fonts-dejavu-core
+            libegl1
+            libgl1
+            libgl1-mesa-dri
+            libvulkan1
+            mesa-vulkan-drivers
+            xauth
+            xvfb
+          )
+          apt-get install -y --no-install-recommends "${packages[@]}"
+          dpkg-query -W "${packages[@]}"
+
+      # The archive has no sdformat. 14 is the oldest major DART accepts.
+      - name: Install sdformat from the OSRF repository
+        run: |
+          curl -fsSL --retry 3 https://packages.osrfoundation.org/gazebo.gpg \
+            -o /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] https://packages.osrfoundation.org/gazebo/ubuntu-stable noble main" \
+            > /etc/apt/sources.list.d/gazebo-stable.list
+          apt-get update
+          apt-get install -y --no-install-recommends libsdformat14-dev
+          dpkg-query -W libsdformat14-dev
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # actions/checkout trusts the workspace only in a temporary git config,
+      # and root in this container does not own the checkout. dartpy tests
+      # run git, so trust it for the later steps.
+      - name: Trust the checkout for git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Restore compiler cache
+        uses: actions/cache/restore@v6
+        with:
+          path: /ccache
+          key: ccache-noble-fallbacks-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: ccache-noble-fallbacks-
+
+      # Configure downloads the Filament sources (about 830 MB) and builds the
+      # SDK in a separate CMake run, which takes most of this step. The launcher
+      # variables reach that run through the environment, so ccache covers it.
+      # The Filament and GLFW switches are explicit so the lane keeps testing the
+      # fallbacks if their defaults change: Ubuntu has no Filament, and its GLFW
+      # is 3.3.10 where DART wants 3.4.
+      - name: Configure
+        id: configure
+        env:
+          CMAKE_C_COMPILER_LAUNCHER: ccache
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
+        run: |
+          ccache --zero-stats
+          if ! cmake -G Ninja -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DDART_USE_SYSTEM_DEPENDENCIES=ON \
+            -DDART_REQUIRE_OPTIONAL_DEPENDENCIES=ON \
+            -DDART_BUILD_GUI=ON -DDART_BUILD_DARTPY=ON \
+            -DDART_BUILD_UTILS_ASSETS=ON \
+            -DDART_BENCHMARK_NATIVE_ARCH=OFF \
+            -DDART_USE_SYSTEM_FILAMENT=OFF \
+            -DDART_USE_SYSTEM_GLFW=OFF \
+            -DDART_ENABLE_GUI_SMOKE_TESTS=ON \
+            -DPython_EXECUTABLE=/usr/bin/python3; then
+            # The SDK's build output goes to a file, not to this log.
+            find build -name filament-source-build.log -exec tail -n 100 {} +
+            exit 1
+          fi
+
+      - name: Build
+        run: cmake --build build --target all tests dartpy dartpy_gc_test -j 4
+
+      - name: Test
+        run: |
+          # test_Distance is an expected external failure. Ubuntu's FCL 0.7.0 is
+          # built with assertions on, and libccd's GJK distance of two touching
+          # ellipsoids aborts in doSimplex2 ("A is not in region 1"). DART fixes
+          # only the FCL it builds itself: see
+          # docker/wheels/patches/fcl-0.7.0-gjk-zero-direction.patch and the FCL
+          # note in docs/readthedocs/dart/developer_guide/build.rst.
+          ctest --test-dir build --output-on-failure --no-tests=error -j 4 \
+            -LE gui-device -E '^test_Distance$'
+
+      # The GUI tests render with Lavapipe. Capture needs no display server, so
+      # these two steps run without one.
+      - name: Test the GUI on Lavapipe without a display
+        run: |
+          env -u DISPLAY -u WAYLAND_DISPLAY ctest --test-dir build \
+            --output-on-failure --no-tests=error -L gui -LE filament-native
+
+      - name: Test the Python GUI and integration suites on Lavapipe
+        run: |
+          env -u DISPLAY -u WAYLAND_DISPLAY python3 -I scripts/run_pytest.py \
+            --pythonpath build/python --pythonpath scripts \
+            python/tests/unit/gui python/tests/integration -q
+
+      - name: Test native windows under Xvfb
+        run: |
+          xvfb-run -a -s '-screen 0 1280x1024x24' ctest --test-dir build \
+            --output-on-failure --no-tests=error \
+            -R '^(test_Gui(Descriptors|Interactions|Viewer)$|test_FilamentNative|offscreen_capture_smoke)'
+
+      - name: Test a relocated GUI install
+        run: python3 scripts/test_gui_install.py build
+
+      - name: Test dartpy
+        run: cmake --build build --target pytest
+
+      - name: Compiler cache stats
+        if: always()
+        run: ccache --show-stats || true
+
+      - name: Save compiler cache
+        if: always() && github.ref == 'refs/heads/main' && steps.configure.outcome != 'skipped'
+        uses: actions/cache/save@v6
+        with:
+          path: /ccache
+          key: ccache-noble-fallbacks-${{ github.run_id }}-${{ github.run_attempt }}

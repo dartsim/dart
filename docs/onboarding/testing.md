@@ -25,7 +25,9 @@ For GUI, Filament, `dartpy.gui`, or GUI example changes, also run
 `python/tests/integration`. Linux capture uses Vulkan and needs no display
 server; to use the Pixi environment's Mesa Lavapipe driver as CI does, set
 `VK_DRIVER_FILES` to the absolute path of
-`.pixi/envs/<env>/share/vulkan/icd.d/lvp_icd.x86_64.json`. Native-window tests
+`.pixi/envs/<env>/share/vulkan/icd.d/lvp_icd.x86_64.json`. Apt's
+`mesa-vulkan-drivers` names the same driver
+`/usr/share/vulkan/icd.d/lvp_icd.json`. Native-window tests
 need a desktop session; Linux windows use X11, through XWayland on Wayland
 desktops (Xvfb also works):
 

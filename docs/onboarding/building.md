@@ -237,8 +237,8 @@ Ubuntu 24.04 LTS is the oldest supported platform. Its packages plus OSRF's
 sdformat build `dart` and `dart-io` headless (Tier 1); the GUI and dartpy need
 DART's fallbacks there (Tier 2); Pixi, conda-forge and the wheels build
 everything (Tier 3). The [support tiers](build-system.md#support-tiers)
-describe each tier and the nightly Tier 1 lane, whose configure is a working
-offline package configure:
+describe each tier and the nightly lanes that enforce Tiers 1 and 2. The Tier 1
+configure is a working offline package configure:
 
 ```bash
 cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Release \
