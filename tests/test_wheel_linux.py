@@ -1,6 +1,7 @@
 """Guard the Linux wheel ABI policy and the platform workflow routing."""
 
 import importlib.util
+import re
 import subprocess
 import sys
 import tomllib
@@ -227,6 +228,18 @@ def test_dependency_image_builds_sdformat_against_urdfdom_6():
     assert (
         "-DUSE_INTERNAL_URDF=OFF" in dockerfile[sdformat : dockerfile.index("# Bullet")]
     )
+
+
+def test_dependency_image_builds_the_sdformat_major_of_the_conda_wheels():
+    pixi = tomllib.loads((ROOT / "pixi.toml").read_text())
+    conda_major = re.match(r">=(\d+)\.", pixi["dependencies"]["libsdformat"])[1]
+    dockerfile = (ROOT / "docker/wheels/Dockerfile.manylinux_2_28").read_text()
+    # Every wheel reads the same SDF versions. sdformat 16 requires gz-cmake 5,
+    # gz-math 9 and gz-utils 4, and gz-utils 4 vendors CLI11 only on request.
+    assert conda_major == "16"
+    for archive in ("gz-cmake5_5.", "gz-utils4_4.", "gz-math9_9.", "sdformat16_16."):
+        assert f"/refs/tags/{archive}" in dockerfile
+    assert "-DGZ_UTILS_VENDOR_CLI11=ON" in dockerfile
 
 
 def write_nanobind_package(package):

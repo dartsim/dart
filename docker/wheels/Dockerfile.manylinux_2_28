@@ -102,10 +102,12 @@ RUN curl -fsSL https://github.com/ros/urdfdom/archive/refs/tags/6.0.1.tar.gz -o 
     && cmake --build urdfdom/build --target install -j${NUM_CORES} \
     && rm -rf urdfdom urdfdom.tar.gz
 
-# sdformat embeds its schemas and conversion recipes in the library.
+# sdformat embeds its schemas and conversion recipes in the library. Keep the
+# major that the conda-forge wheels use; sdformat 16 requires gz-cmake 5,
+# gz-math 9 and gz-utils 4.
 # gz-cmake
-RUN curl -fsSL https://github.com/gazebosim/gz-cmake/archive/refs/tags/gz-cmake4_4.2.0.tar.gz -o gz-cmake.tar.gz \
-    && echo "62deb00527ea91a5467cfb352189d10303e6508b8d5e52cd6f999bf5a8166cc4  gz-cmake.tar.gz" | sha256sum -c - \
+RUN curl -fsSL https://github.com/gazebosim/gz-cmake/archive/refs/tags/gz-cmake5_5.1.1.tar.gz -o gz-cmake.tar.gz \
+    && echo "5424e481b765e7e88347c167e87b1c89f152ded2f8bbc7f24c7559ea3694f83f  gz-cmake.tar.gz" | sha256sum -c - \
     && mkdir gz-cmake && tar -xf gz-cmake.tar.gz -C gz-cmake --strip-components=1 \
     && cmake gz-cmake -B gz-cmake/build -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
@@ -113,19 +115,20 @@ RUN curl -fsSL https://github.com/gazebosim/gz-cmake/archive/refs/tags/gz-cmake4
     && cmake --build gz-cmake/build --target install -j${NUM_CORES} \
     && rm -rf gz-cmake gz-cmake.tar.gz
 
-# gz-utils
-RUN curl -fsSL https://github.com/gazebosim/gz-utils/archive/refs/tags/gz-utils3_3.1.1.tar.gz -o gz-utils.tar.gz \
-    && echo "e3cf80c00454c964d61948d13e79a790cfa14b82fbb0c76fbd8170105fb28761  gz-utils.tar.gz" | sha256sum -c - \
+# gz-utils; sdformat needs its cli component, and gz-utils 4 no longer vendors
+# CLI11 by default.
+RUN curl -fsSL https://github.com/gazebosim/gz-utils/archive/refs/tags/gz-utils4_4.0.0.tar.gz -o gz-utils.tar.gz \
+    && echo "b06a179ea4297be8b8d09ea7a5d3d45059a3e4030c1bd256afc62f997cc992ed  gz-utils.tar.gz" | sha256sum -c - \
     && mkdir gz-utils && tar -xf gz-utils.tar.gz -C gz-utils --strip-components=1 \
     && cmake gz-utils -B gz-utils/build -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-    -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DSKIP_log=ON \
+    -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DSKIP_log=ON -DGZ_UTILS_VENDOR_CLI11=ON \
     && cmake --build gz-utils/build --target install -j${NUM_CORES} \
     && rm -rf gz-utils gz-utils.tar.gz
 
 # gz-math
-RUN curl -fsSL https://github.com/gazebosim/gz-math/archive/refs/tags/gz-math8_8.4.0.tar.gz -o gz-math.tar.gz \
-    && echo "36002123cd6383bf70309f744571a1d70c699d2c0af16446d4f81f4e20623736  gz-math.tar.gz" | sha256sum -c - \
+RUN curl -fsSL https://github.com/gazebosim/gz-math/archive/refs/tags/gz-math9_9.3.0.tar.gz -o gz-math.tar.gz \
+    && echo "9e957d024a8ce7a94dfb4a33f6425077b33526a0f0e2385ae93c25f88ff8cfb7  gz-math.tar.gz" | sha256sum -c - \
     && mkdir gz-math && tar -xf gz-math.tar.gz -C gz-math --strip-components=1 \
     && cmake gz-math -B gz-math/build -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
@@ -134,8 +137,8 @@ RUN curl -fsSL https://github.com/gazebosim/gz-math/archive/refs/tags/gz-math8_8
     && rm -rf gz-math gz-math.tar.gz
 
 # sdformat
-RUN curl -fsSL https://github.com/gazebosim/sdformat/archive/refs/tags/sdformat15_15.3.0.tar.gz -o sdformat.tar.gz \
-    && echo "b187da7a21a6e0f5e2a45f6b4026a1a69fd39e3f50de26f028313595a1c10cfd  sdformat.tar.gz" | sha256sum -c - \
+RUN curl -fsSL https://github.com/gazebosim/sdformat/archive/refs/tags/sdformat16_16.1.0.tar.gz -o sdformat.tar.gz \
+    && echo "f9ef71787b0055f7ee35a3b52f42a9d6397f0c2f21f9572957bc3f456e2ca674  sdformat.tar.gz" | sha256sum -c - \
     && mkdir sdformat && tar -xf sdformat.tar.gz -C sdformat --strip-components=1 \
     && PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig \
     cmake sdformat -B sdformat/build -DCMAKE_BUILD_TYPE=Release \

@@ -542,6 +542,10 @@ The Linux x86_64 size is after `auditwheel repair --strip`, which cut main's
 21,303,992-byte wheel by 1,021,842 compressed and 5,936,768 unpacked bytes. The
 Linux limit stays at 23,000,000 bytes, which now leaves 13% headroom, close to
 macOS (14%) and Windows (15%).
+Moving the Linux wheels from sdformat 15.3.0, gz-math 8.4.0 and gz-utils
+3.1.1 to sdformat 16.1.0, gz-math 9.3.0 and gz-utils 4.0.0 added 5,314
+compressed bytes (14,332 unpacked) in a build without `--strip`.
+
 The macOS/Windows baselines are main's
 [nightly run 40095159727](https://github.com/dartsim/dart/actions/runs/40095159727),
 not newly built artifacts from this change. That run's Linux aarch64 wheel
