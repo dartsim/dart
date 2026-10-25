@@ -67,9 +67,14 @@ tree; source-consuming dependencies such as the Filament SDK keep enforcing
 their own SDK and license requirements. Existing
 populated source directories in the build tree are accepted. The stable
 FetchContent names are `googletest`, `benchmark`, `tracy`, `nanobind`,
-`dart_imgui`, `dart_filament_sdk`, `glfw`, `ode`, and `bullet`. The umbrella
-does not select system nanobind, ImGui, or Filament; set those switches
-separately when needed. Pixi configure tasks use the umbrella, except
+`dart_imgui`, `dart_filament_sdk`, `glfw`, `ode`, and `bullet`. With
+`DART_USE_SYSTEM_FILAMENT=ON`, an installed SDK without Filament's `notices/`
+tree takes its license notices from the Filament source tree that
+`FETCHCONTENT_SOURCE_DIR_DART_FILAMENT_SDK` names. Without that tree,
+configure downloads them and an offline configure stops
+([Offline builds](building.md#offline-builds)). The umbrella does not select
+system nanobind, ImGui, or Filament; set those switches separately when
+needed. Pixi configure tasks use the umbrella, except
 `pixi run -e profile config-tracy`, which sets `DART_USE_SYSTEM_TRACY=OFF`:
 conda-forge's Tracy 0.14.1 client is built without `TRACY_ENABLE`, so its
 library is empty. A fetched Tracy is the 0.14.1 tag archive, downloaded
