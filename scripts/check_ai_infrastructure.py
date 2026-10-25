@@ -3198,16 +3198,37 @@ def check_cmake_ctest_inventory(
             "-P",
             ode_source.as_posix(),
         )
-    headers_source = root / "tests/cmake/test_HeadersComponent.cmake"
-    if headers_source.is_file():
-        headers_test = "test_HeadersComponent"
+
+    def cache_on(variable: str) -> bool:
+        # dart_option() normalizes with if(<variable>): any value but a false
+        # constant is true.
+        value = cache.get(variable, "")
+        return not (
+            value.upper() in ("", "0", "OFF", "NO", "FALSE", "N", "IGNORE")
+            or value == "NOTFOUND"
+            or value.endswith("-NOTFOUND")
+        )
+
+    for name in ("HeadersComponent", "StandaloneHeaders"):
+        headers_source = root / f"tests/cmake/test_{name}.cmake"
+        if not headers_source.is_file():
+            continue
+        # tests/CMakeLists.txt skips the standalone-header test for static GUI
+        # builds with DART's private Filament SDK.
+        if name == "StandaloneHeaders" and not (
+            cache_on("BUILD_SHARED_LIBS")
+            or not cache_on("DART_BUILD_GUI")
+            or cache_on("DART_USE_SYSTEM_FILAMENT")
+        ):
+            continue
+        headers_test = f"test_{name}"
         if headers_test not in generated_names:
             errors.append(
                 f"{prefix}: required CMake script test `{headers_test}` is missing"
             )
         script_arguments[headers_test] = (
             f"-DDART_BINARY_DIR={build_dir.as_posix()}",
-            f"-DTEST_BINARY_DIR={build_dir.as_posix()}/tests/cmake/HeadersComponent",
+            f"-DTEST_BINARY_DIR={build_dir.as_posix()}/tests/cmake/{name}",
             f"-DTEST_CONFIG={configuration}",
             "-P",
             headers_source.as_posix(),
