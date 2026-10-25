@@ -8,7 +8,7 @@ import sys
 import zipfile
 from pathlib import Path
 
-# Compressed baselines: Linux x86_64 21,303,502 B; macOS arm64 14,083,197 B;
+# Compressed baselines: Linux x86_64 20,282,150 B; macOS arm64 14,083,197 B;
 # Windows x64 12,597,754 B. Linux aarch64 shares the Linux budget.
 WHEEL_SIZE_LIMITS = {"linux": 23_000_000, "macosx": 16_000_000, "win": 14_500_000}
 TLS_NOTICES = ("curl.txt", "openssl.txt")
