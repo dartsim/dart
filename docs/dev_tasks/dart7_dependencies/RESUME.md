@@ -1,20 +1,18 @@
 # Resume
 
-## Current state (2026-10-24)
+## Current state (2026-10-25)
 
 - The plan is on `main` (#3848); this home is updated through follow-up PRs.
-- The maintainer answered the second decision batch one question at a time
-  (DD-10 to DD-34 in [decisions.md](decisions.md)); DD-33 is the standing
-  approval for this plan's publishing, DD-34 extends it to merging `main`,
-  resolving conflicts and fixing CI on the plan's ready PRs, and DD-35 marks
-  drafts ready once they pass the PR Lifecycle gate.
-- Every PR the plan published through 2026-10-24 has merged (list below),
-  including #3943 (DEP-11 PR4) on 2026-10-25.
-- On 2026-10-24 the maintainer chose the order: land the in-flight work,
-  then answer the queued decisions one at a time, then the backports, then
-  the remaining packets, with DEP-21 after M1d. M1d's counted stepping
-  merged that day (#3927), so DEP-21 is sequenced after the remaining
-  packets and its prerequisite below.
+- The maintainer answered the decision batches and the later questions one
+  at a time ([decisions.md](decisions.md), DD-10 to DD-38). DD-33 is the
+  standing approval for this plan's publishing. DD-34 extends it to merging
+  `main`, resolving conflicts and fixing CI on the plan's ready PRs. Under
+  DD-35, drafts leave draft once they pass the PR Lifecycle gate.
+- Every PR the plan published through 2026-10-25 has merged (list below).
+  The FCL/libccd fetch path (DD-36) is in review and not yet published.
+- The maintainer's order from 2026-10-24 stands. The in-flight work, the
+  queued decisions and both backports are done, so the remaining packets
+  come next, then DEP-21 after its prerequisites below.
 - Two local spike branches hold experiment edits only and will not be
   published: `spike/cxx20-standard` and `spike/cxx20-private`. Their worktrees
   hold the Gazebo lane builds and base variants; remove both once DEP-21's own
@@ -41,59 +39,77 @@
   #3899 (DEP-16, through #3854), #3900 and #3901 (DEP-4(b)), #3921
   (DEP-33(e)), #3922 (libcurl 8.5.0), #3923 (OpenSSL 3.0.13), #3924
   (DEP-13(d)), #3925 (DEP-11 PR3), #3929 (installed DART finds its fetched
-  Bullet), #3931 (DEP-19's Linux wheels), and wave 7: #3936 (a Clang
+  Bullet), #3931 (DEP-19's Linux wheels), wave 7: #3936 (a Clang
   `-Werror` fix for #3924's test), #3937 (DEP-12(a)'s Tier 1 apt lane),
   #3938 (DEP-13(c)), #3939 (DEP-22 Tracy), #3940 (DEP-24), #3941 (DEP-22
-  CMake cap), #3942 (DEP-20(b)) and #3943 (DEP-11 PR4); and wave 8 on
-  2026-10-25: #3952 (DEP-3(b)), #3953 (DEP-21's `DART_STRING_TYPE`
-  prerequisite), #3954 (DEP-23's packaging section), #3955 (DEP-8(b)),
+  CMake cap), #3942 (DEP-20(b)) and #3943 (DEP-11 PR4), and wave 8: #3952
+  (DEP-3(b)), #3953 (`DART_STRING_TYPE`), #3954 (DEP-23), #3955 (DEP-8(b)),
   #3957 (DEP-8(e)) and #3958 (DEP-8(c)).
-- Merged in `release-6.20` on 2026-10-25: #3947 (backports #3859) and #3948
-  (backports #3887).
+- Merged in `release-6.20` for 6.20.4: #3947 (#3859's backport, DD-27) and
+  #3948 (#3887's backport, DD-32).
 - DEP-8(a) needed no PR: #3847 already stopped packaging `tests` in wheels.
   DEP-13(b) needed no PR: #3865 already deleted those paths.
 
 ## Next steps
 
-1. #3943 merged on 2026-10-25. Under DD-35, later drafts leave draft once
-   Codex has reviewed their head without findings and CI is green. #3937's
-   stock-noble lane passed in the 2026-10-25 nightly on `main`, so the
-   README's stock-noble acceptance bullet holds.
-2. Backports: both merged into `release-6.20` on 2026-10-25. #3947 backports
-   #3859, and #3948 backports #3887's urdfdom wheel bump (DD-32).
-3. Remaining packets:
-   - DEP-20 (a) and (c);
-   - DEP-22's rest: CMake 4.4 once the Bullet precision probe models CMP0200
-     per imported target, FreeBSD patches upstream, and formatter bumps (the
-     clang-format reformat follows the PLAN-624 order);
-   - DEP-23's upstream proposals, each approval-gated;
-   - the FCL/libccd fetch prototype (DD-36);
-   - DEP-19's macOS and Windows wheels with a minimal libcurl and OpenSSL
-     (DD-37); and
-   - DEP-33(d), now that DEP-19's Linux wheels merged.
-
-   Wave 8 merged DEP-3(b), DEP-8 (b), (c) and (e), and DEP-23's packaging
-   section on 2026-10-25.
-4. DEP-21 prerequisites from the spikes
-   ([verification](verification.md#wave-7-2026-10-24)): #3953 made
-   `DART_STRING_TYPE`'s names initialize the same way in both dialects. Still
-   to do: replace gate 3's raw `abidiff` condition with the scripted checks,
-   and add a mixed-dialect consumer to `tools/package`. Then DEP-21 itself in
-   the PLAN-624 merge order.
-5. Follow-ups found on the way: MJCF inertia from all geoms and
-   `<compiler inertiafromgeom>`; MJCF heightfields; urdfdom in `package.xml`
-   could become build and exec dependencies now that shared installs link it
-   privately; `DART_BUILD_WHEELS` is unused after #3892; the Korean
-   translations of the build docs still list Python 3.10 and 3.11; DEP-16's
-   optional review nits (clear retired wrappers on an empty wrap result,
-   restore the log level before the bridge's restore); the ~30 property
-   structs that share DEP-11's deprecated-copy pattern; Clang's
-   `-Wunused-const-variable` on `kMeshMax` in `tests/benchmark/simd/bm_simd.cpp`;
-   a dartpy binding for `SoftMeshShape.getTriMesh()` after #3938.
-6. Sequence in the PLAN-624 merge order: ball-joint limits for MJCF, the libccd attribution in the MPR
-   sources, and the `GenericJoint` finite checks that GCC 13 stopped
-   inlining after DEP-14 (`array().isFinite().all()`; see #3853's perf
-   rationale), each re-qualified on current `main`.
+1. Publish the FCL/libccd fetch path (DD-36) once its review findings are
+   fixed and two reviews pass on the result.
+2. DEP-20(c) under DD-38, in this order:
+   - Check for Clang 20 or newer and `GL/glx.h` before the 828 MB Filament
+     download, with an error that names `clang-20 libgl-dev`.
+   - Declare `DART_USE_SYSTEM_FILAMENT` after the umbrella and flip its
+     default where DART has a private SDK, as a labeled change with a
+     changelog fragment.
+   - Document the noble apt line, including `libgl-dev` and
+     `fonts-dejavu-core`.
+   - Fix the Tier 2 row: the CMake route needs no pip packages.
+   - Add a nightly Tier 2 lane: noble apt packages plus clang-20,
+     `VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json`, Xvfb, and
+     `-E '^test_Distance$'`.
+3. Make the Filament notice download honor
+   `FETCHCONTENT_FULLY_DISCONNECTED` (found by DEP-23).
+4. DEP-33(d): the online catalog entries DD-24 names that are not in
+   `data/robot_models/` yet.
+5. DEP-23's remaining handoff proposals: batch raycasts, the MSVC probe, and
+   a `utils-urdf`-only package. #3954's research drafted only the
+   gz_dartsim_vendor and gz-physics notes, and nothing is filed upstream.
+6. DEP-19's macOS and Windows wheels with a minimal libcurl and OpenSSL
+   (DD-37). Validating them needs a dispatched wheel workflow run; ask the
+   maintainer before dispatching it.
+7. DEP-22's rest: model CMP0200 per imported target in the Bullet precision
+   probe, then lift the CMake cap; FreeBSD patches upstream; formatter
+   bumps. The clang-format reformat follows the PLAN-624 order.
+8. DEP-21 prerequisites, then DEP-21 itself in the PLAN-624 merge order:
+   - Replace gate 3's raw `abidiff` condition with the scripted checks
+     ([verification](verification.md#wave-8-2026-10-24-to-2026-10-25) and
+     #3953's object comparison).
+   - Add a mixed-dialect consumer to `tools/package`.
+9. Follow-ups found on the way:
+   - Linux wheels ship notices for libcurl and OpenSSL only, not for the
+     other bundled libraries (FCL, assimp, ODE, sdformat and the gz
+     libraries among them).
+   - main's #3887 changelog entry says Linux wheels accept URDF 1.1 and 1.2;
+     files with geometry DART lacks, such as capsules, still fail.
+   - `test_compare_soft_body_detector_pairs` fails outside a git checkout
+     and leaves a lock-file handle open, whose warning fails
+     `test_evidence_publish`.
+   - MJCF inertia from all geoms and `<compiler inertiafromgeom>`; MJCF
+     heightfields.
+   - urdfdom in `package.xml` could become build and exec dependencies now
+     that shared installs link it privately.
+   - The Korean translations of the build docs still list Python 3.10 and
+     3.11.
+   - DEP-16's optional review nits: clear retired wrappers on an empty wrap
+     result, and restore the log level before the bridge's restore.
+   - The ~30 property structs that share DEP-11's deprecated-copy pattern.
+   - Clang's `-Wunused-const-variable` on `kMeshMax` in
+     `tests/benchmark/simd/bm_simd.cpp`.
+   - A dartpy binding for `SoftMeshShape.getTriMesh()` after #3938.
+10. Sequence in the PLAN-624 merge order: ball-joint limits for MJCF, the
+   libccd attribution in the MPR sources, and the `GenericJoint` finite
+   checks that GCC 13 stopped inlining after DEP-14
+   (`array().isFinite().all()`; see #3853's perf rationale), each
+   re-qualified on current `main`.
 
 ## Risks and recovery
 

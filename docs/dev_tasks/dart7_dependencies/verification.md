@@ -707,3 +707,70 @@ reviewed twice by Codex.
   exported global symbols, no class size or alignment change in the
   installed-header closure, no exported object moving between sections, and
   `abidiff` as an informational report.
+
+### Wave 8 (2026-10-24 to 2026-10-25)
+
+Six wave-8 packets merged, and the DEP-20(a) spike reported. Claude wrote
+the packets in isolated worktrees, except DEP-3(b), which Codex wrote. Each
+passed two reviews from the engine that did not write it, then the PR
+Lifecycle gate (DD-35).
+
+- DEP-3(b) (#3952): shared `dart` links Bullet and ODE privately, and their
+  usage requirements moved to the collision components. Round 1 found five
+  issues: the fetched-prefix RUNPATH, static builds losing PUBLIC scope,
+  fetched ODE's rpath-link, a precision `#error`, and changelog wording.
+  Round 2 was clean in both reviews. `pixi run -e gazebo test-gz` passed 204
+  of 204; the packet's writer did not run the unpatched Gazebo
+  compatibility lanes locally.
+  The perf gate saw Ir change by 0.000% everywhere. It failed only on the
+  dyn and lcp `input_sha`. The workload hash includes the benchmark compile
+  commands, so the PR body carries a `Rebaseline-Rationale` line.
+- `DART_STRING_TYPE` (#3953), a DEP-21 prerequisite: the macro now binds its
+  function-local static to a heap string, so both dialects initialize it on
+  first use. Before the fix, three `libdart` objects moved section between
+  C++17 and C++20 builds; after it, none do. A scan of 501 headers alone in
+  both dialects found no other case. `UNIT_common_StringType` fails on the
+  old macro and passes on the new one.
+- DEP-23 (#3954): `building.md` gained a "Packaging DART 7" section. Its
+  research found two packaging hazards. A GUI configure against an SDK
+  without Filament's notices downloads them even when
+  `FETCHCONTENT_FULLY_DISCONNECTED` is on. OSRF's noble packaging sets only
+  `DART_USE_SYSTEM_GOOGLETEST`, so it would stop at Benchmark.
+- DEP-8(b) (#3955): `auditwheel repair --strip` saves 1,021,842 B (4.8%)
+  compressed and 5,936,768 B (7.4%) unpacked on x86_64. The script rejects
+  auditwheel older than 6.8.0, reading only the first line of its wrapped
+  `--version` output.
+- DEP-8(e) (#3957): the wheel's assimp 6.0.5 keeps four importers: Collada,
+  OBJ, STL and glTF 2.0. The x86_64 wheel drops from 21,303,988 B to
+  17,683,778 B compressed (17%), measured without `--strip`. The wheel
+  smoke test loads a `.dae`, an `.STL` and an `.obj` file.
+- DEP-8(c) (#3958): the wheel image builds sdformat 16.1.0. sdformat 15.3
+  and 16.1 both implement SDF 1.12, so wheels accept the same SDF versions.
+  Loading a 1,000-model world takes 0.54 s and peaks at 185 MB, against
+  6.2 to 6.9 s and 4,783 MB before. The wheel grows by 5,314 B.
+- Backports to `release-6.20` for 6.20.4:
+  - #3947 (#3859, voxel-grid rays) passed 173 of 173 tests and test-gz.
+  - #3948 (#3887, urdfdom 6.0.1 wheels) matches PyPI 6.20.3's load and
+    reject results on all 15 repository URDF files.
+  - With #3948, files that declare URDF 1.1 or 1.2 load unless they use
+    geometry DART lacks, such as capsules.
+- **DEP-20(a) spike** (no PR; base `0821e694b`): stock Ubuntu 24.04 builds
+  and tests `dart-gui` and dartpy with DART's fallbacks and apt packages.
+  The private Filament 1.77.3 SDK builds from source with apt's clang-20.
+  - Results: 185 of 186 C++ tests passed; only `test_Distance` failed, the
+    known distro FCL abort. All 11 GUI tests passed on Lavapipe, and all 5
+    native-window tests under Xvfb, where two FilamentNative cases skip by
+    design. dartpy passed 2,361 tests, with 126 skipped and 52 expected
+    failures.
+  - Undocumented prerequisites: `libgl-dev` is a build blocker (Filament
+    includes `GL/glx.h`), and one test needs `fonts-dejavu-core`.
+  - Configure reports a missing Clang 20 only after the 828 MB source
+    download. It reports the missing `GL/glx.h` only after about 15
+    CPU-minutes of SDK build.
+  - On 16 CPUs, configure took 163 s, including 60 s of download, and the
+    build took 233 s. A 4-vCPU nightly lane would take an estimated 35 to
+    45 minutes.
+  - Apt names Lavapipe's ICD `lvp_icd.json`, not the conda name in DART's
+    docs. `test_compare_soft_body_detector_pairs` fails outside a git
+    checkout, and its runner leaves a lock-file handle open; the resulting
+    warning fails `test_evidence_publish`.

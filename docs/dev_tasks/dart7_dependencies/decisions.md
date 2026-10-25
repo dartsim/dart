@@ -335,6 +335,16 @@ The maintainer answers these one question at a time.
   instead of conda-forge's closure (about +16 to 18 MB per wheel) or no
   retriever.
 
+- **DD-38. Standalone GUI builds use DART's private Filament SDK by default
+  (2026-10-25).** The maintainer chose option 1 of the DEP-20(c) question.
+  `DART_USE_SYSTEM_FILAMENT` takes its default from
+  `DART_USE_SYSTEM_DEPENDENCIES` where DART has a private SDK. Linux builds
+  that SDK from source; macOS arm64 and 64-bit Windows use prebuilt
+  archives. Other platforms keep the installed SDK. When the selected source cannot
+  work, configure stops with a message that names the fix; it never drops
+  the GUI quietly. This is a labeled default change with a changelog
+  fragment.
+
 ## Second decision batch (2026-10-19, answered one by one in DD-10 to DD-34)
 
 The balance review under DD-9 ([balance-review.md](balance-review.md)) asks
@@ -393,6 +403,14 @@ Asked one at a time, in this order.
   minimal libcurl and OpenSSL from the pinned sources, as the Linux image
   does; (2) accept conda-forge's closure; (3) keep the retriever off on
   those wheels.
+- **DEP-20(c): the Filament source when no SDK is installed.** Asked and
+  answered 2026-10-25: option 1 (DD-38). The DEP-20(a) spike
+  ([verification](verification.md#wave-8-2026-10-24-to-2026-10-25)) built
+  and tested the GUI and dartpy on stock Ubuntu 24.04 with DART's fallbacks
+  after the worker installed `libgl-dev`. Options:
+  1. (recommended) Fetch first where DART has a private SDK.
+  2. Use an installed SDK first, else build the private one.
+  3. Keep failing, and improve only the message and docs.
 - **The Tracy viewer in Pixi** (DEP-22). Resolved 2026-10-24: the maintainer
   merged #3939 as proposed, so the `profile` environment fetches the Tracy
   0.14.1 client and the viewer is installed separately. conda-forge's
