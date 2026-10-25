@@ -58,6 +58,7 @@ def test_accepts_package_with_vendored_libraries(tmp_path, capsys):
             **PACKAGE,
             "dartpy.libs/": b"",
             "dartpy.libs/libfcl-54c78b3b.so.0.7.0": b"vendored",
+            f"{DIST_INFO}/licenses/python/dartpy/licenses/fcl.txt": b"FCL\n",
             "dartpy/.dylibs/x": b"",
         },
     )
@@ -132,6 +133,70 @@ def test_platform_size_budget(tmp_path, capsys, platform):
     module.WHEEL_SIZE_LIMITS[key] -= 1
     assert not module.verify_wheel(wheel)
     assert "exceeds the" in capsys.readouterr().out
+
+
+def test_linux_wheel_needs_every_bundled_library_notice(tmp_path, capsys):
+    # auditwheel names a bundled library <name>-<8 hex digits>.so.<version>.
+    libraries = {
+        f"dartpy.libs/{library}-0123abcd.so.1.2": notices
+        for library, notices in _load().BUNDLED_NOTICES.items()
+    }
+    every_notice = sorted({n for notices in libraries.values() for n in notices})
+    prefix = f"{DIST_INFO}/licenses/python/dartpy/licenses/"
+    entries = {
+        **PACKAGE,
+        **dict.fromkeys(libraries, b"library"),
+        **{prefix + notice: b"Notice\n" for notice in every_notice},
+    }
+    assert _load().verify_wheel(_wheel(tmp_path, entries))
+    capsys.readouterr()
+    for notice in every_notice:
+        del entries[prefix + notice]
+        assert not _load().verify_wheel(_wheel(tmp_path, entries))
+        output = capsys.readouterr().out
+        for library in (name for name, n in libraries.items() if notice in n):
+            assert f"missing {prefix}{notice} for {library}." in output
+        entries[prefix + notice] = b"Notice\n"
+
+
+def test_linux_wheel_needs_the_notices_of_vendored_code():
+    notices = _load().BUNDLED_NOTICES
+    assert {
+        "assimp-earcut.txt",
+        "assimp-openddlparser.txt",
+        "assimp-poly2tri.txt",
+        "assimp-pugixml.txt",
+        "assimp-rapidjson.txt",
+    } <= set(notices["libassimp"])
+    assert {"ode-opcode.txt", "ode-ou.txt"} <= set(notices["libode"])
+    assert "libjpeg-turbo-ijg.txt" in notices["libjpeg"]
+
+
+def test_linux_wheel_rejects_an_unmapped_bundled_library(tmp_path, capsys):
+    library = "dartpy.libs/libunknown-0123abcd.so.1"
+    wheel = _wheel(tmp_path, {**PACKAGE, library: b"library"})
+    assert not _load().verify_wheel(wheel)
+    assert f"No notice is mapped for the bundled library {library}" in (
+        capsys.readouterr().out
+    )
+
+
+def test_bundled_library_notices_are_collected_or_listed():
+    shipped = set(TLS_NOTICES)
+    dockerfile = (ROOT / "docker/wheels/Dockerfile.manylinux_2_28").read_text()
+    shipped.update(re.findall(r'"\$DARTPY_LICENSES/([^"]+)"', dockerfile))
+    required = {n for notices in _load().BUNDLED_NOTICES.values() for n in notices}
+    assert required <= shipped
+
+
+@pytest.mark.parametrize("platform", ["macosx_15_0_arm64", "win_amd64"])
+def test_only_linux_wheels_need_bundled_library_notices(tmp_path, platform):
+    wheel = _wheel(
+        tmp_path,
+        {**PACKAGE, "dartpy.libs/libunknown-0123abcd.dll": b"library"},
+        f"dartpy-1.0-cp312-abi3-{platform}.whl",
+    )
+    assert _load().verify_wheel(wheel)
 
 
 @pytest.mark.parametrize("platform", ["macosx_15_0_arm64", "win_amd64"])

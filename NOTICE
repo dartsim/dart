@@ -14,11 +14,13 @@ declarations; their provenance is tracked separately.
 
 Filament's SDK and runtime notices are distributed separately under
 share/licenses/dart/filament in CMake installs and {dist-info}/licenses/filament
-in wheels. Linux wheels ship curl and OpenSSL notices under
-{dist-info}/licenses/python/dartpy/licenses. This file does not inventory all
-libraries bundled into a binary package. The Filament test fixture is never
-installed and is excluded from the attribution scan (it is included in source
-distributions).
+in wheels. Linux wheels ship a notice for each library that they bundle or
+compile in, and for the third-party code inside assimp and ODE, from the wheel
+image under {dist-info}/licenses/python/dartpy/licenses, as
+python/dartpy/licenses/README.md lists. This file does not inventory the
+libraries bundled into other binary packages. The Filament test fixture is
+never installed and is excluded from the attribution scan (it is included in
+source distributions).
 
 ------------------------------------------------------------------------
 Project: Open Dynamics Engine (ODE)

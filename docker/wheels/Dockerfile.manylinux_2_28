@@ -3,11 +3,23 @@ FROM $BASE_IMAGE
 
 ARG NUM_CORES=8
 
+# The steps below copy the license file of each library that the wheel bundles
+# or compiles in, and of the third-party code that assimp and ODE compile in,
+# unedited, from its pinned archive or AlmaLinux package to this directory;
+# scripts/wheel_notices.py adds them to the repaired wheel.
+# pyproject.toml ships the curl and OpenSSL notices instead.
+ENV DARTPY_LICENSES=/usr/local/share/dartpy/licenses
+
 # Build every native dependency with the manylinux toolchain: Conda libraries
 # require newer GLIBCXX/CXXABI symbols even when their glibc floor is 2.28.
 RUN /opt/python/cp313-cp313/bin/pip install "cmake>=3.28,<4.4" ninja
 
-RUN yum install -y \
+# The wheel bundles libjpeg and libpng; manylinux allows the system's zlib.
+# The base image's tsflags=nodocs skips libjpeg-turbo's README.ijg, the IJG
+# license that its LICENSE.md points to, so install that package first with its
+# docs; the library is unchanged.
+RUN yum install -y --setopt=tsflags= libjpeg-turbo \
+    && yum install -y \
     clang \
     libX11-devel \
     libXcursor-devel \
@@ -16,20 +28,32 @@ RUN yum install -y \
     libXinerama-devel \
     libXrandr-devel \
     libjpeg-turbo-devel \
-    libpng-devel
+    libpng-devel \
+    && install -Dm644 /usr/share/licenses/libjpeg-turbo/LICENSE.md "$DARTPY_LICENSES/libjpeg-turbo.txt" \
+    && install -Dm644 /usr/share/doc/libjpeg-turbo/README.ijg "$DARTPY_LICENSES/libjpeg-turbo-ijg.txt" \
+    && install -Dm644 /usr/share/licenses/libpng/LICENSE "$DARTPY_LICENSES/libpng.txt"
 
 # assimp, importing only the formats DART's samples and robot catalog use, plus
 # glTF 2.0 for PBR materials (glTF 1.0 has no CMake switch, hence the define).
 # Exporters are off, but export support stays: MeshShape::clone() needs its
-# aiCopyScene().
+# aiCopyScene(). Hiding librt keeps out Open3DGC, the glTF 1.0 codec that assimp
+# compiles only when it finds librt; its MIT notice exists only in source headers.
+# Ship the notices of the compiled-in contrib code that needs one.
 RUN curl -fsSL https://github.com/assimp/assimp/archive/refs/tags/v6.0.5.tar.gz -o assimp.tar.gz \
     && echo "edf3749559c2b7d1f758ffb66fc5bec62186221e623b7f2e8969f17ee46ecb6f  assimp.tar.gz" | sha256sum -c - \
     && mkdir assimp && tar -xf assimp.tar.gz -C assimp --strip-components=1 \
+    && install -Dm644 assimp/LICENSE "$DARTPY_LICENSES/assimp.txt" \
+    && install -Dm644 assimp/contrib/earcut-hpp/LICENSE "$DARTPY_LICENSES/assimp-earcut.txt" \
+    && install -Dm644 assimp/contrib/openddlparser/LICENSE "$DARTPY_LICENSES/assimp-openddlparser.txt" \
+    && install -Dm644 assimp/contrib/poly2tri/LICENSE "$DARTPY_LICENSES/assimp-poly2tri.txt" \
+    && install -Dm644 assimp/contrib/pugixml/LICENSE.md "$DARTPY_LICENSES/assimp-pugixml.txt" \
+    && install -Dm644 assimp/contrib/rapidjson/license.txt "$DARTPY_LICENSES/assimp-rapidjson.txt" \
     && mkdir -p assimp/build \
     && cmake assimp -B assimp/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DASSIMP_BUILD_TESTS=OFF -DASSIMP_WARNINGS_AS_ERRORS=OFF \
     -DASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT=OFF -DASSIMP_BUILD_COLLADA_IMPORTER=ON \
     -DASSIMP_BUILD_GLTF_IMPORTER=ON -DASSIMP_BUILD_OBJ_IMPORTER=ON -DASSIMP_BUILD_STL_IMPORTER=ON \
     -DCMAKE_CXX_FLAGS=-DASSIMP_BUILD_NO_GLTF1_IMPORTER -DASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT=OFF \
+    -DCMAKE_DISABLE_FIND_PACKAGE_RT=ON \
     && cmake --build assimp/build --target install -j${NUM_CORES} \
     && rm -rf assimp assimp.tar.gz
 
@@ -46,6 +70,7 @@ RUN curl -fsSL https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar
 RUN curl -fsSL https://github.com/OctoMap/octomap/archive/refs/tags/v1.10.1.tar.gz -o octomap.tar.gz \
     && echo "b6b6c10c99ab15701dd105840e7d4cf18e226eb68714dd4bdfe049dede5cd489  octomap.tar.gz" | sha256sum -c - \
     && mkdir octomap && tar -xf octomap.tar.gz -C octomap --strip-components=1 \
+    && install -Dm644 octomap/octomap/LICENSE.txt "$DARTPY_LICENSES/octomap.txt" \
     && mkdir -p octomap/build \
     && cmake octomap -B octomap/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_OCTOVIS_SUBPROJECT=OFF -DBUILD_DYNAMICETD3D_SUBPROJECT=OFF -DBUILD_TESTING=OFF \
     && cmake --build octomap/build --target install -j${NUM_CORES} \
@@ -55,6 +80,7 @@ RUN curl -fsSL https://github.com/OctoMap/octomap/archive/refs/tags/v1.10.1.tar.
 RUN curl -fsSL https://github.com/danfis/libccd/archive/refs/tags/v2.1.tar.gz -o libccd.tar.gz \
     && echo "542b6c47f522d581fbf39e51df32c7d1256ac0c626e7c2b41f1040d4b9d50d1e  libccd.tar.gz" | sha256sum -c - \
     && mkdir libccd && tar -xf libccd.tar.gz -C libccd --strip-components=1 \
+    && install -Dm644 libccd/BSD-LICENSE "$DARTPY_LICENSES/libccd.txt" \
     && mkdir -p libccd/build \
     && cmake libccd -B libccd/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_TESTING=OFF -DENABLE_DOUBLE_PRECISION=ON \
     && cmake --build libccd/build --target install -j${NUM_CORES} \
@@ -65,6 +91,7 @@ COPY patches/fcl-0.7.0-gjk-zero-direction.patch /tmp/fcl-0.7.0-gjk-zero-directio
 RUN curl -fsSL https://github.com/flexible-collision-library/fcl/archive/refs/tags/0.7.0.tar.gz -o fcl.tar.gz \
     && echo "90409e940b24045987506a6b239424a4222e2daf648c86dd146cbcb692ebdcbc  fcl.tar.gz" | sha256sum -c - \
     && mkdir fcl && tar -xf fcl.tar.gz -C fcl --strip-components=1 \
+    && install -Dm644 fcl/LICENSE "$DARTPY_LICENSES/fcl.txt" \
     && git -C fcl apply /tmp/fcl-0.7.0-gjk-zero-direction.patch \
     && mkdir -p fcl/build \
     && cmake fcl -B fcl/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_TESTING=OFF \
@@ -75,6 +102,7 @@ RUN curl -fsSL https://github.com/flexible-collision-library/fcl/archive/refs/ta
 RUN curl -fsSL https://github.com/leethomason/tinyxml2/archive/refs/tags/11.0.0.tar.gz -o tinyxml2.tar.gz \
     && echo "5556deb5081fb246ee92afae73efd943c889cef0cafea92b0b82422d6a18f289  tinyxml2.tar.gz" | sha256sum -c - \
     && mkdir tinyxml2 && tar -xf tinyxml2.tar.gz -C tinyxml2 --strip-components=1 \
+    && install -Dm644 tinyxml2/LICENSE.txt "$DARTPY_LICENSES/tinyxml2.txt" \
     && mkdir -p tinyxml2/build \
     && cmake tinyxml2 -B tinyxml2/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -Dtinyxml2_BUILD_TESTING=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     && cmake --build tinyxml2/build --target install -j${NUM_CORES} \
@@ -84,6 +112,7 @@ RUN curl -fsSL https://github.com/leethomason/tinyxml2/archive/refs/tags/11.0.0.
 RUN curl -fsSL https://github.com/ros/console_bridge/archive/refs/tags/1.0.2.tar.gz -o console_bridge.tar.gz \
     && echo "303a619c01a9e14a3c82eb9762b8a428ef5311a6d46353872ab9a904358be4a4  console_bridge.tar.gz" | sha256sum -c - \
     && mkdir console_bridge && tar -xf console_bridge.tar.gz -C console_bridge --strip-components=1 \
+    && install -Dm644 console_bridge/LICENSE "$DARTPY_LICENSES/console_bridge.txt" \
     && mkdir -p console_bridge/build \
     && cmake console_bridge -B console_bridge/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_TESTING=OFF \
     && cmake --build console_bridge/build --target install -j${NUM_CORES} \
@@ -103,6 +132,7 @@ RUN curl -fsSL https://github.com/ros/urdfdom_headers/archive/refs/tags/3.0.1.ta
 RUN curl -fsSL https://github.com/ros/urdfdom/archive/refs/tags/6.0.1.tar.gz -o urdfdom.tar.gz \
     && echo "f34c6b25512fe47a7e4e8806df2b94b166aed13dd19befd6056858be619b6a40  urdfdom.tar.gz" | sha256sum -c - \
     && mkdir urdfdom && tar -xf urdfdom.tar.gz -C urdfdom --strip-components=1 \
+    && install -Dm644 urdfdom/LICENSE "$DARTPY_LICENSES/urdfdom.txt" \
     && mkdir -p urdfdom/build \
     && cmake urdfdom -B urdfdom/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_TESTING=OFF \
     && cmake --build urdfdom/build --target install -j${NUM_CORES} \
@@ -126,6 +156,7 @@ RUN curl -fsSL https://github.com/gazebosim/gz-cmake/archive/refs/tags/gz-cmake5
 RUN curl -fsSL https://github.com/gazebosim/gz-utils/archive/refs/tags/gz-utils4_4.0.0.tar.gz -o gz-utils.tar.gz \
     && echo "b06a179ea4297be8b8d09ea7a5d3d45059a3e4030c1bd256afc62f997cc992ed  gz-utils.tar.gz" | sha256sum -c - \
     && mkdir gz-utils && tar -xf gz-utils.tar.gz -C gz-utils --strip-components=1 \
+    && install -Dm644 gz-utils/LICENSE "$DARTPY_LICENSES/gz-utils.txt" \
     && cmake gz-utils -B gz-utils/build -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DSKIP_log=ON -DGZ_UTILS_VENDOR_CLI11=ON \
@@ -136,6 +167,7 @@ RUN curl -fsSL https://github.com/gazebosim/gz-utils/archive/refs/tags/gz-utils4
 RUN curl -fsSL https://github.com/gazebosim/gz-math/archive/refs/tags/gz-math9_9.3.0.tar.gz -o gz-math.tar.gz \
     && echo "9e957d024a8ce7a94dfb4a33f6425077b33526a0f0e2385ae93c25f88ff8cfb7  gz-math.tar.gz" | sha256sum -c - \
     && mkdir gz-math && tar -xf gz-math.tar.gz -C gz-math --strip-components=1 \
+    && install -Dm644 gz-math/LICENSE "$DARTPY_LICENSES/gz-math.txt" \
     && cmake gz-math -B gz-math/build -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DSKIP_SWIG=ON -DSKIP_PYBIND11=ON \
@@ -146,6 +178,7 @@ RUN curl -fsSL https://github.com/gazebosim/gz-math/archive/refs/tags/gz-math9_9
 RUN curl -fsSL https://github.com/gazebosim/sdformat/archive/refs/tags/sdformat16_16.1.0.tar.gz -o sdformat.tar.gz \
     && echo "f9ef71787b0055f7ee35a3b52f42a9d6397f0c2f21f9572957bc3f456e2ca674  sdformat.tar.gz" | sha256sum -c - \
     && mkdir sdformat && tar -xf sdformat.tar.gz -C sdformat --strip-components=1 \
+    && install -Dm644 sdformat/LICENSE "$DARTPY_LICENSES/sdformat.txt" \
     && PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig \
     cmake sdformat -B sdformat/build -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
@@ -157,6 +190,7 @@ RUN curl -fsSL https://github.com/gazebosim/sdformat/archive/refs/tags/sdformat1
 RUN curl -fsSL https://github.com/bulletphysics/bullet3/archive/refs/tags/3.25.tar.gz -o bullet3.tar.gz \
     && echo "c45afb6399e3f68036ddb641c6bf6f552bf332d5ab6be62f7e6c54eda05ceb77  bullet3.tar.gz" | sha256sum -c - \
     && mkdir bullet3 && tar -xf bullet3.tar.gz -C bullet3 --strip-components=1 \
+    && install -Dm644 bullet3/LICENSE.txt "$DARTPY_LICENSES/bullet.txt" \
     && mkdir -p bullet3/build \
     && cmake bullet3 \
     -B bullet3/build \
@@ -175,6 +209,7 @@ RUN curl -fsSL https://github.com/bulletphysics/bullet3/archive/refs/tags/3.25.t
 RUN curl -fsSL https://github.com/glfw/glfw/archive/refs/tags/3.4.tar.gz -o glfw.tar.gz \
     && echo "c038d34200234d071fae9345bc455e4a8f2f544ab60150765d7704e08f3dac01  glfw.tar.gz" | sha256sum -c - \
     && mkdir glfw && tar -xf glfw.tar.gz -C glfw --strip-components=1 \
+    && install -Dm644 glfw/LICENSE.md "$DARTPY_LICENSES/glfw.txt" \
     && cmake glfw -B glfw/build \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
@@ -187,9 +222,14 @@ RUN curl -fsSL https://github.com/glfw/glfw/archive/refs/tags/3.4.tar.gz -o glfw
     && rm -rf glfw glfw.tar.gz
 
 # Match DART's source-build ODE settings and retain the ODE collision bindings.
+# libode compiles in OPCODE and OU. OU offers LGPL, BSD-3-Clause or Zlib; like
+# ODE itself, ship the BSD option.
 RUN curl -fsSL https://bitbucket.org/odedevs/ode/downloads/ode-0.16.6.tar.gz -o ode.tar.gz \
     && echo "c91a28c6ff2650284784a79c726a380d6afec87ecf7a35c32a6be0c5b74513e8  ode.tar.gz" | sha256sum -c - \
     && tar -xf ode.tar.gz \
+    && install -Dm644 ode-0.16.6/LICENSE-BSD.TXT "$DARTPY_LICENSES/ode.txt" \
+    && install -Dm644 ode-0.16.6/OPCODE/COPYING "$DARTPY_LICENSES/ode-opcode.txt" \
+    && install -Dm644 ode-0.16.6/ou/LICENSE-BSD.TXT "$DARTPY_LICENSES/ode-ou.txt" \
     && cmake ode-0.16.6 -B ode-0.16.6/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
     -DBUILD_SHARED_LIBS=ON -DODE_DOUBLE_PRECISION=ON \
     -DODE_WITH_LIBCCD=ON -DODE_WITH_LIBCCD_SYSTEM=ON \

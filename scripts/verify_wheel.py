@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""Verify the layout of dartpy wheels: the package, its extension and licenses."""
+"""Verify the layout of dartpy wheels: the package, its extension and licenses.
+
+Linux wheels must also ship a notice for every library in dartpy.libs/.
+"""
 
 from __future__ import annotations
 
 import glob
+import re
 import sys
 import zipfile
 from pathlib import Path
@@ -12,6 +16,38 @@ from pathlib import Path
 # Windows x64 12,597,754 B. Linux aarch64 shares the Linux budget.
 WHEEL_SIZE_LIMITS = {"linux": 23_000_000, "macosx": 16_000_000, "win": 14_500_000}
 TLS_NOTICES = ("curl.txt", "openssl.txt")
+# The notices that a Linux wheel ships for each library auditwheel bundles,
+# keyed by file name without auditwheel's hash or the extension. Beside the
+# library's own license, they cover the third-party code that its build compiles
+# in. pyproject.toml ships curl's and OpenSSL's; scripts/wheel_notices.py adds
+# the others, which docker/wheels/Dockerfile.manylinux_2_28 collects.
+BUNDLED_NOTICES = {
+    "libassimp": (
+        "assimp.txt",
+        "assimp-earcut.txt",
+        "assimp-openddlparser.txt",
+        "assimp-poly2tri.txt",
+        "assimp-pugixml.txt",
+        "assimp-rapidjson.txt",
+    ),
+    "libccd": ("libccd.txt",),
+    "libconsole_bridge": ("console_bridge.txt",),
+    "libcrypto": ("openssl.txt",),
+    "libcurl": ("curl.txt",),
+    "libfcl": ("fcl.txt",),
+    "libgz-math": ("gz-math.txt",),
+    "libgz-utils": ("gz-utils.txt",),
+    "libjpeg": ("libjpeg-turbo.txt", "libjpeg-turbo-ijg.txt"),
+    "liboctomap": ("octomap.txt",),
+    "liboctomath": ("octomap.txt",),
+    "libode": ("ode.txt", "ode-opcode.txt", "ode-ou.txt"),
+    "libpng16": ("libpng.txt",),
+    "libsdformat": ("sdformat.txt",),
+    "libssl": ("openssl.txt",),
+    "liburdfdom_model": ("urdfdom.txt",),
+    "liburdfdom_sensor": ("urdfdom.txt",),
+    "liburdfdom_world": ("urdfdom.txt",),
+}
 
 
 def _expand_wheels(patterns: list[str]) -> list[Path]:
@@ -109,6 +145,30 @@ def verify_wheel(wheel_path: Path) -> bool:
         if required not in names:
             print(f"ERROR: Wheel is missing {required}.")
             ok = False
+    # macOS and Windows wheels do not ship their bundled libraries' notices yet.
+    bundled = [
+        name
+        for name in file_list
+        if platform == "linux"
+        and name.startswith("dartpy.libs/")
+        and not name.endswith("/")
+    ]
+    notices = f"{dist_info}/licenses/python/dartpy/licenses/"
+    for name in bundled:
+        library = name.removeprefix("dartpy.libs/").split(".", 1)[0]
+        required = BUNDLED_NOTICES.get(re.sub(r"-[0-9a-f]{8}$", "", library))
+        if required is None:
+            print(
+                f"ERROR: No notice is mapped for the bundled library {name}; "
+                "collect its license in docker/wheels/Dockerfile.manylinux_2_28 "
+                "and add it to BUNDLED_NOTICES."
+            )
+            ok = False
+            continue
+        for notice in required:
+            if notices + notice not in names:
+                print(f"ERROR: Wheel is missing {notices}{notice} for {name}.")
+                ok = False
     # auditwheel and delvewheel vendor shared libraries into dartpy.libs/;
     # delocate uses dartpy/.dylibs/ inside the package.
     stray = sorted(
