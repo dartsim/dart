@@ -306,6 +306,35 @@ The maintainer answers these one question at a time.
   content changes; each push follows lint, the local-path check and the
   relevant tests.
 
+- **DD-35. Drafts leave draft as soon as they pass the gate (2026-10-24).**
+  The maintainer asked that the plan's PRs be marked ready for human review
+  as soon as they are ready: the agent is done updating them, every required
+  CI job passes, no review comment is left to address, and the Codex and
+  GitHub review bots have passed. Without asking each time: post one
+  top-level `@codex review` on each finished draft, fix bot findings
+  silently (pushes under DD-33), request a new `@codex review` for each new
+  head, and run `gh pr ready` once the
+  [PR Lifecycle](../../onboarding/ai-tools.md#pr-lifecycle) step-2 gate passes
+  on the current head. Merging (which needs the `maintainer-approved` label),
+  backports and replies to human reviewers are still asked.
+
+- **DD-36. Fetch-first follows the loaders (2026-10-24).** The maintainer
+  chose option 1 of the open question below: tinyxml2, urdfdom and assimp are
+  fetched only when nothing installed in the build already loads them;
+  otherwise DART uses the installed copy, so one process never holds two of
+  their ABIs. Fetch-first stays unconditional for ODE, Bullet, FCL/libccd and
+  octomap, and FCL/libccd is the next fetch prototype. The tinyxml2
+  prototype stays unmerged on its local branch: DART requires urdfdom, which
+  loads tinyxml2, so a tinyxml2 fetch only applies once urdfdom can be
+  fetched too.
+
+- **DD-37. macOS and Windows wheels build their own minimal libcurl
+  (2026-10-24).** The maintainer chose option 1 of the DEP-19 question: those
+  wheels ship `ModelResourceRetriever` with a minimal libcurl (HTTP and
+  HTTPS) and OpenSSL built from pinned sources, as the Linux image does,
+  instead of conda-forge's closure (about +16 to 18 MB per wheel) or no
+  retriever.
+
 ## Second decision batch (2026-10-19, answered one by one in DD-10 to DD-34)
 
 The balance review under DD-9 ([balance-review.md](balance-review.md)) asks
@@ -338,18 +367,38 @@ recommended option comes first.
   removes curl and OpenSSL together; the release-6.20 backport of DEP-17
   PR3's wheel bump; the labeled changes listed in the review's §4.
 
-## Open question (2026-10-20)
+## Open questions (2026-10-24)
 
-- **Fetch-first for libraries that DART's own dependencies load.** The
+Asked one at a time, in this order.
+
+- **Fetch-first for libraries that DART's own dependencies load.**
+  Answered 2026-10-24: option 1 (DD-36). The
   tinyxml2 prototype ([verification](verification.md#tinyxml2-fetch-prototype-2026-10-20))
   shows that a fetched tinyxml2 is either the ABI that urdfdom and sdformat
   already load, so it is redundant, or a second ABI in one process, so it
-  must be rejected. Options: (1, recommended) tinyxml2, urdfdom and assimp
-  follow the libraries that load them (system in practice), sdformat keeps
-  DD-11, and fetch-first stays for ODE, Bullet, FCL/libccd and octomap, with
-  FCL/libccd as the next fetch prototype; (2) system first and fetch only
-  when missing, for every library; (3) keep literal fetch-first for
-  tinyxml2 and merge the prototype with platform skips and a CI lane.
+  must be rejected; on Ubuntu 24.04, OSRF's sdformat 14 links apt's urdfdom
+  4 and tinyxml2 10. Options: (1, recommended) tinyxml2, urdfdom and assimp
+  are fetched only when nothing installed in the build already loads them,
+  and fetch-first stays unconditional for ODE, Bullet, FCL/libccd and
+  octomap, with FCL/libccd as the next fetch prototype; (2) literal
+  fetch-first for tinyxml2: merge the prototype, and fail configure where an
+  installed urdfdom or sdformat loads another tinyxml2; (3) fetch the whole
+  chain (urdfdom with console_bridge and urdfdom_headers, and sdformat with
+  its gz libraries when SDF is on), revising DD-11.
+- **DEP-19 on macOS and Windows** (asked 2026-10-20, in DD-13's note).
+  Answered 2026-10-24: option 1 (DD-37).
+  Linux wheels ship the retriever (#3931). conda-forge's libcurl closure
+  adds about 18.2 MB (macOS) and 16.5 MB (Windows) per compressed wheel,
+  against DD-13's estimate of about 2 MB. Options: (1, recommended) build a
+  minimal libcurl and OpenSSL from the pinned sources, as the Linux image
+  does; (2) accept conda-forge's closure; (3) keep the retriever off on
+  those wheels.
+- **The Tracy viewer in Pixi** (DEP-22). Resolved 2026-10-24: the maintainer
+  merged #3939 as proposed, so the `profile` environment fetches the Tracy
+  0.14.1 client and the viewer is installed separately. conda-forge's
+  `tracy-profiler-client` 0.14.1 is an empty stub (its recipe does not pass
+  `TRACY_ENABLE`), and `tracy-profiler-gui` 0.14.1 needs GLFW 3.5.1 against
+  the GUI's 3.4 pin.
 
 ## Original questions (2026-10-18)
 
@@ -379,6 +428,13 @@ Asked as one batch; the answers are above.
   in Linux wheels; retired switches kept as no-ops through 7.x; Bullet and ODE
   usage requirements moved from core to their components. No gz-physics,
   gz-sim or dartpy use was found for any of them.
+  Note (2026-10-24): gz-physics uses `Eigen::Vector6d` (`JointFeatures.cc`)
+  and `Eigen::Matrix6d` (`AddedMassFeatures_TEST.cc`) in Harmonic, Ionic and
+  Jetty; the lexical API inventory misses both. The Eigen-alias deprecation
+  therefore covers only names gz does not use (`EIGEN_V_VEC3D`,
+  `EIGEN_VV_VEC3D`, `Eigen::aligned_vector`, `Eigen::aligned_map`,
+  `Eigen::make_aligned_shared`), and `Vector6d` and `Matrix6d` stay, as the
+  [8.0 design record](../../design/dart8_dependencies.md) keeps them.
 - **Q4. Fetch policy.** Recommended: keep per-dependency defaults (fetch
   first only where an exact version matters: the ImGui docking release,
   nanobind, GoogleTest, Benchmark, Tracy; system first with a fetch fallback

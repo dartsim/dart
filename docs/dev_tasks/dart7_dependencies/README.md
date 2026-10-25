@@ -154,38 +154,38 @@ shorthand is defined under [Gates](#gates).
 | ID | Packet | Needs | Gates | Owner | Target | Status |
 | --- | --- | --- | --- | --- | --- | --- |
 | DEP-0 | Assert the gz contact-surface probe in the Gazebo lanes | none | gz | Claude Sonnet | 7.0 | Merged (#3849) |
-| DEP-1 | Remove Boost from environments, the wheel image and FreeBSD CI | none (DD-7) | base, gz, pkg, wheel image | Claude Sonnet | 7.0 | Draft #3851 |
+| DEP-1 | Remove Boost from environments, the wheel image and FreeBSD CI | none (DD-7) | base, gz, pkg, wheel image | Claude Sonnet | 7.0 | Merged (#3851) |
 | DEP-2 | Export CURL and OpenSSL only for static builds | none | base, gz, pkg | Claude Sonnet | 7.0 | Merged (#3883) |
-| DEP-3 | Link only BulletCollision and LinearMath; move Bullet/ODE usage requirements to their components | none (DD-7) | base, gz, pkg, wheel | Muse (a) | 7.0 | (a) merged (#3864) |
-| DEP-4 | Find-module hygiene; repair the ODE and Bullet fetch fallbacks under CMake 4 | none (DD-7) | base, gz, pkg, dis, BSD | Claude Sonnet ((a), (e)), Codex high ((b)), orchestrator ((c)) | 7.0 | (e) merged (#3886), (c) merged (#3895), (a) merged (#3898); (b) in review |
+| DEP-3 | Link only BulletCollision and LinearMath; move Bullet/ODE usage requirements to their components | none (DD-7) | base, gz, pkg, wheel | Muse (a) | 7.0 | (a) merged (#3864); (b) planned |
+| DEP-4 | Find-module hygiene; repair the ODE and Bullet fetch fallbacks under CMake 4 | none (DD-7) | base, gz, pkg, dis, BSD | Claude Sonnet ((a), (e)), Codex high ((b)), orchestrator ((c)) | 7.0 | (a) merged (#3898), (b) merged (#3900, #3901; installed consumers #3929), (c) merged (#3895), (e) merged (#3886) |
 | DEP-5 | Eigen 5 readiness and the `[3.4.0, 6)` range | none (DD-7) | base on both Eigen majors, gz, py | Codex high | 7.0 | Merged (#3891); #3836 fixed the deprecated calls |
-| DEP-6 | Current fetched GoogleTest and Benchmark plus a fetch lane | none | base, apt | Codex high | 7.0 | Ready #3893 |
+| DEP-6 | Current fetched GoogleTest and Benchmark plus a fetch lane | none | base, apt | Codex high | 7.0 | Merged (#3893) |
 | DEP-7 | Slim the default pixi environment | none | base, ai | Muse | 7.0 | Merged (#3890) |
-| DEP-8 | Wheel hygiene (one concern per PR) | none (DD-7) | wheel | Claude Sonnet ((f)) | 7.0 | (f) merged (#3885); (a) already done by #3847 |
-| DEP-9 | Python 3.12 and NumPy 1.26.4 floors; one wheel per platform | none (D20) | base, py, wheel | Codex high | 7.0 | Ready #3892 |
-| DEP-10 | nanobind 3.1.x checked at configure | none | base, py | Codex high | 7.0 | Draft #3894 (stacked on #3892) |
-| DEP-11 | C++20-clean tree and installed-header dialect gates (4 PRs) | none | base, gz, C++20 Werror builds | Codex high + Claude Sonnet | 7.0 | PR1 merged (#3852); the captures are in #3804 |
-| DEP-12 | Ubuntu 24.04 floor: (a) toolchain, CMake 3.28, CI; (b) library floors | none (DD-1) | base, gz, pkg, apt, dis, BSD | Orchestrator ((a)), Codex high ((b)) | 7.0 | (a) draft #3850; (b) tinyxml2 ready #3896 (stacked on #3850) |
-| DEP-13 | assimp 5.3.1 floor and a narrower assimp role | none (DD-7) | base, gz, gui, apt | Codex high | 7.0 | PR1 merged (#3865) |
-| DEP-14 | Compiled logging boundary and DART log sink; drop spdlog | DD-4 | base, gz, pkg, TSan | Codex ultra + orchestrator | 7.0, before F | Draft #3853 |
-| DEP-15 | Standard-library formatter; drop fmt | DD-4 | base, gz, pkg, wheel, BSD | Codex high | 7.0 | Draft #3854 (stacked on #3853; Q1 default) |
-| DEP-16 | Native diagnostics and the dartpy logging bridge through the sink | DD-4 | base, py, gui, gz | Codex ultra + orchestrator | 7.0 | Draft #3899 (stacked on #3854) |
-| DEP-17 | urdfdom kept (DD-5): floor and cleanup; in-house URDF reader dropped | DD-5, DD-28, DD-31 | base, gz, pkg, apt, py | Codex high | 7.0 | PR1 in review #3884; PR2 merged (#3863); PR3 in review #3887; PR4 merged into #3884 (#3888) |
-| DEP-18 | SDF as an optional part of `dart-io`, sdformat kept (DD-5, DD-11) | DD-11 | base, gz, pkg, BSD, py | Orchestrator + Codex high | 7.0, before F | Ready #3889 |
-| DEP-19 | Asset retriever kept, libcurl and OpenSSL kept (DD-12, DD-13) | DD-12, DD-13, DEP-2, DEP-8(f) | base, gz, pkg, py, wheel, ai | Codex ultra | 7.0, before F | Wheel half in review; base #3885 merged; the source-build fetch waits on the tinyxml2 decision |
-| DEP-20 | GUI on stock 24.04 (GLFW fallback, Filament pin enforcement, texture-decode caps) | spike first | base, gui, wheel | Codex high, Muse | 7.0 / 7.x | (d), (e) merged (#3860, #3862) |
-| DEP-21 | DART-owned targets build as C++20 | DD-3 | C++20 gates in [verification.md](verification.md#c-standard-gates) | Orchestrator + Codex ultra | 7.0 or 7.1, in PLAN-624 merge order | Planned |
-| DEP-22 | Developer-tooling refresh (CMake cap, Tracy, clang-format, formatters) | none | check-lint parity, gz | Muse / Codex high | 7.x | Planned |
+| DEP-8 | Wheel hygiene (one concern per PR) | none (DD-7) | wheel | Claude Sonnet ((f)) | 7.0 | (f) merged (#3885); (a) already done by #3847; (b), (c), (e) planned |
+| DEP-9 | Python 3.12 and NumPy 1.26.4 floors; one wheel per platform | none (D20) | base, py, wheel | Codex high | 7.0 | Merged (#3892) |
+| DEP-10 | nanobind 3.1.x checked at configure | none | base, py | Codex high | 7.0 | Merged (#3894, through #3892) |
+| DEP-11 | C++20-clean tree and installed-header dialect gates (4 PRs) | none | base, gz, C++20 Werror builds | Codex high + Claude Sonnet | 7.0 | PR1 merged (#3852), PR2's captures merged with #3804, PR3 merged (#3925); PR4 ready for review (#3943) |
+| DEP-12 | Ubuntu 24.04 floor: (a) toolchain, CMake 3.28, CI; (b) library floors | none (DD-1) | base, gz, pkg, apt, dis, BSD | Orchestrator ((a)), Codex high ((b)) | 7.0 | (a) merged (#3850) with its Tier 1 apt lane (#3937); (b) merged: tinyxml2 (#3896), libcurl (#3922), OpenSSL (#3923) |
+| DEP-13 | assimp 5.3.1 floor and a narrower assimp role | none (DD-7) | base, gz, gui, apt | Codex high | 7.0 | PR1 merged (#3865), (b) done by #3865, (c) merged (#3938), (d) merged (#3924) |
+| DEP-14 | Compiled logging boundary and DART log sink; drop spdlog | DD-4 | base, gz, pkg, TSan | Codex ultra + orchestrator | 7.0, before F | Merged (#3853) |
+| DEP-15 | Standard-library formatter; drop fmt | DD-4 | base, gz, pkg, wheel, BSD | Codex high | 7.0 | Merged (#3854) |
+| DEP-16 | Native diagnostics and the dartpy logging bridge through the sink | DD-4 | base, py, gui, gz | Codex ultra + orchestrator | 7.0 | Merged (#3899, through #3854) |
+| DEP-17 | urdfdom kept (DD-5): floor and cleanup; in-house URDF reader dropped | DD-5, DD-28, DD-31 | base, gz, pkg, apt, py | Codex high | 7.0 | Merged: PR1 (#3884, with PR4 #3888), PR2 (#3863), PR3 (#3887) |
+| DEP-18 | SDF as an optional part of `dart-io`, sdformat kept (DD-5, DD-11) | DD-11 | base, gz, pkg, BSD, py | Orchestrator + Codex high | 7.0, before F | Merged (#3889) |
+| DEP-19 | Asset retriever kept, libcurl and OpenSSL kept (DD-12, DD-13) | DD-12, DD-13, DEP-2, DEP-8(f) | base, gz, pkg, py, wheel, ai | Codex ultra | 7.0, before F | Linux wheels merged (#3931); macOS and Windows wheels build a minimal libcurl and OpenSSL next (DD-37); the standalone libcurl and OpenSSL fetch follows DD-36's loader rule |
+| DEP-20 | GUI on stock 24.04 (GLFW fallback, Filament pin enforcement, texture-decode caps) | spike first | base, gui, wheel | Codex high, Muse | 7.0 / 7.x | (b), (d), (e) merged (#3942, #3860, #3862); (a), (c) planned |
+| DEP-21 | DART-owned targets build as C++20 | DD-3 | C++20 gates in [verification.md](verification.md#c-standard-gates) | Orchestrator + Codex ultra | 7.0 or 7.1, in PLAN-624 merge order | Spikes done ([verification](verification.md#wave-7-2026-10-24)); prerequisites first, then the PLAN-624 order |
+| DEP-22 | Developer-tooling refresh (CMake cap, Tracy, clang-format, formatters) | none | check-lint parity, gz | Muse / Codex high | 7.x | CMake cap (#3941, `<4.4` until the Bullet probe models CMP0200) and Tracy 0.14.1 (#3939) merged; the rest planned |
 | DEP-23 | Packaging section and downstream handoff notes | approval per upstream action | lint, local paths | Orchestrator | 7.0 / 7.x | Planned |
-| DEP-24 | 8.0 design record: optional assimp and FCL, backend facades, C++20 export | none | review | Orchestrator | 8.0 | Planned |
-| DEP-25 | Umbrella `DART_USE_SYSTEM_DEPENDENCIES` switch, offline fail-fast and CMP0170 (shared step), then fetch paths one dependency per PR starting with tinyxml2 (DD-10, DD-30) | none | base, pkg, dis | Codex high; the tinyxml2 prototype Codex ultra | 7.0 | Ready #3879; the tinyxml2 fetch prototype is done and parked pending a maintainer decision |
-| DEP-27a | Root NOTICE for derived code, installed and in wheels, with a coverage test | none | base, wheel | Codex high | 7.0 | Ready #3857 (stacked on #3856) |
-| DEP-28 | Delete dead `dart/utils/*_` files and `tests/.deprecated` | none | base | Muse | 7.0 | Ready #3856 |
-| DEP-30 | Fetch Dear ImGui as a hash-pinned, TLS-verified tag archive and drop its compatibility patch (DD-14) | DEP-31 | base, gui, dis | Claude Sonnet | 7.0 | Ready #3876 |
+| DEP-24 | 8.0 design record: optional assimp and FCL, backend facades, C++20 export | none | review | Orchestrator | 8.0 | Merged (#3940), the design record `docs/design/dart8_dependencies.md` |
+| DEP-25 | Umbrella `DART_USE_SYSTEM_DEPENDENCIES` switch, offline fail-fast and CMP0170 (shared step), then fetch paths one dependency per PR (DD-10, DD-30, DD-36) | none | base, pkg, dis | Codex high; the tinyxml2 prototype Codex ultra | 7.0 | Merged (#3879); under DD-36 the tinyxml2 prototype stays parked until urdfdom can be fetched, and FCL/libccd is the next fetch path |
+| DEP-27a | Root NOTICE for derived code, installed and in wheels, with a coverage test | none | base, wheel | Codex high | 7.0 | Merged (#3857) |
+| DEP-28 | Delete dead `dart/utils/*_` files and `tests/.deprecated` | none | base | Muse | 7.0 | Merged (#3856) |
+| DEP-30 | Fetch Dear ImGui as a hash-pinned, TLS-verified tag archive and drop its compatibility patch (DD-14) | DEP-31 | base, gui, dis | Claude Sonnet | 7.0 | Merged (#3876) |
 | DEP-31 | Reject empty overlay font files before ImGui | none | base, gui | Muse | 7.0 | Merged (#3861) |
 | DEP-32 | Skip voxel-grid rays longer than OctoMap can trace | none | base, py, gz | Codex | 7.0 | Merged (#3859) |
-| DEP-33 | Sample-data provenance and modernization: attribute Atlas v3 (DD-23), WAM's BSD files only (DD-20), remove kima (DD-21), replace KR5 with an authored fixture and UR5e (DD-22), catalog G1, UR5e and FR3 (DD-24) | DD-16, DD-17 | base, py, gui | Codex high, Claude Sonnet | 7.0 | (a) merged (#3880), (b) ready #3878, (c) draft #3882 (stacked on #3857); (d) the online catalog after DEP-19 |
-| DEP-34 | Replace the Roboti-derived MuJoCo models with DeepMind's (DD-15) and remove the Fetch assets (DD-19), with authored MJCF fixtures | DEP-36 first | base, py | Codex high | 7.0 | Draft #3881 |
+| DEP-33 | Sample-data provenance and modernization: attribute Atlas v3 (DD-23), WAM's BSD files only (DD-20), remove kima (DD-21), replace KR5 with an authored fixture and UR5e (DD-22), catalog G1, UR5e and FR3 (DD-24) | DD-16, DD-17 | base, py, gui | Codex high, Claude Sonnet | 7.0 | (a) merged (#3880), (b) merged (#3878), (c) merged (#3882), (e) merged (#3921, the Atlas v3 URDF that never loaded); (d) the online catalog is next |
+| DEP-34 | Replace the Roboti-derived MuJoCo models with DeepMind's (DD-15) and remove the Fetch assets (DD-19), with authored MJCF fixtures | DEP-36 first | base, py | Codex high | 7.0 | Merged (#3881) |
 | DEP-35 | Carry an FCL 0.7.0 patch for GJK distance on touching shapes in Linux wheels (DD-18) | none | base, wheel | Codex ultra | 7.0 | Merged (#3870) |
 | DEP-36 | Fix MJCF joint limits and declared inertia (DD-25) | none | base, py | Codex high | 7.0 | Merged (#3877) |
 | DEP-37 | Fix the Bullet detector leak (DD-26) | none | base, ASan, gz | Codex high | 7.0 | Merged (#3875) |

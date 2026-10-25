@@ -42,7 +42,11 @@ Read these files first:
    GitHub. Publishing requires explicit maintainer/user approval.
    Create the topic branch without tracking its base:
    `git switch --no-track -c <type>/<topic> origin/<target-branch>`.
-4. **Implement** - Keep commits focused, follow code style
+4. **Implement** - Keep commits focused, follow code style. Delegate by
+   default under `docs/ai/orchestration.md`, honoring a per-task
+   `delegation=off` opt-out: route bounded packets to the best available
+   agent, and keep small tasks or a single hard workstream with one agent
+   when proportionate.
 5. **Verify** - Run `pixi run lint` before committing, then run the focused
    branch gate for the touched surface. Use `pixi run test-all` when
    feasible, and `pixi run -e gazebo test-gz` for package, collision,
@@ -51,6 +55,10 @@ Read these files first:
    Filament output, or a visual example, route through `dart-verify-sim`: prove
    correctness with text first, then add assessed claim-tied visual/debug
    evidence or record why it is unavailable or not applicable.
+   Then run the review loop in `docs/ai/orchestration.md` § "Review Loop":
+   at least two clean independent review passes on the post-fix state,
+   preferably from a different client or model family than the writer
+   (under `delegation=off`, a role-separated local review).
 6. **PR** - After explicit maintainer/user approval, push with the same local
    and remote topic-branch name:
    `branch=$(git branch --show-current); git push -u origin "HEAD:${branch}"`.

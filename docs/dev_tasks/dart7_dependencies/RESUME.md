@@ -1,112 +1,100 @@
 # Resume
 
-## Current state (2026-10-20)
+## Current state (2026-10-24)
 
 - The plan is on `main` (#3848); this home is updated through follow-up PRs.
 - The maintainer answered the second decision batch one question at a time
   (DD-10 to DD-34 in [decisions.md](decisions.md)); DD-33 is the standing
-  approval for this plan's publishing, and DD-34 extends it to merging
-  `main`, resolving conflicts and fixing CI on the plan's ready PRs.
-- The published PRs and the merge order are below.
+  approval for this plan's publishing, DD-34 extends it to merging `main`,
+  resolving conflicts and fixing CI on the plan's ready PRs, and DD-35 marks
+  drafts ready once they pass the PR Lifecycle gate.
+- Every PR the plan published through 2026-10-24 has merged (list below).
+  Open: #3943 (DEP-11 PR4) and the PR that carries this update.
+- On 2026-10-24 the maintainer chose the order: land the in-flight work,
+  then answer the queued decisions one at a time, then the backports, then
+  the remaining packets, with DEP-21 after M1d. M1d's counted stepping
+  merged that day (#3927), so DEP-21 is sequenced after the remaining
+  packets and its prerequisite below.
 - Two local spike branches hold experiment edits only and will not be
   published: `spike/cxx20-standard` and `spike/cxx20-private`. Their worktrees
   hold the Gazebo lane builds and base variants; remove both once DEP-21's own
-  evidence replaces them.
+  evidence replaces them. The tinyxml2 fetch prototype is parked on the local
+  branch `build/tinyxml2-fetch`.
 - gz-sim's `INTEGRATION_reset_sensors` is an external test defect (#3866).
 - Muse's quota is exhausted until 2026-10-26; until then packets go to Codex
   and Claude, and each packet's two reviews come from whichever of those two
   did not write it (two passes from the same engine when needed).
 
-## Published (2026-10-20)
+## Published
 
-- Merged in `main`: #3848 (this plan), #3849 (DEP-0), #3852 (DEP-11 PR1),
-  #3859 (DEP-32), #3860 (DEP-20(d)), #3861 (DEP-31), #3862 (DEP-20(e)),
-  #3863 (DEP-17 PR2), #3864 (DEP-3(a)), #3865 (DEP-13 PR1), #3870 (DEP-35),
-  #3875 (DEP-37), #3877 (DEP-36), #3880 (DEP-33(a)), #3883 (DEP-2),
-  #3885 (DEP-8(f)), #3890 (DEP-7), #3895 (DEP-4(c)).
-- #3888 (DEP-17 PR4) merged into #3884; it reaches `main` when #3884 merges.
-- Open: #3850 (DEP-12(a)), #3851 (DEP-1), #3853 and #3854 (DEP-14 and
-  DEP-15, GitHub stack), #3856 (DEP-28), #3857 (DEP-27a, stacked on #3856),
-  #3876 (DEP-30), #3878 (DEP-33(b)), #3879 (DEP-25), #3881 (DEP-34),
-  #3882 (DEP-33(c), stacked on #3857), #3884 (DEP-17 PR1), #3886 (DEP-4(e)),
-  #3887 (DEP-17 PR3), #3889 (DEP-18), #3891 (DEP-5), #3892 (DEP-9),
-  #3893 (DEP-6), #3894 (DEP-10, stacked on #3892), #3896
-  (DEP-12(b) tinyxml2, stacked on #3850), #3897 (perf-harness link fix for
-  #3889), #3898 (DEP-4(a)), #3899 (DEP-16, stacked on #3854).
+- Merged in `main`: #3848 (this plan), #3849 (DEP-0), #3850 (DEP-12(a)),
+  #3851 (DEP-1), #3852 (DEP-11 PR1), #3853 (DEP-14), #3854 (DEP-15),
+  #3856 (DEP-28), #3857 (DEP-27a), #3859 (DEP-32), #3860 (DEP-20(d)),
+  #3861 (DEP-31), #3862 (DEP-20(e)), #3863 (DEP-17 PR2), #3864 (DEP-3(a)),
+  #3865 (DEP-13 PR1), #3870 (DEP-35), #3875 (DEP-37), #3876 (DEP-30),
+  #3877 (DEP-36), #3878 (DEP-33(b)), #3879 (DEP-25), #3880 (DEP-33(a)),
+  #3881 (DEP-34), #3882 (DEP-33(c)), #3883 (DEP-2), #3884 (DEP-17 PR1, with
+  PR4 #3888), #3885 (DEP-8(f)), #3886 (DEP-4(e)), #3887 (DEP-17 PR3),
+  #3889 (DEP-18), #3890 (DEP-7), #3891 (DEP-5), #3892 (DEP-9),
+  #3893 (DEP-6), #3894 (DEP-10, through #3892), #3895 (DEP-4(c)),
+  #3896 (DEP-12(b) tinyxml2), #3897 (perf-harness links), #3898 (DEP-4(a)),
+  #3899 (DEP-16, through #3854), #3900 and #3901 (DEP-4(b)), #3921
+  (DEP-33(e)), #3922 (libcurl 8.5.0), #3923 (OpenSSL 3.0.13), #3924
+  (DEP-13(d)), #3925 (DEP-11 PR3), #3929 (installed DART finds its fetched
+  Bullet), #3931 (DEP-19's Linux wheels), and wave 7: #3936 (a Clang
+  `-Werror` fix for #3924's test), #3937 (DEP-12(a)'s Tier 1 apt lane),
+  #3938 (DEP-13(c)), #3939 (DEP-22 Tracy), #3940 (DEP-24), #3941 (DEP-22
+  CMake cap) and #3942 (DEP-20(b)).
 - DEP-8(a) needed no PR: #3847 already stopped packaging `tests` in wheels.
-- CI: #3872 is merged in `main`; its `dartpy.experimental` import-order
-  fix is available when updating the plan's PR branches.
-- Merge order: #3857 after #3856; #3854 after #3853 and #3850; #3899 after
-  #3854; #3896 after #3850. #3889's
-  perf gate passes only after #3897 lands and #3889 merges `main` (the gate
-  runs the base revision's harness); #3889 then needs a
-  `Rebaseline-Rationale` for `pend/dart`. #3879 carries one for `dyn` and
-  `lcp`, and #3893 will need the same, because the harness hashes
-  `tests/benchmark/CMakeLists.txt` into those rows. DD-33 covers pushes to drafts and DD-34 the merge, conflict and CI
-  pushes to ready PRs; marking ready, merging and backports are asked.
+  DEP-13(b) needed no PR: #3865 already deleted those paths.
+- Open: #3943 (DEP-11 PR4).
 
 ## Next steps
 
-1. Watch CI on the plan's open PRs and merge current `main` where needed
-   (DD-33, DD-34). Overlaps to resolve when the second PR of each pair
-   merges `main`:
-   - #3876 and #3879 in `dart/gui/imgui/CMakeLists.txt`: drop the ImGui
-     guard's source-directory argument.
-   - #3886 and #3889 in the optional-dependency docs: add sdformat to the
-     strict switch's list.
-   - #3884 (including merged #3888) and #3889 in `dart/utils/CMakeLists.txt`.
-   - #3884 and #3889 in the shared IO CHANGELOG bullet.
-   - #3891, #3892 and #3894 in `scripts/nanobind/eigen_probe/CMakeLists.txt`.
-   - #3893 and #3894 against #3879's offline-guard lines.
-2. Waiting on the maintainer: whether fetch-first applies to libraries that
-   DART's required dependencies or Gazebo load in the same process
-   (tinyxml2, urdfdom, assimp). The tinyxml2 prototype (local branch
-   `build/tinyxml2-fetch`, unpublished) and two reviews show a fetched copy
-   is either redundant or a second ABI in one process; as default it would
-   break the standalone configure on Ubuntu 24.04 and every non-Linux
-   platform. Recommended: those libraries follow their consumers (system),
-   fetch-first stays for ODE, Bullet, FCL/libccd and octomap, and the next
-   fetch prototype is FCL/libccd. In progress meanwhile: DEP-4(b) (final
-   review fixes; it publishes as an ODE PR on #3879 with a Bullet PR on top)
-   and DEP-19's wheel half (in review; base #3885 merged).
-3. Asked when the condition holds: the release-6.20 backport of #3887's
-   urdfdom wheel bump (DD-32) after it merges. #3859 has merged; its
-   release-6.20 backport (DD-27) still requires approval.
-4. Then: DEP-33(d) after DEP-19's wheel half, DEP-3(b), DEP-8 (b), (c) and (e), the
-   remaining DEP-12(b) floors (libcurl 8.5.0 and OpenSSL 3.0.13 with
-   DEP-19), DEP-22, DEP-23 and DEP-24.
+1. Land #3943, which is ready for review; merging is the maintainer's. Under
+   DD-35 later drafts leave draft once Codex has reviewed their head without
+   findings and CI is green. #3937's lane passed its first hosted run (176 of
+   176); the README's stock-noble acceptance bullet holds once the nightly
+   runs it green on `main`.
+2. Backports: the maintainer approved #3859's release-6.20 backport for
+   6.20.4 on 2026-10-24 (in progress, through `dart-backport-pr`); #3887's
+   urdfdom wheel bump (DD-32) is asked next.
+3. Remaining packets: DEP-3(b) (Bullet and ODE private in core), DEP-8 (b),
+   (c) and (e), DEP-20 (a) and (c), DEP-22's rest (CMake 4.4 once the Bullet
+   precision probe models CMP0200 per imported target, FreeBSD patches
+   upstream, formatter bumps; the clang-format reformat follows the PLAN-624
+   order),
+   DEP-23 (now unblocked by DD-36), the FCL/libccd fetch prototype (DD-36),
+   DEP-19's macOS and Windows wheels with a minimal libcurl and OpenSSL
+   (DD-37), and DEP-33(d) now that DEP-19's Linux wheels merged.
+4. DEP-21 prerequisites from the spikes
+   ([verification](verification.md#wave-7-2026-10-24)): make
+   `DART_STRING_TYPE`'s function-local `std::string` safe across dialects;
+   replace gate 3's raw `abidiff` condition with the scripted checks; add a
+   mixed-dialect consumer to `tools/package`. Then DEP-21 itself in the
+   PLAN-624 merge order.
 5. Follow-ups found on the way: MJCF inertia from all geoms and
-   `<compiler inertiafromgeom>`; MJCF heightfields; the root `NOTICE` entry
-   for the DeepMind models once #3857 merges; `data/sdf/atlas/atlas_v3.urdf`
-   fails to load (its `head` link is missing); urdfdom in `package.xml` could
-   become build and exec dependencies now that shared installs link it
-   privately; `DART_BUILD_WHEELS` is unused after #3892 (remove it once
-   #3850 and #3892 merge, since #3850 edits the same test); the Korean
-   translations of the build docs still list Python 3.10 and 3.11;
-   `data/sdf/atlas/atlas_v3.urdf` can never load (its neck joint names a
-   missing `head` link) and can go in a PR stacked on #3882; DEP-16's
+   `<compiler inertiafromgeom>`; MJCF heightfields; urdfdom in `package.xml`
+   could become build and exec dependencies now that shared installs link it
+   privately; `DART_BUILD_WHEELS` is unused after #3892; the Korean
+   translations of the build docs still list Python 3.10 and 3.11; DEP-16's
    optional review nits (clear retired wrappers on an empty wrap result,
-   restore the log level before the bridge's restore).
-6. Owed spikes: the Werror C++20 budget on every toolchain, `abidiff` between
-   the C++17 and C++20 builds, and the stock-noble Tier 2 build.
-7. Sequence DEP-21, the `World.cpp` captures from DEP-11, ball-joint limits
-   for MJCF, the libccd attribution in the MPR sources, the `GenericJoint`
-   finite checks that GCC 13 stopped inlining after DEP-14
-   (`array().isFinite().all()`; see #3853's perf rationale), and other
-   step-path hunks in the PLAN-624 program-owned merge order, each
-   re-qualified on current `main`.
-8. Routing: Claude's 7-day usage reached 58% on 2026-10-20, so new writer
-   packets go to Codex first; Claude-side reviews use Sonnet, and Opus for
-   the hardest.
+   restore the log level before the bridge's restore); the ~30 property
+   structs that share DEP-11's deprecated-copy pattern; Clang's
+   `-Wunused-const-variable` on `kMeshMax` in `tests/benchmark/simd/bm_simd.cpp`;
+   a dartpy binding for `SoftMeshShape.getTriMesh()` after #3938.
+6. Sequence in the PLAN-624 merge order: ball-joint limits for MJCF, the libccd attribution in the MPR
+   sources, and the `GenericJoint` finite checks that GCC 13 stopped
+   inlining after DEP-14 (`array().isFinite().all()`; see #3853's perf
+   rationale), each re-qualified on current `main`.
 
 ## Risks and recovery
 
 - `main` moves quickly. Re-check file and line references in
   [packets.md](packets.md) and the review on current `main` before each
   packet.
-- The step-path quiet window is closed: `World.cpp` and `lcpsolver` hunks
-  follow the PLAN-624 program-owned merge order, each re-qualified on current
-  `main`.
+- `World.cpp` and `lcpsolver` hunks follow the PLAN-624 program-owned merge
+  order, each re-qualified on current `main`.
 - The merging PR regenerates `pixi.lock`; never hand-merge it.
 - Gazebo lanes: compare against a base variant built from the packet's base
   (`GZ_COMPAT_BASE_VARIANT`); `reset_sensors` fails on every base today.
