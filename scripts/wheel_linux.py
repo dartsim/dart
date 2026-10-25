@@ -50,7 +50,15 @@ export LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64:${{LD_LIBRARY_PATH:-}}
 {python} -m pip install 'scikit-build-core>=1.1.1' ninja
 CONDA_PREFIX=/usr/local {python} scripts/wheel_build.py OFF
 auditwheel show dist/dartpy-*-linux_{arch}.whl
-auditwheel repair --plat manylinux_2_28_{arch} --only-plat \\
+# --strip drops the bundled libraries' symbol tables. It needs auditwheel 6.8.0
+# or newer, which strips before patching (pypa/auditwheel#716); a cached older
+# base image would produce unloadable libraries.
+auditwheel_version=$(auditwheel --version | awk 'NR == 1 {{print $2}}')
+if [ "$(printf '%s\n' 6.8.0 "$auditwheel_version" | sort -V | head -n 1)" != 6.8.0 ]; then
+  echo "auditwheel $auditwheel_version is older than 6.8.0; rebuild the image with a newer base" >&2
+  exit 1
+fi
+auditwheel repair --plat manylinux_2_28_{arch} --only-plat --strip \\
     dist/dartpy-*-linux_{arch}.whl -w /output
 {python} scripts/verify_wheel.py /output/dartpy-*-{args.python_tag}-*.whl
 {python} -m pip install abi3audit==0.0.26

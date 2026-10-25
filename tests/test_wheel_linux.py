@@ -58,6 +58,7 @@ def test_linux_driver_repairs_and_tests_in_clean_base(monkeypatch, tmp_path):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     calls = []
+    run = subprocess.run  # the driver's subprocess.run is replaced below
     monkeypatch.setattr(module, "__file__", str(tmp_path / "scripts/wheel_linux.py"))
     monkeypatch.setattr(module.platform, "machine", lambda: "aarch64")
     monkeypatch.setattr("sys.argv", ["wheel_linux.py", python_tag])
@@ -67,7 +68,22 @@ def test_linux_driver_repairs_and_tests_in_clean_base(monkeypatch, tmp_path):
     module.main()
     build, repair, *smokes = [cmd for cmd, _ in calls]
     assert "BASE_IMAGE=quay.io/pypa/manylinux_2_28_aarch64" in build
-    assert "--plat manylinux_2_28_aarch64 --only-plat" in repair[-1]
+    # Repair strips the bundled libraries' symbol tables, which needs
+    # auditwheel 6.8.0 or newer.
+    assert "--plat manylinux_2_28_aarch64 --only-plat --strip" in repair[-1]
+    assert "6.8.0" in repair[-1].split("auditwheel repair")[0]
+    # auditwheel wraps --version over several lines; only the first counts.
+    script = repair[-1]
+    guard = script[
+        script.index("auditwheel_version=") : script.index("auditwheel repair")
+    ]
+    for version, status in (("6.8.2", 0), ("6.10.0", 0), ("6.7.1", 1)):
+        stub = (
+            "auditwheel() { printf 'auditwheel %s installed at\\n/opt/auditwheel\\n"
+            "(python 3.14)\\n'; }\n" % version
+        )
+        result = run(["bash", "-c", stub + guard], capture_output=True, text=True)
+        assert result.returncode == status, (version, result.stderr)
     assert f"/opt/python/{python_tag}-{python_tag}/bin/python" in repair[-1]
     assert "--exclude=build" in repair[-1]
     assert "abi3audit --strict" in repair[-1]
