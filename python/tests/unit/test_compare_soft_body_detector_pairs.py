@@ -14,6 +14,26 @@ ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = ROOT / "scripts" / "compare_soft_body_detector_pairs.py"
 
 
+def _in_git_checkout():
+    try:
+        top = subprocess.check_output(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=ROOT,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return False
+    return Path(top.strip()).resolve() == ROOT
+
+
+# The runner pins its revision with Git, so the tests that run it on this tree
+# need the checkout; a source export has no .git directory.
+requires_git_checkout = pytest.mark.skipif(
+    not _in_git_checkout(), reason="needs the source Git checkout"
+)
+
+
 def _load_runner_module():
     script_dir = str(SCRIPT.parent)
     if script_dir not in sys.path:
@@ -492,6 +512,7 @@ def statistics_median(values):
     return (ordered[middle - 1] + ordered[middle]) / 2
 
 
+@requires_git_checkout
 def test_dry_run_serializes_schema_revision_and_full_schedule(tmp_path):
     result = subprocess.run(
         [
@@ -848,14 +869,21 @@ def test_revision_owned_harness_is_not_grafted_from_the_live_checkout(
     assert not metadata["benchmark_harness_patched"]
 
 
+@pytest.fixture
+def lock_stream(tmp_path):
+    # main() closes the lock when it succeeds; this closes it on every path.
+    with (tmp_path / "runner.lock").open("w", encoding="utf-8") as stream:
+        yield stream
+
+
+@requires_git_checkout
 def test_diagnostic_main_runs_adjacent_row_protocol_and_publishes_marker_last(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, lock_stream
 ):
     runner = _load_runner_module()
     output_dir = tmp_path / "artifact"
     actions = []
     idle_contexts = []
-    lock_stream = (tmp_path / "runner.lock").open("w", encoding="utf-8")
 
     monkeypatch.setattr(runner.matrix, "repo_root", lambda: ROOT)
 
@@ -971,6 +999,29 @@ def test_diagnostic_main_runs_adjacent_row_protocol_and_publishes_marker_last(
         "DIAGNOSTIC"
     )
     assert len((output_dir / "pairs.jsonl").read_text().splitlines()) == 2
+
+
+@requires_git_checkout
+def test_main_closes_the_lock_when_the_run_fails(tmp_path, monkeypatch, lock_stream):
+    runner = _load_runner_module()
+    output_dir = tmp_path / "artifact"
+
+    def failing_prepare(*_args):
+        raise RuntimeError("prepare failed")
+
+    monkeypatch.setattr(runner.matrix, "repo_root", lambda: ROOT)
+    monkeypatch.setattr(runner.matrix, "prepare_revision", failing_prepare)
+    monkeypatch.setattr(
+        runner,
+        "acquire_benchmark_lock",
+        lambda _root, _sha: (lock_stream, tmp_path / "runner.lock"),
+    )
+
+    with pytest.raises(RuntimeError, match="prepare failed"):
+        runner.main(["--diagnostic", "--output-dir", str(output_dir)])
+
+    assert lock_stream.closed
+    assert json.loads((output_dir / "metadata.json").read_text())["status"] == "failed"
 
 
 def test_completion_marker_is_written_last(tmp_path, monkeypatch):
