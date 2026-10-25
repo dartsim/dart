@@ -779,7 +779,6 @@ def test_dof_arrays_are_read_only_copies(robot, channel):
     np.testing.assert_array_equal(array, expected)
 
 
-@pytest.mark.xfail(strict=True, reason="M5: non-DOF array properties with read-only copies are pending")
 def test_gravity_is_read_only_copy(world):
     expected = np.array([0.5, -0.25, -4.905])
     world.gravity = expected

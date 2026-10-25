@@ -109,17 +109,17 @@ def test_boxed_lcp_rejects_null_world_and_wrong_types():
 def test_boxed_lcp_rejects_non_boxed_constraint_solver_before_mutation():
     class NonBoxedWorld(dart.simulation.World):
         def getConstraintSolver(self):
-            return self.solver
+            return self.test_solver
 
     world = NonBoxedWorld()
-    world.solver = object()
-    original = world.solver
+    world.test_solver = object()
+    original = world.test_solver
     for kind in ("dantzig", "pgs"):
         with pytest.raises(
             ValueError, match="world must use a BoxedLcpConstraintSolver"
         ):
             set_boxed_lcp_solver(world, kind)
-        assert world.solver is original
+        assert world.test_solver is original
 
 
 def test_boxed_lcp_switch_restarts_dwell_for_awake_and_resting_mobile_bodies():
