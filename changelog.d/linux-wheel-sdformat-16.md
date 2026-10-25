@@ -5,3 +5,4 @@ Section: Python
     worlds: a world of 1,000 small models now loads in about 0.5 s and 0.2 GB
     instead of 6.5 s and 4.8 GB. The accepted SDF versions are unchanged (up
     to 1.12).
+    [#3958](https://github.com/dartsim/dart/pull/3958)
