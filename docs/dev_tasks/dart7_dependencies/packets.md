@@ -333,7 +333,7 @@ pattern. A mechanical PR can default their copy operations the same way.
   gate.
 - **Gates:** in [verification.md](verification.md#c-standard-gates).
 - **Timing:** after M1d, DEP-0, DEP-11 and DEP-12(a), all merged by
-  2026-10-24 except DEP-11 PR4 (#3943).
+  2026-10-25; DEP-11 PR4 (#3943) was the last, on 2026-10-25.
 - **Prerequisites (wave-7 spikes, 2026-10-24):** make `DART_STRING_TYPE`'s
   function-local `std::string` initialize the same way in both dialects
   (for example, bind it to a heap string, under a new name so an old
