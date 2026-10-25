@@ -107,16 +107,65 @@ file(
   "${DART_FILAMENT_LICENSE_DIRECTORY}/LICENSE\n"
 )
 
-find_package(glfw3 3.4 CONFIG)
+if(DART_USE_SYSTEM_GLFW)
+  find_package(glfw3 3.4 CONFIG)
+  if(NOT glfw3_FOUND)
+    message(
+      FATAL_ERROR
+      "The DART GUI requires GLFW 3.4: install it, use DART_USE_SYSTEM_GLFW=OFF "
+      "for DART's pinned static GLFW, or set DART_BUILD_GUI=OFF for a headless "
+      "build."
+    )
+  endif()
+else()
+  if(APPLE)
+    message(
+      FATAL_ERROR
+      "DART_USE_SYSTEM_GLFW=OFF is not supported on macOS: a GLFW built into "
+      "DART would register the same Objective-C classes as any other GLFW in "
+      "the process. Install GLFW 3.4 (for example, brew install glfw) and use "
+      "DART_USE_SYSTEM_GLFW=ON."
+    )
+  endif()
+  # A static GLFW 3.4 (X11 only on Linux) whose hidden symbols stay private to
+  # dart-gui. Only static builds install it, because their exported dart-gui
+  # links it.
+  include(FetchContent)
+  block(SCOPE_FOR VARIABLES)
+    set(GLFW_LIBRARY_TYPE STATIC)
+    set(GLFW_BUILD_WAYLAND OFF)
+    set(GLFW_BUILD_DOCS OFF)
+    set(GLFW_BUILD_EXAMPLES OFF)
+    set(GLFW_BUILD_TESTS OFF)
+    set(GLFW_INSTALL ON)
+    if(BUILD_SHARED_LIBS)
+      set(GLFW_INSTALL OFF)
+    endif()
+    set(CMAKE_C_VISIBILITY_PRESET hidden)
+    set(CMAKE_UNITY_BUILD OFF)
+    if(NOT MSVC)
+      # Keep DART's -Werror away from third-party sources.
+      string(APPEND CMAKE_C_FLAGS " -w")
+    endif()
+    FetchContent_Declare(
+      glfw
+      URL https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.zip
+      URL_HASH
+        SHA256=b5ec004b2712fd08e8861dc271428f048775200a2df719ccf575143ba749a3e9
+      TLS_VERIFY ON
+    )
+    FetchContent_MakeAvailable(glfw)
+    dart_check_fetchcontent(glfw DART_USE_SYSTEM_GLFW)
+  endblock()
+endif()
 find_package(PNG)
 find_package(JPEG)
-foreach(_dart_gui_dependency glfw3 PNG JPEG)
+foreach(_dart_gui_dependency PNG JPEG)
   if(NOT ${_dart_gui_dependency}_FOUND)
     message(
       FATAL_ERROR
-      "The DART GUI requires GLFW 3.4, libpng and libjpeg (${_dart_gui_dependency} "
-      "was not found); install them or set DART_BUILD_GUI=OFF for a headless "
-      "build."
+      "The DART GUI requires libpng and libjpeg (${_dart_gui_dependency} was "
+      "not found); install them or set DART_BUILD_GUI=OFF for a headless build."
     )
   endif()
 endforeach()

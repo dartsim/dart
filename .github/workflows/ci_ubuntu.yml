@@ -261,7 +261,7 @@ jobs:
             -DDART_DISABLE_COMPILER_CACHE=ON -DDART_BUILD_DARTPY=ON \
             -DDART_BUILD_PROFILE=ON -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
             -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON \
-            -DDART_USE_SYSTEM_TRACY=ON'
+            -DDART_USE_SYSTEM_TRACY=ON -DDART_USE_SYSTEM_GLFW=ON'
           cd build/unity-clashes
           find . -path '*/Unity/unity_*_cxx.cxx' -exec grep -c -H '^#include' {} + |
             awk -F: '$2 > 1 { sub(/^\.\//, "", $1); print $1 ".o" }' > unity-objects.txt

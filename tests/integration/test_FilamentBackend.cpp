@@ -1505,6 +1505,9 @@ TEST(FilamentBackend, RetiredImGuiTextureLeavesNoCachedSamplerReferences)
 
 TEST(FilamentNative, RetiredImGuiTextureLeavesNoCachedSamplerReferences)
 {
+#ifdef DART_TEST_PRIVATE_GLFW
+  GTEST_SKIP() << "dart-gui's private GLFW cannot use this test's windows";
+#endif
 #if !defined(_WIN32) && !defined(__APPLE__)
   glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
 #endif
@@ -1606,6 +1609,9 @@ TEST(FilamentNative, DefaultViewerWindowHasUsableDimensions)
 
 TEST(FilamentNative, PresentationResizeAndContextTeardown)
 {
+#ifdef DART_TEST_PRIVATE_GLFW
+  GTEST_SKIP() << "dart-gui's private GLFW cannot use this test's windows";
+#endif
 #if !defined(_WIN32) && !defined(__APPLE__)
   glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
 #endif
