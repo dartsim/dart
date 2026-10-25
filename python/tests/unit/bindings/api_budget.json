@@ -1,4 +1,9 @@
 {
+  "caps": {
+    "dartpy.math.Rotation": 15,
+    "dartpy.math.Transform": 15,
+    "dartpy.simulation.WorldState": 15
+  },
   "dartpy": {
     "classes": {},
     "container_owners": {

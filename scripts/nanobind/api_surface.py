@@ -24,6 +24,7 @@ BUDGET_PATH = (
     Path(__file__).resolve().parents[2] / "python/tests/unit/bindings/api_budget.json"
 )
 BUDGET_UPDATE = "pixi run dartpy scripts/nanobind/api_surface.py --update-budget"
+NAMING_EXCEPTIONS_PATH = BUDGET_PATH.with_name("api_naming_exceptions.json")
 TRACKED_SPECIAL_NAMES = frozenset(
     {"__init__", "__GUIEventHandler__", "__str__", "__repr__", "__mul__", "__eq__"}
 )
@@ -231,6 +232,12 @@ def snapshot():
         }
         if isinstance(value, types.ModuleType):
             result["name"] = value.__name__
+        if (
+            inspect.isclass(value)
+            and hasattr(value, "__len__")
+            and hasattr(value, "__getitem__")
+        ):
+            result["protocol_methods"] = ["index", "count"]
         # Keep objects alive, and resolve owners after all classes have been walked.
         inherited = owner is not None and owner is not parent
         pending_runtime.append((result, value, path, owner, name, inherited))
@@ -361,6 +368,144 @@ def name_counters(names):
             name for name in names if re.match(r"^(?i:get|set)([A-Z_]|$)", name)
         ],
     }
+
+
+def visible_class_members(rows):
+    """R57 names by canonical class, including inherited rows, without dunders."""
+    classes = {}
+    owners = {}
+    for path, row in rows.items():
+        if row["kind"] not in {"class", "enum"} or any(
+            part.startswith("_") for part in path.split(".")
+        ):
+            continue
+        runtime = row["runtime"]
+        owner = runtime["module"] + "." + runtime["qualname"]
+        owners[path] = owner
+        members = classes.setdefault(owner, {})
+        members.update(
+            (name, {"kind": "enum_value"})
+            for name in row.get("members", {})
+            if not name.startswith("_")
+        )
+    for path, row in rows.items():
+        parent, _, name = path.rpartition(".")
+        if parent in owners and not name.startswith("_"):
+            classes[owners[parent]][name] = row
+    return classes
+
+
+def cap_failures(classes, caps):
+    failures = []
+    for owner, cap in sorted(caps.items()):
+        if owner not in classes:
+            failures.append(f"{owner}: capped class missing from build (cap {cap})")
+        elif len(classes[owner]) > cap:
+            failures.append(
+                f"{owner}: visible public names {len(classes[owner])} exceed cap {cap}"
+            )
+    return failures
+
+
+def r2_deferred(owner, name, row):
+    """R2 defers GUI and aspect/composite state, including inherited members."""
+    if owner.startswith("dartpy.gui."):
+        return True
+    if owner.startswith("dartpy.viewer."):
+        return "dartpy.gui." in json.dumps(row)
+    return bool(re.search(r"Aspect|Composite|composite_state", owner + "." + name))
+
+
+def naming_failures(rows, *, exceptions=(), freeze=False):
+    """R57's four checks; every exemption cites a recorded rule exception."""
+    allowed = set()
+    for entry in exceptions:
+        if not all(
+            entry.get(key) for key in ("check", "path", "rule", "reason", "exception")
+        ):
+            raise ValueError(
+                "Naming exceptions require check, path, rule, reason and exception"
+            )
+        allowed.add((entry["check"], entry["path"]))
+    failures = []
+    nouns = {}
+
+    def report(check, path, reason):
+        if (check, path) not in allowed:
+            failures.append(f"{path}: naming check {check}: {reason}")
+
+    classes = visible_class_members(rows)
+    constructors = {
+        row["runtime"]["module"]
+        + "."
+        + row["runtime"]["qualname"]: rows[path + ".__init__"]
+        for path, row in rows.items()
+        if row["kind"] == "class" and path + ".__init__" in rows
+    }
+    protocols = {
+        row["runtime"]["module"]
+        + "."
+        + row["runtime"]["qualname"]: row["runtime"].get("protocol_methods", [])
+        for row in rows.values()
+        if row["kind"] == "class"
+    }
+    for owner, members in sorted(classes.items()):
+        active = {
+            name: row
+            for name, row in members.items()
+            if not r2_deferred(owner, name, row)
+        }
+        if freeze:
+            camel = name_counters(active)["camel_case"]
+            if camel:
+                failures.append(
+                    f"{owner}: API freeze forbids camelCase names: {', '.join(camel)}"
+                )
+        if owner in constructors and not r2_deferred(
+            owner, "__init__", constructors[owner]
+        ):
+            active["__init__"] = constructors[owner]
+        for name, row in sorted(active.items()):
+            path = owner + "." + name
+            callable_member = row["kind"] in {"callable", "class", "enum"}
+            if callable_member and name.startswith("get_"):
+                noun = name[4:]
+                if not any(
+                    members.get(candidate, {}).get("kind") == "property"
+                    for candidate in (noun, "world_" + noun, "relative_" + noun)
+                ):
+                    report(1, path, "get_ requires a matching property")
+            signatures = row.get("normalized", [])
+            if callable_member and name.startswith(("compute_", "calc_", "eval_")):
+                if any(sig.get("return") not in {None, "None"} for sig in signatures):
+                    report(2, path, "compute_/calc_/eval_ cannot return a value")
+            if name.startswith("compute_") and (
+                not callable_member
+                or not signatures
+                or any(sig.get("return") != "None" for sig in signatures)
+            ):
+                report(3, path, "compute_ must be a method returning None")
+            for sig in signatures:
+                for argument in sig.get("arguments", []):
+                    if argument["name"].startswith("compute_"):
+                        report(
+                            3, path, f"keyword {argument['name']} starts with compute_"
+                        )
+            if (
+                name.startswith("_")
+                or name in protocols.get(owner, [])
+                or (4, path) in allowed
+            ):
+                continue
+            kinds = nouns.setdefault(name, {True: [], False: []})
+            kinds[callable_member].append(path)
+    for name, kinds in sorted(nouns.items()):
+        if kinds[True] and kinds[False]:
+            failures.append(
+                f"{name}: naming check 4: attribute on {', '.join(kinds[False])}; "
+                f"callable on {', '.join(kinds[True])}"
+            )
+    return failures
 
 
 def budget_surface(rows):
@@ -648,6 +793,8 @@ def update_budget(path, surface, allow_growth=False, *, prune=False):
     # A copy, so removing owners below leaves `previous` intact for the
     # container pass, which needs the absent owners.
     budget = {} if prune else copy.deepcopy(previous)
+    if "caps" in previous:
+        budget["caps"] = copy.deepcopy(previous["caps"])
     if not prune:
         # Unconditional owners missing from the build were removed: drop them
         # (and any submodules below a removed module) so the next check passes.
@@ -839,6 +986,8 @@ def main():
     parser.add_argument("--update-budget", action="store_true")
     parser.add_argument("--allow-growth", action="store_true")
     parser.add_argument("--prune", action="store_true")
+    parser.add_argument("--check-budget", action="store_true")
+    parser.add_argument("--freeze", action="store_true")
     parser.add_argument("--pb", type=Path)
     parser.add_argument("--nb", type=Path)
     parser.add_argument("--output", type=Path)
@@ -847,11 +996,26 @@ def main():
         parser.error("--allow-growth requires --update-budget")
     if args.prune and not args.update_budget:
         parser.error("--prune requires --update-budget")
+    if args.freeze and not args.check_budget:
+        parser.error("--freeze requires --check-budget")
     self_check()
     if args.self_check:
         return
     if args.snapshot:
         print(json.dumps(snapshot(), indent=2))
+        return
+    if args.check_budget:
+        rows = snapshot()
+        budget = json.loads(BUDGET_PATH.read_text())
+        failures = budget_growth(budget_surface(rows), budget, check_stale=True)
+        failures += cap_failures(visible_class_members(rows), budget.get("caps", {}))
+        failures += naming_failures(
+            rows,
+            exceptions=json.loads(NAMING_EXCEPTIONS_PATH.read_text()),
+            freeze=args.freeze,
+        )
+        if failures:
+            parser.exit(1, "\n".join(failures) + "\n")
         return
     if args.update_budget:
         try:

@@ -68,6 +68,10 @@ Snapshot runtime identities attribute inherited members to their walked defining
   With `PYTHONPATH` already
   selecting a build, `pixi run python scripts/nanobind/api_surface.py
   --update-budget` also works.
+- `pixi run dartpy scripts/nanobind/api_surface.py --check-budget` runs the
+  ratchet, the R57 caps and the four R23 naming checks. The binding test
+  `test_api_surface_budget` runs the same checks. "API budget checks" below
+  describes them.
 - `probe_gui_rss.py` checks 1,000 GUI owner lifecycles without opening a window.
 - `visual_scenes.py` supplies the existing dominoes tutorial to `agent-capture`.
 - `codemod.py --source <DART-6.20-pybind11-sources> --output <new-directory>`
@@ -94,5 +98,77 @@ nanobind. The `--pb` API comparison input is a separately built DART 6.20 module
 this tree no longer contains its binder. Compile/import measurements and
 research reports are not part of these tools.
 
-World is pinned to today's surface; the DART 7 target is about 20 public names
-(see `docs/design/dart7_python_api.md`, "World, modes and mutation classes").
+World is pinned to today's surface; R57 sets its DART 7 cap at 24 visible
+public names (see `docs/design/dart7_python_naming.md`).
+
+## API budget checks
+
+R57 counts the visible public names of each class:
+
+- its own and inherited public names, without dunders;
+- each collection, sub-object or nested type once, under its exported name.
+
+The existing counters keep their defining-owner attribution and their tracked
+special methods.
+
+Caps:
+
+- The budget's top-level `caps` key maps a canonical class path to a limit.
+- The check fails for a class over its cap and for a capped class that is
+  missing.
+- `--update-budget` and `--update-budget --prune` preserve the caps.
+  `--allow-growth` cannot override a cap.
+- Transform, Rotation and WorldState have a cap of 15. Later area packets add
+  caps when their classes fit R57. World's cap of 24 waits until its legacy
+  members leave.
+
+The R23 naming checks:
+
+1. A `get_` method needs a matching property.
+2. No method that returns a value starts with `compute_`, `calc_` or `eval_`.
+3. A `compute_` member is a method that returns `None`, and no keyword starts
+   with `compute_`.
+4. A noun has one kind across the public classes. Sequence `index` and `count`
+   methods are protocol exceptions.
+
+R2 defers GUI members, viewer members whose signatures use GUI types, and
+aspect and composite state.
+
+Known violations live in `python/tests/unit/bindings/api_naming_exceptions.json`.
+Each entry names the check, the full member path, the rule, the reason and a
+recorded exception reference: a section of a repository document, or the PR
+that records it. Remove an entry when its member migrates. Add one only after
+you record a rule exception, with its reason and the condition that ends it.
+
+Freeze mode:
+
+- camelCase and facade members coexist during the migration, so freeze mode is
+  off by default.
+- The API-freeze packet turns it on. It runs `--check-budget --freeze` and
+  passes `freeze=True` to `naming_failures` in `test_api_surface_budget`.
+- Freeze mode fails for any class outside R2 that has a nonzero `camel_case`
+  counter, whatever the known exceptions say.
+
+## Recorded naming exceptions
+
+R23 temporarily allows these provisional lookups without matching properties:
+
+- `dartpy.dynamics.SoftBodyNode.get_face`
+- `dartpy.dynamics.SoftBodyNode.get_point_mass`
+
+The soft-body area replaces them with R27 collections and removes these
+exceptions. Coexistence keeps today's callers working until that migration.
+
+R59 has these temporary exceptions while R41 retains the legacy math types:
+
+- `dartpy.math.Isometry3.matrix`
+- `dartpy.math.Isometry3.rotation`
+- `dartpy.math.Isometry3.translation`
+- `dartpy.math.AngleAxis.rotation`
+- `dartpy.math.Quaternion.rotation`
+- `dartpy.math.Quaternion.wxyz`
+
+These callables coexist with the same nouns as Transform and Rotation
+properties. Removing each legacy type with its last consumer ends its
+exceptions. No new class or member inherits an exception merely by using
+one of these nouns.

@@ -1,0 +1,58 @@
+[
+  {
+    "check": 1,
+    "path": "dartpy.dynamics.SoftBodyNode.get_face",
+    "rule": "R23",
+    "reason": "The provisional legacy lookup has no matching property. Keep it during coexistence; remove this exception when the soft-body area replaces it with a collection under R27.",
+    "exception": "scripts/nanobind/README.md#recorded-naming-exceptions"
+  },
+  {
+    "check": 1,
+    "path": "dartpy.dynamics.SoftBodyNode.get_point_mass",
+    "rule": "R23",
+    "reason": "The provisional legacy lookup has no matching property. Keep it during coexistence; remove this exception when the soft-body area replaces it with a collection under R27.",
+    "exception": "scripts/nanobind/README.md#recorded-naming-exceptions"
+  },
+  {
+    "check": 4,
+    "path": "dartpy.math.AngleAxis.rotation",
+    "rule": "R59",
+    "reason": "R41 retains this legacy math type until its last consumer migrates; Transform and Rotation already use this noun as a property. Remove this exception with the legacy type.",
+    "exception": "scripts/nanobind/README.md#recorded-naming-exceptions"
+  },
+  {
+    "check": 4,
+    "path": "dartpy.math.Isometry3.matrix",
+    "rule": "R59",
+    "reason": "R41 retains Isometry3 until its last consumer migrates; Transform already uses this noun as a property. Remove this exception with Isometry3.",
+    "exception": "scripts/nanobind/README.md#recorded-naming-exceptions"
+  },
+  {
+    "check": 4,
+    "path": "dartpy.math.Isometry3.rotation",
+    "rule": "R59",
+    "reason": "R41 retains Isometry3 until its last consumer migrates; Transform already uses this noun as a property. Remove this exception with Isometry3.",
+    "exception": "scripts/nanobind/README.md#recorded-naming-exceptions"
+  },
+  {
+    "check": 4,
+    "path": "dartpy.math.Isometry3.translation",
+    "rule": "R59",
+    "reason": "R41 retains Isometry3 until its last consumer migrates; Transform already uses this noun as a property. Remove this exception with Isometry3.",
+    "exception": "scripts/nanobind/README.md#recorded-naming-exceptions"
+  },
+  {
+    "check": 4,
+    "path": "dartpy.math.Quaternion.rotation",
+    "rule": "R59",
+    "reason": "R41 retains this legacy math type until its last consumer migrates; Transform and Rotation already use this noun as a property. Remove this exception with the legacy type.",
+    "exception": "scripts/nanobind/README.md#recorded-naming-exceptions"
+  },
+  {
+    "check": 4,
+    "path": "dartpy.math.Quaternion.wxyz",
+    "rule": "R59",
+    "reason": "R41 retains this legacy math type until its last consumer migrates; Transform and Rotation already use this noun as a property. Remove this exception with the legacy type.",
+    "exception": "scripts/nanobind/README.md#recorded-naming-exceptions"
+  }
+]
