@@ -1063,6 +1063,54 @@ def bullet_fixture_run(*args, env=None):
     return result.stdout.strip()
 
 
+@pytest.mark.skipif(
+    not sys.platform.startswith(("linux", "freebsd")), reason="ELF runtime search order"
+)
+def test_bullet_fetched_private_core_avoids_system_sonames(tmp_path):
+    fetched = bullet_fallback_source(tmp_path / "fetched")
+    system = bullet_fallback_source(tmp_path / "system")
+    for sdk in (fetched, system):
+        with (sdk / "src/BulletCollision.cpp").open("a") as source:
+            source.write(
+                "int scalar_abi(btScalar) { return sizeof(btScalar) == sizeof(double); }\n"
+            )
+    system_build = tmp_path / "system-build"
+    bullet_fixture_run(CMAKE, "-G", "Ninja", "-S", system, "-B", system_build)
+    bullet_fixture_run(
+        CMAKE,
+        "--build",
+        system_build,
+        "--target",
+        "BulletCollision",
+        "LinearMath",
+        "BulletDynamics",
+    )
+    case = tmp_path / "case"
+    case.mkdir()
+    result = configure(
+        case,
+        f'set(CMAKE_BUILD_RPATH "{system_build.as_posix()}/src")\n'
+        f'set(FETCHCONTENT_SOURCE_DIR_BULLET "{fetched.as_posix()}")\n'
+        + bullet_fallback_content()
+        + "include(DARTFindBullet)\n"
+        'file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/core.cpp" "#include <btBulletCollisionCommon.h>\\nint scalar_abi(btScalar);\\nextern \\"C\\" int core() { return scalar_abi(0.) + fixture_LinearMath(); }\\n")\n'
+        'add_library(core SHARED "${CMAKE_CURRENT_BINARY_DIR}/core.cpp")\n'
+        "target_link_libraries(core PRIVATE Bullet)\n"
+        "add_library(system_noise SHARED IMPORTED)\n"
+        f'set_target_properties(system_noise PROPERTIES IMPORTED_LOCATION "{system_build.as_posix()}/src/libBulletDynamics.so")\n'
+        'file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/io.cpp" "extern \\"C\\" int fixture_BulletDynamics();\\nint io() { return fixture_BulletDynamics(); }\\n")\n'
+        'add_library(io SHARED "${CMAKE_CURRENT_BINARY_DIR}/io.cpp")\n'
+        "target_link_libraries(io PUBLIC core PRIVATE system_noise)\n"
+        'file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/main.cpp" "extern \\"C\\" int core();\\nint io();\\nint main() { return core() == 2 && io() == 0 ? 0 : 1; }\\n")\n'
+        'add_executable(consumer "${CMAKE_CURRENT_BINARY_DIR}/main.cpp")\n'
+        "target_link_libraries(consumer PRIVATE io)\n",
+        language="C CXX",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    bullet_fixture_run(CMAKE, "--build", case / "build", "--target", "consumer")
+    bullet_fixture_run(case / "build/consumer")
+
+
 @pytest.mark.parametrize("libdir", ["lib", "lib64", "absolute"])
 @pytest.mark.parametrize("source_suffix", ["", "/", "/.", "/sub/.."])
 def test_bullet_fetched_pkgconfig_libdir(tmp_path, monkeypatch, libdir, source_suffix):
@@ -3242,6 +3290,7 @@ def install_bullet_dart_fixture(
         "set(DART_USE_SYSTEM_BULLET ON)\ninclude(DARTMacros)\n"
         + bullet_imports(prefix, suffix)
         + "include(backend.cmake)\n"
+        f"set(BUILD_SHARED_LIBS {'ON' if linkage == 'SHARED' else 'OFF'})\n"
         f"add_library(dart {linkage} core.cpp)\n"
         'target_link_libraries(dart PUBLIC "$<BUILD_INTERFACE:Bullet>" "$<INSTALL_INTERFACE:$<1:Bullet>>")\n'
         "if(BT_USE_DOUBLE_PRECISION)\ntarget_compile_definitions(dart PUBLIC BT_USE_DOUBLE_PRECISION)\nendif()\n"
@@ -3661,7 +3710,7 @@ def test_pkgconfig_consumer_preserves_flag_roles(tmp_path, cflags):
 
 @pytest.mark.parametrize("linkage", ["STATIC", "SHARED"])
 @pytest.mark.parametrize("layout", ["plain", "spaces", "sysroot", "backslash"])
-def test_bullet_pkgconfig_public_consumer(tmp_path, linkage, layout):
+def test_bullet_pkgconfig_component_consumer(tmp_path, linkage, layout):
     folder = "bullet with spaces" if layout == "spaces" else "bullet"
     prefix = build_bullet_abi_fixture(tmp_path / folder, "double", linkage, "-float64")
     pc_settings = ""
@@ -3705,8 +3754,12 @@ def test_bullet_pkgconfig_public_consumer(tmp_path, linkage, layout):
     stage = install_bullet_dart_fixture(
         tmp_path / "dart", prefix, linkage, "-float64", pc_settings
     )
-    pcfile = stage / "lib/pkgconfig/dart.pc"
+    pcfile = stage / "lib/pkgconfig/dart-collision-bullet.pc"
     text = pcfile.read_text()
+    core_pc = (stage / "lib/pkgconfig/dart.pc").read_text()
+    if linkage == "SHARED":
+        assert "Bullet" not in core_pc
+        assert "BT_USE_DOUBLE_PRECISION" not in core_pc
     assert "bullet-float64" not in text.split("Requires:")[1].splitlines()[0]
     relocated = tmp_path / "relocated dart"
     shutil.move(stage, relocated)
@@ -3727,7 +3780,9 @@ def test_bullet_pkgconfig_public_consumer(tmp_path, linkage, layout):
     consumer = tmp_path / "consumer"
     consumer.mkdir()
     for static in (False, True):
-        options, flags = pkgconfig_consumer_options("dart", static=static, env=env)
+        options, flags = pkgconfig_consumer_options(
+            "dart-collision-bullet", static=static, env=env
+        )
         content = (
             "cmake_minimum_required(VERSION 3.22.1)\nproject(Consumer LANGUAGES CXX)\n"
             "set(CMAKE_CXX_STANDARD 17)\n"
@@ -3753,8 +3808,8 @@ def test_bullet_pkgconfig_public_consumer(tmp_path, linkage, layout):
         )
         assert sum("BulletCollision" in flag for flag in flags) == 1
         assert sum("LinearMath" in flag for flag in flags) == 1
-    assert "BulletCollision" in text.split("Libs:")[1].splitlines()[0]
-    assert "BulletCollision" not in text.split("Libs.private:")[1].splitlines()[0]
+    link_pc = text if linkage == "SHARED" else core_pc
+    assert "BulletCollision" in link_pc.split("Libs:")[1].splitlines()[0]
 
 
 def test_bullet_pkgconfig_sysroot_boundary(tmp_path):
@@ -3775,6 +3830,38 @@ def test_bullet_pkgconfig_sysroot_boundary(tmp_path):
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_pkgconfig_shared_core_without_collision_sdks(tmp_path):
+    prefix = build_bullet_abi_fixture(tmp_path / "bullet", "double", suffix="-float64")
+    stage = install_bullet_dart_fixture(
+        tmp_path / "dart",
+        prefix,
+        suffix="-float64",
+        pc_settings=(
+            "set(HAVE_ODE TRUE)\n"
+            f'set_target_properties(dart PROPERTIES INSTALL_RPATH "{prefix.as_posix()}/lib")\n'
+        ),
+    )
+    shutil.rmtree(prefix / "include")
+    # Only DART's modules are visible; neither backend has a discoverable SDK.
+    pcdir = stage / "lib/pkgconfig"
+    env = {**os.environ, "PKG_CONFIG_PATH": str(pcdir), "PKG_CONFIG_LIBDIR": str(pcdir)}
+    env.pop("PKG_CONFIG_SYSROOT_DIR", None)
+    options, flags = pkgconfig_consumer_options("dart", env=env)
+    assert all("Bullet" not in flag and str(prefix) not in flag for flag in flags)
+    assert all("BT_USE_DOUBLE_PRECISION" not in flag for flag in flags)
+    consumer = tmp_path / "consumer"
+    consumer.mkdir()
+    (consumer / "core.cpp").write_text(
+        "int dart_fixture();\nint main() { return dart_fixture(); }\n"
+    )
+    (consumer / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.22.1)\nproject(CoreConsumer LANGUAGES CXX)\n"
+        "add_executable(consumer core.cpp)\n" + options
+    )
+    cmake_fixture_run(CMAKE, "-G", "Ninja", "-S", consumer, "-B", consumer / "build")
+    cmake_fixture_run(CMAKE, "--build", consumer / "build")
+
+
 @pytest.mark.parametrize("version,floor", [(305, "3.05"), (325, "3.17")])
 def test_bullet_installed_selected_version(tmp_path, version, floor):
     prefix = build_bullet_abi_fixture(tmp_path / "bullet", "single", version=version)
@@ -3784,7 +3871,10 @@ def test_bullet_installed_selected_version(tmp_path, version, floor):
     )
     component = stage / "lib/cmake/DART/dart_dartComponent.cmake"
     assert f'set(DART_BULLET_REQUIRE_VERSION "{floor}")' in component.read_text()
-    assert f"bullet >= {floor}" in (stage / "lib/pkgconfig/dart.pc").read_text()
+    assert (
+        f"bullet >= {floor}"
+        in (stage / "lib/pkgconfig/dart-collision-bullet.pc").read_text()
+    )
     for selected_version in (304, 305, 325):
         consumer = tmp_path / f"consumer-{selected_version}"
         consumer.mkdir()
@@ -3994,7 +4084,7 @@ def test_bullet_bundled_inherited_directory_precision(tmp_path):
         "set(external_dependencies Bullet)\n"
         f'configure_file("{ROOT.as_posix()}/cmake/dart_Component.cmake.in" "${{CMAKE_BINARY_DIR}}/component.cmake" @ONLY)\n'
         f'set(DART_SOURCE_DIR "{ROOT.as_posix()}")\n'
-        "set(DART_BINARY_DIR ${CMAKE_BINARY_DIR})\n"
+        "set(DART_BINARY_DIR ${CMAKE_BINARY_DIR})\nset(BUILD_SHARED_LIBS ON)\n"
         "set(CMAKE_INSTALL_LIBDIR lib)\ninclude(GNUInstallDirs)\n"
         "include(pkgconfig.cmake)\n",
     )
@@ -4002,7 +4092,7 @@ def test_bullet_bundled_inherited_directory_precision(tmp_path):
     cmake_fixture_run(shutil.which("cmake"), "--build", tmp_path / "build")
     component = (tmp_path / "build/component.cmake").read_text()
     assert 'set(DART_BULLET_REQUIRE_PRECISION "double")' in component
-    pc = (tmp_path / "build/cmake/dart.pc").read_text()
+    pc = (tmp_path / "build/cmake/dart-collision-bullet.pc").read_text()
     assert "-DBT_USE_DOUBLE_PRECISION" in pc.split("Cflags:")[1].splitlines()[0]
 
 
@@ -4366,7 +4456,7 @@ def test_bullet_pkgconfig_unsupported_sysroot_only_blocks_fallback(tmp_path, fal
         (ROOT / "CMakeLists.txt")
         .read_text()
         .split("# Generate the DART pkg-config\n")[1]
-        .split("if(HAVE_ODE)")[0]
+        .split("if(NOT BUILD_SHARED_LIBS)")[0]
     )
     suffix = "-float64" if fallback else ""
     result = configure(
@@ -5034,7 +5124,7 @@ def test_bullet_link_options_only_block_pkgconfig_fallback(tmp_path, monkeypatch
         (ROOT / "CMakeLists.txt")
         .read_text()
         .split("# Generate the DART pkg-config\n")[1]
-        .split("if(HAVE_ODE)")[0]
+        .split("if(NOT BUILD_SHARED_LIBS)")[0]
     )
     for available in (False, True) if kind == "shell" else (False,):
         case = tmp_path / ("real-module" if available else "fallback")

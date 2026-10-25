@@ -66,12 +66,24 @@ endif()
 dart_property_add(DART_CORE_LINK_LIBRARIES
   $<BUILD_INTERFACE:${bullet_target}> $<INSTALL_INTERFACE:$<1:Bullet>>
 )
-dart_property_add(DART_CORE_DEPENDENCY_PACKAGES Bullet)
+if(NOT BUILD_SHARED_LIBS)
+  # The static core archive still contains the backend's unresolved symbols.
+  dart_property_add(DART_CORE_DEPENDENCY_PACKAGES Bullet)
+endif()
 if(BT_USE_DOUBLE_PRECISION)
   dart_property_add(DART_CORE_COMPILE_DEFINITIONS BT_USE_DOUBLE_PRECISION)
 endif()
 add_library(${target_name} INTERFACE ${hdrs})
-target_link_libraries(${target_name} INTERFACE dart)
+target_link_libraries(
+  ${target_name}
+  INTERFACE
+    dart
+    $<BUILD_INTERFACE:${bullet_target}>
+    $<INSTALL_INTERFACE:$<1:Bullet>>
+)
+if(BT_USE_DOUBLE_PRECISION)
+  target_compile_definitions(${target_name} INTERFACE BT_USE_DOUBLE_PRECISION)
+endif()
 add_dependencies(${target_name} dart)
 
 # Component

@@ -135,6 +135,12 @@ if(NOT DART_USE_SYSTEM_ODE AND NOT DART_SKIP_ODE)
   set(DART_ODE_SOURCE_DIR "${ode_SOURCE_DIR}" CACHE INTERNAL "ODE source dir.")
   set(DART_ODE_BINARY_DIR "${ode_BINARY_DIR}" CACHE INTERNAL "ODE binary dir.")
 
+  # Core-only consumers also need to resolve the fetched ODE shared library.
+  list(PREPEND CMAKE_BUILD_RPATH "$<TARGET_FILE_DIR:ODE>")
+  if(CMAKE_SYSTEM_NAME MATCHES "^(Linux|FreeBSD)$")
+    add_link_options("LINKER:-rpath-link,$<TARGET_FILE_DIR:ODE>")
+  endif()
+
   set(BUILD_SHARED_LIBS "${_dart_build_shared_libs}" CACHE BOOL "" FORCE)
   unset(_dart_build_shared_libs)
 endif()
@@ -208,6 +214,23 @@ if(NOT DART_USE_SYSTEM_BULLET AND NOT DART_SKIP_BULLET)
       "Bullet must provide BulletCollision and LinearMath targets"
     )
   endif()
+  # Core-only links and loads must prefer fetched DSOs over system Bullet's SONAMEs.
+  foreach(_dart_bullet_target BulletCollision LinearMath)
+    get_target_property(_dart_bullet_type ${_dart_bullet_target} TYPE)
+    if(_dart_bullet_type STREQUAL "SHARED_LIBRARY")
+      list(
+        PREPEND CMAKE_BUILD_RPATH
+        "$<TARGET_FILE_DIR:${_dart_bullet_target}>"
+      )
+      if(CMAKE_SYSTEM_NAME MATCHES "^(Linux|FreeBSD)$")
+        add_link_options(
+          "LINKER:-rpath-link,$<TARGET_FILE_DIR:${_dart_bullet_target}>"
+        )
+      endif()
+    endif()
+  endforeach()
+  unset(_dart_bullet_target)
+  unset(_dart_bullet_type)
   if(_dart_bullet_source_owned)
     get_filename_component(
       _dart_bullet_expected_src

@@ -31,9 +31,18 @@ endif()
 dart_property_add(DART_CORE_LINK_LIBRARIES
   $<BUILD_INTERFACE:${ode_target}> $<INSTALL_INTERFACE:$<1:ODE::ODE>>
 )
-dart_property_add(DART_CORE_DEPENDENCY_PACKAGES ODE)
+if(NOT BUILD_SHARED_LIBS)
+  # The static core archive still contains the backend's unresolved symbols.
+  dart_property_add(DART_CORE_DEPENDENCY_PACKAGES ODE)
+endif()
 add_library(${target_name} INTERFACE ${hdrs})
-target_link_libraries(${target_name} INTERFACE dart)
+target_link_libraries(
+  ${target_name}
+  INTERFACE
+    dart
+    $<BUILD_INTERFACE:${ode_target}>
+    $<INSTALL_INTERFACE:$<1:ODE::ODE>>
+)
 add_dependencies(${target_name} dart)
 
 # Component
