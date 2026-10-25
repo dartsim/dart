@@ -18,12 +18,18 @@ RUN yum install -y \
     libjpeg-turbo-devel \
     libpng-devel
 
-# assimp
+# assimp, importing only the formats DART's samples and robot catalog use, plus
+# glTF 2.0 for PBR materials (glTF 1.0 has no CMake switch, hence the define).
+# Exporters are off, but export support stays: MeshShape::clone() needs its
+# aiCopyScene().
 RUN curl -fsSL https://github.com/assimp/assimp/archive/refs/tags/v6.0.5.tar.gz -o assimp.tar.gz \
     && echo "edf3749559c2b7d1f758ffb66fc5bec62186221e623b7f2e8969f17ee46ecb6f  assimp.tar.gz" | sha256sum -c - \
     && mkdir assimp && tar -xf assimp.tar.gz -C assimp --strip-components=1 \
     && mkdir -p assimp/build \
     && cmake assimp -B assimp/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DASSIMP_BUILD_TESTS=OFF -DASSIMP_WARNINGS_AS_ERRORS=OFF \
+    -DASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT=OFF -DASSIMP_BUILD_COLLADA_IMPORTER=ON \
+    -DASSIMP_BUILD_GLTF_IMPORTER=ON -DASSIMP_BUILD_OBJ_IMPORTER=ON -DASSIMP_BUILD_STL_IMPORTER=ON \
+    -DCMAKE_CXX_FLAGS=-DASSIMP_BUILD_NO_GLTF1_IMPORTER -DASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT=OFF \
     && cmake --build assimp/build --target install -j${NUM_CORES} \
     && rm -rf assimp assimp.tar.gz
 

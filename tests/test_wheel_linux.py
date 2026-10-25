@@ -133,6 +133,23 @@ def test_native_dependency_image_preserves_collision_backends():
     assert "pybind11" not in dockerfile
 
 
+def test_dependency_image_builds_only_the_assimp_importers_dart_uses():
+    dockerfile = (ROOT / "docker/wheels/Dockerfile.manylinux_2_28").read_text()
+    assimp = dockerfile[dockerfile.index("# assimp") : dockerfile.index("# eigen")]
+    for setting in (
+        "-DASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT=OFF",
+        "-DASSIMP_BUILD_COLLADA_IMPORTER=ON",
+        "-DASSIMP_BUILD_GLTF_IMPORTER=ON",
+        "-DASSIMP_BUILD_OBJ_IMPORTER=ON",
+        "-DASSIMP_BUILD_STL_IMPORTER=ON",
+        "-DCMAKE_CXX_FLAGS=-DASSIMP_BUILD_NO_GLTF1_IMPORTER",
+        "-DASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT=OFF",
+    ):
+        assert setting in assimp
+    # ASSIMP_NO_EXPORT also removes aiCopyScene(), which MeshShape::clone() uses.
+    assert "-DASSIMP_NO_EXPORT" not in dockerfile
+
+
 def test_dependency_image_fetches_archives_without_git_clones():
     dockerfile = (ROOT / "docker/wheels/Dockerfile.manylinux_2_28").read_text()
     assert "git clone" not in dockerfile
