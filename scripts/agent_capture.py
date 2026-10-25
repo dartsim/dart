@@ -16,6 +16,7 @@ import importlib
 import json
 import math
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -414,12 +415,8 @@ def _review_inspection_targets(
 
 
 def _encode_video(frame_dir: Path, pattern: str, out: Path, fps: int) -> bool:
-    ffmpeg = shutil.which("ffmpeg")
-    if ffmpeg is None:
-        print("ffmpeg not found; skipping video encode", file=sys.stderr)
-        return False
     command = [
-        ffmpeg,
+        "ffmpeg",
         "-y",
         "-loglevel",
         "error",
@@ -433,6 +430,15 @@ def _encode_video(frame_dir: Path, pattern: str, out: Path, fps: int) -> bool:
         "pad=ceil(iw/2)*2:ceil(ih/2)*2",
         str(out),
     ]
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        print(
+            "ffmpeg not found; keeping frames. Encode them with: "
+            + shlex.join(["pixi", "exec", *command]),
+            file=sys.stderr,
+        )
+        return False
+    command[0] = ffmpeg
     try:
         subprocess.run(command, check=True)
     except subprocess.CalledProcessError as error:

@@ -93,12 +93,17 @@ pixi run agent-capture -- --scene box_on_ground --steps 250 \
 pixi run image-verdict -- /tmp/dart-visual-evidence/capture_auto0.png
 ```
 
-The task's first case is the text/geometry oracle for the same settled-contact
-claim shown in the capture; its second checks the underlying engine overlay,
-its third exercises a valid custom factory, and its fourth performs the full
-`agent-capture` A/B with identical cameras and requires debug layers to change
-at least 128 pixels plus visible contact-marker color pixels, then proves each
-of the contacts, collision-bounds, and labels layers changes pixels on its own.
+The task has four cases:
+
+- The first is the text/geometry oracle for the same settled-contact claim
+  shown in the capture.
+- The second checks the underlying engine overlay.
+- The third exercises a valid custom factory.
+- The fourth performs the full `agent-capture` A/B with identical cameras.
+  It requires debug layers to change at least 128 pixels plus visible
+  contact-marker color pixels. It then proves each of the contacts,
+  collision-bounds, and labels layers changes pixels on its own.
+
 Filtered DART sentinel contacts remain diagnostic sidecar evidence rather
 than an A/B failure. For a custom `--factory`, replace the text case with a
 focused test, pose/contact trace, or checksum comparison that exercises that
@@ -110,6 +115,10 @@ For PR before/after 3D highlights, matched captures, and compute-only plots,
 follow `docs/ai/verification.md` § "Simulation Verification Route". For their
 placement beside the supported claim, follow `docs/onboarding/contributing.md`
 § "PR Descriptions".
+
+Motion and turntable captures take `--motion-frames N` or `--turntable N`.
+`--video` writes an MP4 when `ffmpeg` is on PATH. Without ffmpeg, the frames
+stay and the script prints a `pixi exec ffmpeg ...` command that encodes them.
 
 Use `pixi run image-sheet` for motion. `image-verdict` checks pixel integrity and
 optional reference differences; it does not inspect meaning.
