@@ -5,3 +5,4 @@ Section: Build
     `notices/` tree, as in conda-forge's package, seed the Filament 1.77.3
     source tree as `FETCHCONTENT_SOURCE_DIR_DART_FILAMENT_SDK`; otherwise
     configure stops and names the missing file.
+    [#3965](https://github.com/dartsim/dart/pull/3965)
