@@ -791,7 +791,7 @@ TEST(WorldStepMultiple, CaptureContenderCannotAcquireBetweenSubsteps)
     EXPECT_NO_THROW(stepping.get());
     stop.store(true);
     // Captures after the whole count exits are allowed.
-    EXPECT_NO_THROW(contender.get());
+    EXPECT_NO_THROW(static_cast<void>(contender.get()));
     EXPECT_EQ(world->getSimFrames(), count);
   }
 }
