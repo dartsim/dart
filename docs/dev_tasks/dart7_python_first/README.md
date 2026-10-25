@@ -18,6 +18,49 @@ tracks its roadmap status. The durable API and engine rules live in the
 - [Changelog fragments](../../../changelog.d/): release notes for the
   merged native state, executor and demo-consolidation packets.
 
+## Status
+
+Status on 2026-10-25. [RESUME](RESUME.md) holds the packet table and the next
+steps.
+
+- **State:** M0 is done. M1 (core seams) and M5 (the dartpy 7.0 API) are
+  active, and M6a is complete. Three of the 44 target-shape tests passed on
+  2026-10-24.
+- **Merged recently:** counted stepping (M1d, #3927) and the naming rulebook
+  (#3956).
+- **Next:** the remapping clone (M1i) and `WorldBatch`, the facade slice under
+  the rulebook, and the typed solver policy (M1e).
+- **Blocker:** the macOS and Windows Python 3.15 wheels for 6.20.x wait for
+  conda-forge's Python 3.15 builds of `bullet-cpp`.
+- **Needs the maintainer:** check PyPI's project history for deleted 7.0.0
+  files, and settle the C2 fast-profile criteria with M6b.
+
+The remaining critical path runs in four chains, Python first. Every chain ends
+in must-haves, and the API freeze `F` waits for all of them and for C2:
+
+```mermaid
+flowchart LR
+    subgraph py["Python API (M5)"]
+        m5a["Snapshot, package, arrays,<br/>errors, Transform: merged"] --> rule["Naming rulebook:<br/>merged"] --> facade["Facade slice and<br/>remaining API areas"]
+    end
+    subgraph core["Native core (M1)"]
+        m1b["Compile and edit (M1b):<br/>merged"] --> m1d["Counted stepping (M1d):<br/>merged"] --> m1i["Remapping clone (M1i)"] --> batch["WorldBatch"] --> follow["Actuators, sensors<br/>and checkpoints"]
+        m1b --> m1f["Default-detector<br/>switch (M1f)"]
+    end
+    subgraph solver["Multi-solver (M1e)"]
+        policy["Typed solver policy"] --> contract["Written contract"] --> rigid["Rigid domain boundary"]
+    end
+    subgraph render["Rendering (M6b)"]
+        m6b["Sensor rendering and<br/>render/viewer API"] --> c2{"Checkpoint C2"}
+    end
+    facade --> freeze{"API freeze F"}
+    follow --> freeze
+    m1f --> freeze
+    rigid --> freeze
+    c2 --> freeze
+    freeze --> rc["7.0 release candidates (M7)"]
+```
+
 ## North star
 
 `import dartpy as dart` gives every audience a modern, typed, performant
@@ -251,13 +294,9 @@ deciding M3.
 | M7 | Release 7.0 (release candidates first) | Planned | Waits for M6b and checkpoint C2 |
 | M8 | C++ vocabulary rename | After 7.0 | Aliases and forwarders |
 
-Remaining critical path, in four chains that run in parallel (Python first): the
-snapshot, arrays, errors and `Transform` packets still in review (the package
-layout merged in #3847), then the facade slice and the API areas under the
-approved naming rulebook, codemod, stubs and reference; compile and edit (M1b),
-counted stepping (M1d), the remapping clone (M1i) and `WorldBatch`; the typed
-solver policy with its per-solver parameters (M1e), the written contract and the
-rigid domain boundary; and M6b → checkpoint C2.
+The remaining critical path runs in four parallel chains; [Status](#status) maps
+them. The Python API chain also produces the codemod, the stubs and the API
+reference, and M1e includes the per-solver parameters.
 
 ### M1 core seams
 
