@@ -247,8 +247,12 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
     Eigen::Matrix3d P = Eigen::Matrix3d::Zero();
 
     if (theta < EPSILON_EXPMAP_THETA) {
-      R = Matrix3d::Identity() + qss + 0.5 * qss2;
-      P = Matrix3d::Identity() + 0.5 * qss + (1 / 6) * qss2;
+      const double t2 = theta * theta;
+      const double c1 = 1.0 - t2 / 6.0 + (t2 * t2) / 120.0;
+      const double c2 = 0.5 - t2 / 24.0 + (t2 * t2) / 720.0;
+      const double c3 = (1.0 / 6.0) - t2 / 120.0 + (t2 * t2) / 5040.0;
+      R = Matrix3d::Identity() + c1 * qss + c2 * qss2;
+      P = Matrix3d::Identity() + c2 * qss + c3 * qss2;
     } else {
       R = Matrix3d::Identity() + (sin(theta) / theta) * qss
           + ((1 - cos(theta)) / (theta * theta)) * qss2;
@@ -279,8 +283,12 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
     Eigen::Matrix3d P = Eigen::Matrix3d::Zero();
 
     if (theta < EPSILON_EXPMAP_THETA) {
-      R = Matrix3d::Identity() + qss + 0.5 * qss2;
-      P = Matrix3d::Identity() + 0.5 * qss + (1 / 6) * qss2;
+      const double t2 = theta * theta;
+      const double c1 = 1.0 - t2 / 6.0 + (t2 * t2) / 120.0;
+      const double c2 = 0.5 - t2 / 24.0 + (t2 * t2) / 720.0;
+      const double c3 = (1.0 / 6.0) - t2 / 120.0 + (t2 * t2) / 5040.0;
+      R = Matrix3d::Identity() + c1 * qss + c2 * qss2;
+      P = Matrix3d::Identity() + c2 * qss + c3 * qss2;
     } else {
       R = Matrix3d::Identity() + (sin(theta) / theta) * qss
           + ((1 - cos(theta)) / (theta * theta)) * qss2;
@@ -577,5 +585,113 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
 
     for (int j = 0; j < 6; ++j)
       EXPECT_NEAR(dad_V_F(j), dadV_Matrix_F(j), LIE_GROUP_OPT_TOL);
+  }
+}
+
+TEST(LIE_GROUP_OPERATORS, EXPMAP_ROT_AND_JAC)
+{
+  // 1. Zero rotation
+  {
+    const Eigen::Vector3d zero = Eigen::Vector3d::Zero();
+    const Eigen::Matrix3d R_zero = math::expMapRot(zero);
+    EXPECT_TRUE(math::verifyRotation(R_zero));
+    EXPECT_TRUE(R_zero.isIdentity(1e-15));
+
+    const Eigen::Matrix3d J_zero = math::expMapJac(zero);
+    EXPECT_TRUE(J_zero.isIdentity(1e-15));
+
+    const Eigen::Vector3d qdot(1.0, -2.0, 3.0);
+    const Eigen::Matrix3d Jdot_zero = math::expMapJacDot(zero, qdot);
+    const Eigen::Matrix3d Jdot_expected = 0.5 * math::makeSkewSymmetric(qdot);
+    EXPECT_NEAR((Jdot_zero - Jdot_expected).cwiseAbs().maxCoeff(), 0.0, 1e-15);
+  }
+
+  // 2. Accuracy and orthonormality across angles, specifically across
+  // EPSILON_EXPMAP_THETA (1e-3)
+  const std::vector<double> thetas
+      = {1e-9,
+         1e-7,
+         1e-5,
+         1e-4,
+         5e-4,
+         9.99e-4,
+         1e-3,
+         1.001e-3,
+         1e-2,
+         0.1,
+         0.5,
+         1.0,
+         2.0,
+         constantsd::pi() - 1e-4};
+
+  const std::vector<Eigen::Vector3d> axes
+      = {Eigen::Vector3d(1.0, 0.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0),
+         Eigen::Vector3d(0.0, 0.0, 1.0),
+         Eigen::Vector3d(1.0, 1.0, 1.0).normalized(),
+         Eigen::Vector3d(0.3, -0.5, 0.8).normalized(),
+         Eigen::Vector3d(-0.7, 0.2, 0.5).normalized()};
+
+  for (double th : thetas) {
+    for (const auto& axis : axes) {
+      const Eigen::Vector3d q = axis * th;
+      const Eigen::Matrix3d R = math::expMapRot(q);
+      const Eigen::Matrix3d R_exact
+          = Eigen::AngleAxisd(th, axis).toRotationMatrix();
+
+      // Matrix must be an exact rotation (SO(3))
+      EXPECT_TRUE(math::verifyRotation(R));
+
+      // Error against analytical AngleAxis rotation must be machine precision
+      // (previously, theta^3 / 6 error was ~1.7e-10 at theta ~ 1e-3)
+      const double rot_error = (R - R_exact).cwiseAbs().maxCoeff();
+      EXPECT_LT(rot_error, 1e-14);
+
+      // Orthonormality check: R^T * R == I
+      const double ortho_error
+          = (R.transpose() * R - Eigen::Matrix3d::Identity())
+                .cwiseAbs()
+                .maxCoeff();
+      EXPECT_LT(ortho_error, 1e-14);
+
+      // expMapJac evaluation
+      const Eigen::Matrix3d J = math::expMapJac(q);
+      const Eigen::Matrix3d qss = math::makeSkewSymmetric(q);
+      const Eigen::Matrix3d qss2 = qss * qss;
+
+      // Closed form comparison (valid when theta is not too small to avoid
+      // catastrophic cancellation)
+      if (th >= 1e-4) {
+        const Eigen::Matrix3d J_closed
+            = Eigen::Matrix3d::Identity()
+              + ((1.0 - std::cos(th)) / (th * th)) * qss
+              + ((th - std::sin(th)) / (th * th * th)) * qss2;
+        const double jac_error = (J - J_closed).cwiseAbs().maxCoeff();
+        EXPECT_LT(jac_error, 1e-12);
+      }
+    }
+  }
+
+  // 3. Continuity across threshold EPSILON_EXPMAP_THETA
+  {
+    const Eigen::Vector3d axis = Eigen::Vector3d(0.3, -0.5, 0.8).normalized();
+    const double eps = 1e-3;
+    const double delta = 1e-8;
+
+    const Eigen::Vector3d q_below = axis * (eps - delta);
+    const Eigen::Vector3d q_above = axis * (eps + delta);
+
+    const Eigen::Matrix3d R_below = math::expMapRot(q_below);
+    const Eigen::Matrix3d R_above = math::expMapRot(q_above);
+    EXPECT_LT((R_below - R_above).cwiseAbs().maxCoeff(), 2e-7);
+
+    const Eigen::Matrix3d J_below = math::expMapJac(q_below);
+    const Eigen::Matrix3d J_above = math::expMapJac(q_above);
+    EXPECT_LT((J_below - J_above).cwiseAbs().maxCoeff(), 2e-7);
+
+    const Eigen::Vector3d qdot(0.5, -0.2, 0.7);
+    const Eigen::Matrix3d Jdot_below = math::expMapJacDot(q_below, qdot);
+    const Eigen::Matrix3d Jdot_above = math::expMapJacDot(q_above, qdot);
+    EXPECT_LT((Jdot_below - Jdot_above).cwiseAbs().maxCoeff(), 2e-7);
   }
 }

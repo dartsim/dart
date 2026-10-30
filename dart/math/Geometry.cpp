@@ -447,11 +447,15 @@ Eigen::Matrix3d expMapRot(const Eigen::Vector3d& _q)
   Eigen::Matrix3d qss = math::makeSkewSymmetric(_q);
   Eigen::Matrix3d qss2 = qss * qss;
 
-  if (theta < EPSILON_EXPMAP_THETA)
-    R = Eigen::Matrix3d::Identity() + qss + 0.5 * qss2;
-  else
+  if (theta < EPSILON_EXPMAP_THETA) {
+    const double t2 = theta * theta;
+    const double c1 = 1.0 - t2 / 6.0 + (t2 * t2) / 120.0;
+    const double c2 = 0.5 - t2 / 24.0 + (t2 * t2) / 720.0;
+    R = Eigen::Matrix3d::Identity() + c1 * qss + c2 * qss2;
+  } else {
     R = Eigen::Matrix3d::Identity() + (sin(theta) / theta) * qss
         + ((1 - cos(theta)) / (theta * theta)) * qss2;
+  }
 
   return R;
 }
@@ -464,11 +468,15 @@ Eigen::Matrix3d expMapJac(const Eigen::Vector3d& _q)
   Eigen::Matrix3d qss = math::makeSkewSymmetric(_q);
   Eigen::Matrix3d qss2 = qss * qss;
 
-  if (theta < EPSILON_EXPMAP_THETA)
-    J = Eigen::Matrix3d::Identity() + 0.5 * qss + (1.0 / 6.0) * qss2;
-  else
+  if (theta < EPSILON_EXPMAP_THETA) {
+    const double t2 = theta * theta;
+    const double c1 = 0.5 - t2 / 24.0 + (t2 * t2) / 720.0;
+    const double c2 = (1.0 / 6.0) - t2 / 120.0 + (t2 * t2) / 5040.0;
+    J = Eigen::Matrix3d::Identity() + c1 * qss + c2 * qss2;
+  } else {
     J = Eigen::Matrix3d::Identity() + ((1 - cos(theta)) / (theta * theta)) * qss
         + ((theta - sin(theta)) / (theta * theta * theta)) * qss2;
+  }
 
   return J;
 }
@@ -483,17 +491,23 @@ Eigen::Matrix3d expMapJacDot(
   Eigen::Matrix3d qss2 = qss * qss;
   Eigen::Matrix3d qdss = math::makeSkewSymmetric(_qdot);
   double ttdot = _q.dot(_qdot); // theta*thetaDot
-  double st = sin(theta);
-  double ct = cos(theta);
-  double t2 = theta * theta;
-  double t3 = t2 * theta;
-  double t4 = t3 * theta;
-  double t5 = t4 * theta;
 
   if (theta < EPSILON_EXPMAP_THETA) {
-    Jdot = 0.5 * qdss + (1.0 / 6.0) * (qss * qdss + qdss * qss);
-    Jdot += (-1.0 / 12) * ttdot * qss + (-1.0 / 60) * ttdot * qss2;
+    const double t2 = theta * theta;
+    const double c1 = 0.5 - t2 / 24.0 + (t2 * t2) / 720.0;
+    const double c2 = (1.0 / 6.0) - t2 / 120.0 + (t2 * t2) / 5040.0;
+    const double c3 = -1.0 / 12.0 + t2 / 180.0;
+    const double c4 = -1.0 / 60.0 + t2 / 1260.0;
+    Jdot = c1 * qdss + c2 * (qss * qdss + qdss * qss);
+    Jdot += c3 * ttdot * qss + c4 * ttdot * qss2;
   } else {
+    const double st = sin(theta);
+    const double ct = cos(theta);
+    const double t2 = theta * theta;
+    const double t3 = t2 * theta;
+    const double t4 = t3 * theta;
+    const double t5 = t4 * theta;
+
     Jdot = ((1 - ct) / t2) * qdss
            + ((theta - st) / t3) * (qss * qdss + qdss * qss);
     Jdot += ((theta * st + 2 * ct - 2) / t4) * ttdot * qss
