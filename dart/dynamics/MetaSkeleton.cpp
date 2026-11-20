@@ -190,11 +190,11 @@ static Eigen::VectorXd getValuesFromVector(
 
 //==============================================================================
 template <double (DegreeOfFreedom::*getValue)() const>
-static Eigen::VectorXd getValuesFromAllDofs(
-    const MetaSkeleton* skel, std::string_view fname)
+static void getValuesFromAllDofs(
+    const MetaSkeleton* skel, Eigen::VectorXd& values, std::string_view fname)
 {
   std::size_t nDofs = skel->getNumDofs();
-  Eigen::VectorXd values(nDofs);
+  values.resize(static_cast<Eigen::Index>(nDofs));
 
   for (std::size_t i = 0; i < nDofs; ++i) {
     const DegreeOfFreedom* dof = skel->getDof(i);
@@ -209,7 +209,15 @@ static Eigen::VectorXd getValuesFromAllDofs(
       DART_ASSERT(false);
     }
   }
+}
 
+//==============================================================================
+template <double (DegreeOfFreedom::*getValue)() const>
+static Eigen::VectorXd getValuesFromAllDofs(
+    const MetaSkeleton* skel, std::string_view fname)
+{
+  Eigen::VectorXd values;
+  getValuesFromAllDofs<getValue>(skel, values, fname);
   return values;
 }
 
@@ -337,6 +345,13 @@ Eigen::VectorXd MetaSkeleton::getCommands() const
 }
 
 //==============================================================================
+void MetaSkeleton::getCommands(Eigen::VectorXd& commands) const
+{
+  getValuesFromAllDofs<&DegreeOfFreedom::getCommand>(
+      this, commands, "getCommands");
+}
+
+//==============================================================================
 Eigen::VectorXd MetaSkeleton::getCommands(
     const std::vector<std::size_t>& _indices) const
 {
@@ -384,6 +399,13 @@ Eigen::VectorXd MetaSkeleton::getPositions() const
 {
   return getValuesFromAllDofs<&DegreeOfFreedom::getPosition>(
       this, "getPositions");
+}
+
+//==============================================================================
+void MetaSkeleton::getPositions(Eigen::VectorXd& positions) const
+{
+  getValuesFromAllDofs<&DegreeOfFreedom::getPosition>(
+      this, positions, "getPositions");
 }
 
 //==============================================================================
@@ -526,6 +548,13 @@ Eigen::VectorXd MetaSkeleton::getVelocities() const
 }
 
 //==============================================================================
+void MetaSkeleton::getVelocities(Eigen::VectorXd& velocities) const
+{
+  getValuesFromAllDofs<&DegreeOfFreedom::getVelocity>(
+      this, velocities, "getVelocities");
+}
+
+//==============================================================================
 Eigen::VectorXd MetaSkeleton::getVelocities(
     const std::vector<std::size_t>& _indices) const
 {
@@ -662,6 +691,13 @@ Eigen::VectorXd MetaSkeleton::getAccelerations() const
 {
   return getValuesFromAllDofs<&DegreeOfFreedom::getAcceleration>(
       this, "getAccelerations");
+}
+
+//==============================================================================
+void MetaSkeleton::getAccelerations(Eigen::VectorXd& accelerations) const
+{
+  getValuesFromAllDofs<&DegreeOfFreedom::getAcceleration>(
+      this, accelerations, "getAccelerations");
 }
 
 //==============================================================================
@@ -813,6 +849,12 @@ void MetaSkeleton::setForces(
 Eigen::VectorXd MetaSkeleton::getForces() const
 {
   return getValuesFromAllDofs<&DegreeOfFreedom::getForce>(this, "getForces");
+}
+
+//==============================================================================
+void MetaSkeleton::getForces(Eigen::VectorXd& forces) const
+{
+  getValuesFromAllDofs<&DegreeOfFreedom::getForce>(this, forces, "getForces");
 }
 
 //==============================================================================
