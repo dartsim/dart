@@ -268,6 +268,12 @@ public:
   /// Get commands for all generalized coordinates
   Eigen::VectorXd getCommands() const;
 
+  /// Write the commands for all generalized coordinates into a buffer.
+  ///
+  /// The buffer is resized to getNumDofs(). One that already has that size
+  /// is not reallocated, so reusing it makes this call allocation-free.
+  void getCommands(Eigen::VectorXd& commands) const;
+
   /// Get commands for a subset of the generalized coordinates
   Eigen::VectorXd getCommands(const std::vector<std::size_t>& _indices) const;
 
@@ -296,6 +302,12 @@ public:
 
   /// Get the positions for all generalized coordinates
   Eigen::VectorXd getPositions() const;
+
+  /// Write the positions for all generalized coordinates into a buffer.
+  ///
+  /// The buffer is resized to getNumDofs(). One that already has that size
+  /// is not reallocated, so reusing it makes this call allocation-free.
+  void getPositions(Eigen::VectorXd& positions) const;
 
   /// Get the positions for a subset of the generalized coordinates
   Eigen::VectorXd getPositions(const std::vector<std::size_t>& _indices) const;
@@ -367,6 +379,12 @@ public:
 
   /// Get the velocities for all generalized coordinates
   Eigen::VectorXd getVelocities() const;
+
+  /// Write the velocities for all generalized coordinates into a buffer.
+  ///
+  /// The buffer is resized to getNumDofs(). One that already has that size
+  /// is not reallocated, so reusing it makes this call allocation-free.
+  void getVelocities(Eigen::VectorXd& velocities) const;
 
   /// Get the velocities for a subset of the generalized coordinates
   Eigen::VectorXd getVelocities(const std::vector<std::size_t>& _indices) const;
@@ -443,6 +461,12 @@ public:
   /// Get the accelerations for all generalized coordinates
   Eigen::VectorXd getAccelerations() const;
 
+  /// Write the accelerations for all generalized coordinates into a buffer.
+  ///
+  /// The buffer is resized to getNumDofs(). One that already has that size
+  /// is not reallocated, so reusing it makes this call allocation-free.
+  void getAccelerations(Eigen::VectorXd& accelerations) const;
+
   /// Get the accelerations for a subset of the generalized coordinates
   Eigen::VectorXd getAccelerations(
       const std::vector<std::size_t>& _indices) const;
@@ -517,6 +541,12 @@ public:
 
   /// Get the forces for all generalized coordinates
   Eigen::VectorXd getForces() const;
+
+  /// Write the forces for all generalized coordinates into a buffer.
+  ///
+  /// The buffer is resized to getNumDofs(). One that already has that size
+  /// is not reallocated, so reusing it makes this call allocation-free.
+  void getForces(Eigen::VectorXd& forces) const;
 
   /// Get the forces for a subset of the generalized coordinates
   Eigen::VectorXd getForces(const std::vector<std::size_t>& _indices) const;

@@ -1523,6 +1523,61 @@ TEST(StepAllocation, MetaSkeletonDofAccessorsHaveNoOperatorNewAllocations)
   EXPECT_EQ(some.size(), 2);
 }
 
+// gz-physics reads every model's positions after every step. The overloads
+// that write into a caller's buffer must match the by-value getters and, once
+// the buffer has the right size, must not allocate (Eigen vectors use malloc,
+// so this needs the raw counter).
+TEST(StepAllocation, MetaSkeletonDofStateGettersIntoBufferDoNotAllocate)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  auto skeleton = dart::dynamics::Skeleton::create();
+  skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  const Eigen::VectorXd values = Eigen::VectorXd::LinSpaced(6, 1.0, 6.0);
+  skeleton->setCommands(values);
+  skeleton->setPositions(values);
+  skeleton->setVelocities(2.0 * values);
+  skeleton->setAccelerations(3.0 * values);
+  skeleton->setForces(4.0 * values);
+
+  // Buffers start empty or with the wrong size; the first call resizes them.
+  Eigen::VectorXd commands;
+  Eigen::VectorXd positions(2);
+  Eigen::VectorXd velocities;
+  Eigen::VectorXd accelerations(9);
+  Eigen::VectorXd forces;
+  skeleton->getCommands(commands);
+  skeleton->getPositions(positions);
+  skeleton->getVelocities(velocities);
+  skeleton->getAccelerations(accelerations);
+  skeleton->getForces(forces);
+  EXPECT_EQ(commands, skeleton->getCommands());
+  EXPECT_EQ(positions, skeleton->getPositions());
+  EXPECT_EQ(velocities, skeleton->getVelocities());
+  EXPECT_EQ(accelerations, skeleton->getAccelerations());
+  EXPECT_EQ(forces, skeleton->getForces());
+
+  dart::test::ScopedHeapAllocationCounter globalCounter;
+  dart::test::ScopedRawHeapAllocationCounter rawCounter;
+  for (int i = 0; i < 10; ++i) {
+    skeleton->getCommands(commands);
+    skeleton->getPositions(positions);
+    skeleton->getVelocities(velocities);
+    skeleton->getAccelerations(accelerations);
+    skeleton->getForces(forces);
+  }
+  globalCounter.stop();
+  rawCounter.stop();
+
+  EXPECT_EQ(globalCounter.allocationCount(), 0u);
+  if (!rawCounter.skipped()) {
+    EXPECT_EQ(rawCounter.allocationCount(), 0u);
+  }
+  EXPECT_EQ(positions, values);
+  EXPECT_EQ(forces, 4.0 * values);
+}
+
 TEST(
     StepAllocation, NativeExplicitFirstPostBakeHasNoGlobalOrBaseAllocatorGrowth)
 {
